@@ -23,9 +23,9 @@ class BaseEngine(object):
         await engine.close()
     """
 
-    def __init__(self, dsn: str=None, *, host: str=None, port: int=None,
-                 username: str=None, password: str=None, database: str=None,
-                 use_connection_pool: bool=True, pool_min_size: int=2, pool_max_size: int=8,
+    def __init__(self, dsn: str = None, *, host: str = None, port: int = None,
+                 username: str = None, password: str = None, database: str = None,
+                 use_connection_pool: bool = True, pool_min_size: int = 2, pool_max_size: int = 8,
                  loop=None):
         """
         Creates a new database engine.
@@ -81,12 +81,20 @@ class BaseEngine(object):
         Connects the engine to the database specified.
         :param timeout: How long to wait before we terminate the connection?
         """
-        # Create a new future which
+        # Create a new future which is wait_for'd
         coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout, loop=self.loop)
         return await coro
 
     @abc.abstractmethod
-    async def fetch(self, sql: str, rows: int=1, params: dict=None):
+    async def get_connection(self):
+        """
+        Gets a connection.
+
+        This should either return a new connection from the pool, or the existing connection.
+        """
+
+    @abc.abstractmethod
+    async def fetch(self, sql: str, rows: int = 1, params: dict = None):
         """
         Fetches data from the database using the underlying connection.
 
@@ -100,7 +108,7 @@ class BaseEngine(object):
         """
 
     @abc.abstractmethod
-    async def fetchall(self, sql: str, params: dict=None):
+    async def fetchall(self, sql: str, params: dict = None):
         """
         Fetches data from the database using the underlying connection.
 
