@@ -125,12 +125,9 @@ class BaseEngine(object):
         """
         Fetches data from the database using the underlying connection.
 
-        This is a utility function for:
-
-        .. code:: python
-            return await engine.fetch(sql, rows=0, params=params)
+        This returns an iterator that can be used to iterate over the rows of the database that are returned.
 
         :param sql: The SQL statement to execute on the connection.
-        :param params: A dictionary of parameters to fetch from the
+        :param params: A dictionary of parameters to insert into the query.
         :return:
         """
