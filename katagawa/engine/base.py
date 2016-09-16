@@ -52,7 +52,10 @@ class BaseEngine(object):
             self.username = parsed.username
             self.password = parsed.password
 
-            self.database = parsed.paths[0]
+            try:
+                self.database = parsed.paths[0]
+            except IndexError as e:
+                raise KeyError("Database was not specified in the DSN") from e
 
         else:
             self.host = host
