@@ -7,6 +7,8 @@ import asyncio
 
 import dsnparse
 
+from katagawa.exceptions import OperationalException
+
 
 class BaseEngine(object):
     """
@@ -85,8 +87,16 @@ class BaseEngine(object):
         :param timeout: How long to wait before we terminate the connection?
         """
         # Create a new future which is wait_for'd
-        coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout, loop=self.loop)
-        return await coro
+        try:
+            coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout, loop=self.loop)
+            return await coro
+        except ConnectionError as e:
+            exc = OperationalException("Could not connect to server: {}\n\t"
+                                       "Is the server running on host \"{}\" "
+                                       "and accepting connections on port {}?".format(e.strerror,
+                                                                                      self.host,
+                                                                                      self.port))
+            raise exc
 
     @abc.abstractmethod
     async def get_connection(self):
