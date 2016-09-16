@@ -1,0 +1,115 @@
+"""
+The base class for any Katagawa back-end engine.
+"""
+
+import abc
+import asyncio
+
+import dsnparse
+
+
+class BaseEngine(object):
+    """
+    An engine is a way of connecting Katagawa to an actual database server.
+
+    It implements the connection logic and the actual sending and fetching of results from the server.
+
+    .. code:: python
+
+        engine = AsyncpgEngine(url="postgresql://user:password@127.0.0.1:5432/database")
+        await engine.connect()
+        results = await engine.fetch('''SELECT a, b, c FROM sometable''', rows=1)
+        other_results = await engine.execute('''INSERT INTO sometable (a, b, c) VALUES (100), (200), (300)''')
+        await engine.close()
+    """
+
+    def __init__(self, dsn: str=None, *, host: str=None, port: int=None,
+                 username: str=None, password: str=None, database: str=None,
+                 use_connection_pool: bool=True, pool_min_size: int=2, pool_max_size: int=8,
+                 loop=None):
+        """
+        Creates a new database engine.
+
+        Either a DSN or each individual part of it should be specified.
+
+        :param dsn: The DSN to use to create the new engine.
+        :param host: The hostname to connect to.
+        :param port: The port to connect to.
+        :param username: The username to use to log in as.
+        :param password: The password to log in with.
+        :param database: The specific database to use.
+
+        :param use_connection_pool: Should a connection pool be used to connect to the database?
+            Note that variances between the connectors means that this is not always guaranteed to be used.
+
+        :param pool_min_size: The minimum size of the connection pool, if applicable.
+        :param pool_max_size: The maximum size of the connection pool, if applicable.
+        """
+        if dsn:
+            parsed = dsnparse.parse(dsn)
+            self.host = parsed.host
+            self.port = parsed.port
+            self.username = parsed.username
+            self.password = parsed.password
+
+            self.database = parsed.paths[0]
+
+        else:
+            self.host = host
+            self.port = port
+            self.username = username
+            self.password = password
+
+            self.database = database
+
+        self.use_connection_pool = use_connection_pool
+        self.pool_max_size = pool_max_size
+        self.pool_min_size = pool_min_size
+
+        self.loop = loop or asyncio.get_event_loop()
+
+    @abc.abstractmethod
+    async def _connect(self):
+        """
+        This is the actual connect logic.
+
+        It is automatically killed when the ``wait_for`` in ``connect`` is ended.
+        """
+
+    async def connect(self, *, timeout=30):
+        """
+        Connects the engine to the database specified.
+        :param timeout: How long to wait before we terminate the connection?
+        """
+        # Create a new future which
+        coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout, loop=self.loop)
+        return await coro
+
+    @abc.abstractmethod
+    async def fetch(self, sql: str, rows: int=1, params: dict=None):
+        """
+        Fetches data from the database using the underlying connection.
+
+        :param sql: The SQL statement to execute on the connection.
+        :param rows: The number of rows to fetch in the result.
+            If this value is 0, it will attempt to return all.
+
+        :param params: A dictionary of parameters to add to the SQL query.
+
+        :return: An iterator that allows you iterate over the results returned from the query.
+        """
+
+    @abc.abstractmethod
+    async def fetchall(self, sql: str, params: dict=None):
+        """
+        Fetches data from the database using the underlying connection.
+
+        This is a utility function for:
+
+        .. code:: python
+            return await engine.fetch(sql, rows=0, params=params)
+
+        :param sql: The SQL statement to execute on the connection.
+        :param params: A dictionary of parameters to fetch from the
+        :return:
+        """
