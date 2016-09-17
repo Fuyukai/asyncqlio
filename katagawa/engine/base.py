@@ -74,6 +74,18 @@ class BaseEngine(object):
         self.loop = loop or asyncio.get_event_loop()
 
     @abc.abstractmethod
+    async def emit_param(self, name: str):
+        """
+        Emits a parameter for the current engine.
+
+        This will return the param you need to add to the SQL string for the DBAPI to complete successfully,
+        for example asyncpg will emit ``{name}``.
+
+        :param name: The name of the parameter.
+        :return: What the name would be.
+        """
+
+    @abc.abstractmethod
     async def _connect(self):
         """
         This is the actual connect logic.
