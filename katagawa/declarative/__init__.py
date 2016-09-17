@@ -23,16 +23,18 @@ class DeclarativeMeta(type):
         """
         Creates the new declarative class.
         """
-        # First, locate all Column instances in the dict.
+        # Add `__fields__` to the class dict.
+        cls_dict["__fields__"] = {}
+        # Locate all Column instances in the dict.
         for name, value in cls_dict.items():
             # Check if it's an instance of Column.
             if isinstance(value, Column):
-                # TODO: Add to mapper
                 # Set the name of the column.
                 value._name = name
+                # Update it on `__fields__`.
+                cls_dict["__fields__"][name] = value
 
-        # TODO: Flesh this out further.
-        # Finally, create the new class.
+        # create the new class.
         c = super().__new__(mcs, name, bases, cls_dict)
 
         return c
@@ -55,3 +57,5 @@ class Base(metaclass=DeclarativeMeta):
     """
     Class inherited from by models.
     """
+    # Stub field to indicate this class should have a __fields__ attribute.
+    __fields__ = {}
