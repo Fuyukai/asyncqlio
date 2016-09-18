@@ -12,7 +12,7 @@ class Token(abc.ABC):
 
     __slots__ = ()
 
-    def __init__(self, subtokens: typing.List['Token']=None):
+    def __init__(self, subtokens: typing.List['Token'] = None):
         """
         :param subtokens: Any subtokens this token has.
         """
@@ -57,18 +57,38 @@ class Token(abc.ABC):
         """
 
 
-class Aliased(Token):
+class WithIdentifier(Token):
     """
-    Mixin class for an aliased token.
+    Class for a token that takes in an identifier, for example a column or a table.
     """
 
-    __slots__ = ("alias",)
+    __slots__ = ("identifier",)
 
-    def __init__(self, subtokens: typing.List['Token'], alias: str=None):
+    def __init__(self, identifier, subtokens: list = None):
         """
+        :param identifier: The name of the column to use.
+        :param subtokens: Any subtokens this token has.
+        """
+        super().__init__(subtokens)
+
+        self.identifier = identifier
+
+
+class Aliased(WithIdentifier):
+    """
+    Class for an aliased token.
+
+    This inherits WithIdentifier, as you need an identifier to use an alias.
+    """
+
+    __slots__ = ("identifier", "alias",)
+
+    def __init__(self, identifier: str, subtokens: typing.List['Token'] = None, alias: str = None):
+        """
+        :param identifier: The identifier this token has.
         :param subtokens: Any subtokens this token has.
         :param alias: The alias this token has.
         """
-        super().__init__(subtokens)
+        super().__init__(identifier, subtokens)
 
         self.alias = alias
