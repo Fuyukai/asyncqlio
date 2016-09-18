@@ -36,7 +36,7 @@ class Mapper(MutableMapping):
         :return: The Column or Relationship associated with that field.
         """
         tbl = self.tables[table]
-        field = getattr(tbl, field)
+        field = tbl.__fields__[field]
 
         return field
 
