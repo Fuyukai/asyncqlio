@@ -23,6 +23,8 @@ class DeclarativeMeta(type):
         """
         Creates the new declarative class.
         """
+        if "__tablename__" not in cls_dict:
+            raise ValueError("Model {} has no `__tablename__` defined".format(name))
         # Add `__fields__` to the class dict.
         cls_dict["__fields__"] = {}
         # Locate all Column instances in the dict.
@@ -57,5 +59,7 @@ class Base(metaclass=DeclarativeMeta):
     """
     Class inherited from by models.
     """
+    # Stub field to prevent errors.
+    __tablename__ = None
     # Stub field to indicate this class should have a __fields__ attribute.
     __fields__ = {}
