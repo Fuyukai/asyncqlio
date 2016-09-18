@@ -39,7 +39,7 @@ class Column:
             # Return ourself so we can be accessed on the class directly.
             return self
         # Get the mapper item that we refer to.
-        item = instance.__mapper__.get(self._name, self.default)
+        item = instance.__field_mapper__.get(self._name, self.default)
         return item
 
     def __set__(self, instance, value):

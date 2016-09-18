@@ -9,6 +9,7 @@ underlying tables, for example:
         name = Column(String(32), nullable=False)
 """
 from katagawa.declarative.column import Column
+from katagawa.declarative.mapper import Mapper
 
 
 class DeclarativeMeta(type):
@@ -41,25 +42,45 @@ class DeclarativeMeta(type):
 
         return c
 
+    def __init__(cls, name, bases, cls_dict: dict):
+        """
+        Called after the type is created.
+        """
+        # `cls` here is the class instance.
+        # This means that we can set it on the mapper, with the name.
+        cls.mapper[name] = cls
+
+        # Then just call super().
+        newcls = super().__init__(cls, bases, cls_dict)
+        return newcls
+
     def __call__(cls, *args, **kwargs):
         """
         Calls the __init__ method of the declarative model, after doing some housework.
         """
         # Create a fresh new instance.
         new_instance = object.__new__(cls)
-        # Define a new mapper.
-        new_instance.__mapper__ = {}
+        # Define a new field mapper.
+        # This is separate to the Mapper on the class, as it only defines the storage for fields on an instance.
+        new_instance.__field_mapper__ = {}
         # Call the `__init__` method of the new class.
         new_instance.__init__(*args, **kwargs)
 
         return new_instance
 
 
-class Base(metaclass=DeclarativeMeta):
-    """
-    Class inherited from by models.
-    """
-    # Stub field to prevent errors.
-    __tablename__ = None
-    # Stub field to indicate this class should have a __fields__ attribute.
-    __fields__ = {}
+def declarative_base():
+    # Semi-voldemort type.
+    # This is created with a Mapper instance specific to the Base.
+    class Base(metaclass=DeclarativeMeta):
+        """
+        Class inherited from by models.
+        """
+        # The mapper used by this base.
+        mapper = Mapper()
+        # Stub field to prevent errors.
+        __tablename__ = None
+        # Stub field to indicate this class should have a __fields__ attribute.
+        __fields__ = {}
+
+    return Base
