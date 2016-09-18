@@ -62,6 +62,12 @@ class Select(Token):
 
             generated += " ORDER BY {}".format(ob.generate_sql())
 
+        # Check if there is a LIMIT token.
+        ob = self.consume_tokens("LIMIT")
+        if ob:
+            ob = ob[0]
+            generated += " {}".format(ob.generate_sql())
+
         # Return the generated SQL.
         return generated
 
@@ -121,6 +127,7 @@ class OrderBy(Token):
     """
     Defines an ORDER BY instruction.
     """
+
     def __init__(self, columns: typing.List[typing.Tuple[str, str]]):
         """
         :param columns: A list of two-param tuples:
@@ -134,3 +141,15 @@ class OrderBy(Token):
 
     def generate_sql(self):
         return ", ".join(["{} {}".format(column, order.upper()) for (column, order) in self.columns])
+
+
+class Limit(WithIdentifier):
+    """
+    Defines a LIMIT token.
+    """
+    @property
+    def name(self):
+        return "LIMIT"
+
+    def generate_sql(self):
+        return "LIMIT {}".format(self.identifier)
