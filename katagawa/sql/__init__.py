@@ -21,6 +21,9 @@ class Token(abc.ABC):
 
         self.subtokens = subtokens
 
+    def __repr__(self):
+        return self.generate_sql()
+
     def consume_tokens(self, name) -> typing.List['Token']:
         """
         Consumes tokens from the current subtokens and returns a new list of these tokens.
@@ -54,7 +57,7 @@ class Token(abc.ABC):
         """
 
 
-class Aliased(abc.ABC, Token):
+class Aliased(Token):
     """
     Mixin class for an aliased token.
     """
