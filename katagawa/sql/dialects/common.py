@@ -16,8 +16,10 @@ sql_statement = SELECT(
 )
 
 """
+import typing
+
 from katagawa.exceptions import MissingTokenException
-from katagawa.sql import Token, Aliased
+from katagawa.sql import Token, Aliased, WithIdentifier
 
 
 class Select(Token):
@@ -52,6 +54,14 @@ class Select(Token):
 
         generated += ", ".join([f.generate_sql(include_from=False) for f in fr])
 
+        # Check if there is an ORDER_BY token.
+        ob = self.consume_tokens("ORDERBY")
+        if ob:
+            # Only use one. There should only ever be one anyway
+            ob = ob[0]
+
+            generated += " ORDER BY {}".format(ob.generate_sql())
+
         # Return the generated SQL.
         return generated
 
@@ -84,6 +94,7 @@ class From(Aliased):
     """
     Represents a FROM in a SELECT, or similar.
     """
+
     @property
     def name(self):
         return "FROM"
@@ -104,3 +115,22 @@ class From(Aliased):
             base += " AS {}".format(self.alias)
 
         return base
+
+
+class OrderBy(Token):
+    """
+    Defines an ORDER BY instruction.
+    """
+    def __init__(self, columns: typing.List[typing.Tuple[str, str]]):
+        """
+        :param columns: A list of two-param tuples:
+            First param is the column to sort on, and the second the sorting method: 'ASC' or 'DESC'
+        """
+        self.columns = columns
+
+    @property
+    def name(self):
+        return "ORDERBY"
+
+    def generate_sql(self):
+        return ", ".join(["{} {}".format(column, order.upper()) for (column, order) in self.columns])
