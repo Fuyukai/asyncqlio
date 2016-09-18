@@ -4,6 +4,7 @@ An engine using the ``asyncpg`` backend.
 import typing
 
 import asyncpg
+import logging
 
 from katagawa.engine.base import BaseEngine
 from katagawa.engine.transaction import Transaction
@@ -26,6 +27,8 @@ def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
 
     Returns the reparsed SQL, and a tuple of items to be passed as parameters.
     """
+    if not params or len(params) < 1:
+        return sql, ()
     # Dump the params into key -> value pairs.
     kv = [(k, v) for (k, v) in params.items()]
 
@@ -36,6 +39,7 @@ def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
 
     # Iterate over the key-values, adding each key to the fmt_dict with the number index.
     for n, (k, v) in enumerate(kv):
+        n += 1
         # Add to the format dict.
         fmt_dict[k] = "${}".format(n)
         items.append(v)
@@ -99,6 +103,8 @@ class AsyncpgEngine(BaseEngine):
         # self.connection will be None if this exists.
         self.pool = None  # type: asyncpg.pool.Pool
 
+        self.logger = logging.getLogger("Katagawa.engine.asyncpg")
+
     def get_connection(self) -> asyncpg.connection.Connection:
         """
         Returns an asyncpg connection.
@@ -123,15 +129,16 @@ class AsyncpgEngine(BaseEngine):
 
     async def fetch(self, sql: str, rows: int = 1, params: dict = None):
         async with self.get_connection() as conn:
-            # TODO: Do parameters
             assert isinstance(conn, asyncpg.connection.Connection)
+            # Parse the sql and the params.
+            new_sql, p_tup = get_param_query(sql, params)
+            self.logger.debug("Fetching `{}`".format(new_sql))
+            self.logger.debug("{}".format(p_tup))
             # Open up a new transaction.
             async with conn.transaction():
                 # Create a cursor.
-                cursor = conn.cursor(sql, prefetch=rows or 50)
-                items = []
-                async for row in cursor:
-                    items.append(row)
+                cursor = await conn.cursor(new_sql, *p_tup)
+                items = await cursor.fetch(rows)
 
                 return items
 
