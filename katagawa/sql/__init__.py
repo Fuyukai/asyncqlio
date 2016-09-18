@@ -12,11 +12,31 @@ class Token(abc.ABC):
 
     __slots__ = ()
 
-    def __init__(self, subtokens: typing.List['Token']):
+    def __init__(self, subtokens: typing.List['Token']=None):
         """
         :param subtokens: Any subtokens this token has.
         """
+        if subtokens is None:
+            subtokens = []
+
         self.subtokens = subtokens
+
+    def consume_tokens(self, name) -> typing.List['Token']:
+        """
+        Consumes tokens from the current subtokens and returns a new list of these tokens.
+
+        This will remove the tokens from the current subtokens.
+
+        :param name: The name of the token to consume.
+        :return: A list of :class:`Token` that match the type.
+        """
+        returned = []
+        for item in self.subtokens[:]:
+            if item.name == name:
+                returned.append(item)
+                self.subtokens.remove(item)
+
+        return returned
 
     @abc.abstractproperty
     def name(self):
@@ -34,14 +54,14 @@ class Token(abc.ABC):
         """
 
 
-class Aliased(Token):
+class Aliased(abc.ABC, Token):
     """
     Mixin class for an aliased token.
     """
 
     __slots__ = ("alias",)
 
-    def __init__(self, subtokens: typing.List['Token'], alias: str):
+    def __init__(self, subtokens: typing.List['Token'], alias: str=None):
         """
         :param subtokens: Any subtokens this token has.
         :param alias: The alias this token has.
