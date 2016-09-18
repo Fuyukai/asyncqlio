@@ -111,6 +111,12 @@ class BaseEngine(object):
             raise exc
 
     @abc.abstractmethod
+    def create_transaction(self, read_only=False, **kwargs):
+        """
+        Creates a new transaction and returns it.
+        """
+
+    @abc.abstractmethod
     async def get_connection(self):
         """
         Gets a connection.
