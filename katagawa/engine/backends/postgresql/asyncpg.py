@@ -112,6 +112,12 @@ class AsyncpgEngine(BaseEngine):
 
         return r
 
+    def create_transaction(self, read_only=False, **kwargs) -> AsyncpgTransaction:
+        trans = AsyncpgTransaction(self, kwargs.get("isolation", "read_only"), read_only,
+                                   kwargs.get("deferrable", False))
+
+        return trans
+
     def emit_param(self, name: str):
         return "{%s}" % name
 
