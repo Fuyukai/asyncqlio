@@ -60,7 +60,12 @@ class Column:
             # Return ourself so we can be accessed on the class directly.
             return self
         # Get the mapper item that we refer to.
-        item = instance.__field_mapper__.get(self._name, self.default)
+        item = instance.__field_mapper__.get(self._name, None)
+        if item is None:
+            # Set the default, if there is one.
+            if self.default is not None:
+                instance.__field_mapper__[self._name] = self.default
+                item = self.default
         # Cast it using our type
         item = self._type.cast(item)
         return item
