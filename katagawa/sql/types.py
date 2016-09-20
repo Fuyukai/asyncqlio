@@ -56,9 +56,23 @@ class Integer(BaseType):
     """
     Defines a 32-bit integer type.
     """
+
     @property
     def sql_type(self):
         return "INTEGER"
 
     def check_type(self, arg: object):
-            return isinstance(arg, int) and -2147483647 < arg <= 2147483647
+        return isinstance(arg, int) and -2147483647 < arg <= 2147483647
+
+
+class SmallInteger(BaseType):
+    """
+    Defines a 16-bit integer type.
+    """
+
+    def check_type(self, arg: object):
+        return isinstance(arg, int) and -(2**15) < arg <= (2**15 - 1)
+
+    @property
+    def sql_type(self):
+        return "SMALLINT"
