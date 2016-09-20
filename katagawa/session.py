@@ -1,5 +1,5 @@
 from katagawa.engine import BaseEngine
-from katagawa.query import BaseQuery
+from katagawa.querying.query import BaseQuery
 
 
 class Session(object):
