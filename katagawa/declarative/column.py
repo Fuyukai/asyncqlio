@@ -30,7 +30,7 @@ class Column:
         self.default = kwargs.pop("default", None)
 
         # If the value is nullable.
-        self.nullable = kwargs.pop("nullable", False)
+        self.nullable = kwargs.pop("nullable", True)
 
     def __get__(self, instance, owner):
         """
