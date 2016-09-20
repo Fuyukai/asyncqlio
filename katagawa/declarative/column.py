@@ -17,6 +17,18 @@ class Column:
     def __init__(self, type_: type, **kwargs):
         """
         :param type_: The type of the Column.
+
+        :param default: The default value for this column.
+            This is None by default.
+        :param nullable: If this field is nullable or not.
+            This is True by default.
+        :param primary_key: If this field should be a primary key.
+            This is False by default.
+        :param autoincrement: If this field should autoincrement.
+            This is False by default.
+        :param unique: If this field is unique inside the database i.e no other row can have a column with the same
+        value in it.
+            This is False by default.
         """
         if not isinstance(type_, BaseType):
             raise TypeError("Column type must be a BaseType")
@@ -47,6 +59,9 @@ class Column:
                 raise TypeError("Default value `{}` is not compatible with type `{}`".format(
                     self.default, self._type.name
                 ))
+
+        # If this is unique.
+        self.unique = kwargs.pop("unique", False)
 
     def __get__(self, instance, owner):
         """
