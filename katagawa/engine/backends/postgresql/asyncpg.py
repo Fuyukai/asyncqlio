@@ -153,7 +153,8 @@ class AsyncpgEngine(BaseEngine):
             # Create the connection pool.
             self.pool = await asyncpg.create_pool(host=self.host, port=self.port, user=self.username,
                                                   password=self.password, database=self.database,
-                                                  loop=self.loop)
+                                                  loop=self.loop, min_size=self.pool_min_size,
+                                                  max_size=self.pool_max_size)
         else:
             # Connect using a single connection.
             self.connection = await asyncpg.connect(host=self.host, port=self.port, user=self.username,
