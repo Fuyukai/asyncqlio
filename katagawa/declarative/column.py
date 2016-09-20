@@ -32,6 +32,22 @@ class Column:
         # If the value is nullable.
         self.nullable = kwargs.pop("nullable", True)
 
+        # If the value is a primary key.
+        self.primary_key = kwargs.pop("primary_key", False)
+
+        # Should this autoincrement?
+        self.autoincrement = kwargs.pop("autoincrement")
+
+        # The default value for this column.
+        self.default = kwargs.pop("default", None)
+
+        # Type check the default.
+        if self.default is not None:
+            if not self._type.check_type(self.default):
+                raise TypeError("Default value `{}` is not compatible with type `{}`".format(
+                    self.default, self._type.name
+                ))
+
     def __get__(self, instance, owner):
         """
         Gets our value, when on an instance.
