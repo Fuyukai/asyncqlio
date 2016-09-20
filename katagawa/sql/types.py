@@ -50,12 +50,33 @@ class BaseType(abc.ABC):
         :return: True if the argument is compatible, False if the argument isn't compatible.
         """
 
+    @abc.abstractproperty
+    def name(self):
+        """
+        :return: The name of this type.
+        """
+
+    def cast(self, item):
+        """
+        Casts an item to the specified type.
+
+        This is purely for custom subclasses to be able to do magic on items provided.
+
+        :param item: The item to the convert.
+        :return: The converted item.
+        """
+        # By default, just return the item, unchanged.
+        return item
+
 
 # Very basic SQL types.
 class Integer(BaseType):
     """
     Defines a 32-bit integer type.
     """
+    @property
+    def name(self):
+        return "int"
 
     @property
     def sql_type(self):
@@ -69,6 +90,9 @@ class SmallInteger(BaseType):
     """
     Defines a 16-bit integer type.
     """
+    @property
+    def name(self):
+        return "smallint"
 
     def check_type(self, arg: object):
         return isinstance(arg, int) and -(2 ** 15) < arg <= (2 ** 15 - 1)
@@ -82,6 +106,9 @@ class BigInteger(BaseType):
     """
     Defines a 64-bit integer type.
     """
+    @property
+    def name(self):
+        return "bigint"
 
     def check_type(self, arg: object):
         return isinstance(arg, int) and -(2 ** 64) < arg <= (2 ** 64 - 1)
@@ -100,6 +127,10 @@ class String(BaseType):
 
     def __init__(self, length: int = 255):
         self._length = length
+
+    @property
+    def name(self):
+        return "str"
 
     def check_type(self, arg: str):
         return isinstance(arg, str) and len(arg) <= self._length
