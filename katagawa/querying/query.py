@@ -37,7 +37,7 @@ class BaseQuery(object):
         """
         for table in tables:
             if isinstance(table, DeclarativeMeta):
-                tbl = AliasedTable(table, table.__name__)
+                tbl = AliasedTable(table, table.__tablename__)
             elif isinstance(table, AliasedTable):
                 tbl = table
             else:
@@ -45,7 +45,7 @@ class BaseQuery(object):
 
             if tbl.alias in self.tables:
                 raise TableConflictException("Table {} already exists in query when selecting. Did you mean to "
-                                             "alias it?")
+                                             "alias it?".format(tbl.alias))
             self.tables[tbl.alias] = tbl
 
         return self
