@@ -23,13 +23,14 @@ class BaseType(abc.ABC):
     These types define the underlying SQL type that is used for this type, and the restraints that this type can have
     when adding values to it.
     """
-    @abc.abstractmethod
+
     def __init__(self, *args, **kwargs):
         """
         Initializes the BaseType.
 
         The args and kwargs form here are required because some types (such as strings) may take in optional arguments.
         """
+        pass
 
     @abc.abstractproperty
     def sql_type(self):
@@ -50,4 +51,14 @@ class BaseType(abc.ABC):
         """
 
 
+# Very basic SQL types.
+class Integer(BaseType):
+    """
+    Defines a 32-bit integer type.
+    """
+    @property
+    def sql_type(self):
+        return "INTEGER"
 
+    def check_type(self, arg: object):
+            return isinstance(arg, int) and -2147483647 < arg <= 2147483647
