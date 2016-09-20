@@ -71,8 +71,38 @@ class SmallInteger(BaseType):
     """
 
     def check_type(self, arg: object):
-        return isinstance(arg, int) and -(2**15) < arg <= (2**15 - 1)
+        return isinstance(arg, int) and -(2 ** 15) < arg <= (2 ** 15 - 1)
 
     @property
     def sql_type(self):
         return "SMALLINT"
+
+
+class BigInteger(BaseType):
+    """
+    Defines a 64-bit integer type.
+    """
+
+    def check_type(self, arg: object):
+        return isinstance(arg, int) and -(2 ** 64) < arg <= (2 ** 64 - 1)
+
+    @property
+    def sql_type(self):
+        return "BIGINT"
+
+
+# TODO: Decimal and numeric
+
+class String(BaseType):
+    """
+    Defines a string type.
+    """
+
+    def __init__(self, length: int = 255):
+        self._length = length
+
+    def check_type(self, arg: str):
+        return isinstance(arg, str) and len(arg) <= self._length
+
+    def sql_type(self):
+        return "VARCHAR({})".format(self._length)
