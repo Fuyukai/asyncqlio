@@ -14,7 +14,7 @@ class Column:
             id = Column(int)
 
     """
-    def __init__(self, type_: type, **kwargs):
+    def __init__(self, type_: BaseType, **kwargs):
         """
         :param type_: The type of the Column.
 
@@ -31,7 +31,7 @@ class Column:
             This is False by default.
         """
         if not isinstance(type_, BaseType):
-            raise TypeError("Column type must be a BaseType")
+            raise TypeError("Column type must be an instance of a BaseType")
         self._type = type_
 
         # Our name.
@@ -48,7 +48,7 @@ class Column:
         self.primary_key = kwargs.pop("primary_key", False)
 
         # Should this autoincrement?
-        self.autoincrement = kwargs.pop("autoincrement")
+        self.autoincrement = kwargs.pop("autoincrement", False)
 
         # The default value for this column.
         self.default = kwargs.pop("default", None)
