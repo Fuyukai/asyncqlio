@@ -18,6 +18,12 @@ class OperationalException(KatagawaException):
     """
 
 
+class TableConflictException(KatagawaException):
+    """
+    Raised when a table in a query conflicts.
+    """
+
+
 class MissingTokenException(KatagawaException):
     """
     Raised when a token in the SQL generation is missing.
