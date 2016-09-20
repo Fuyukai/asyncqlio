@@ -1,3 +1,6 @@
+from katagawa.sql.types import BaseType
+
+
 class Column:
     """
     A column is a descriptor on a declarative class which is used to access the underlying value.
@@ -15,6 +18,8 @@ class Column:
         """
         :param type_: The type of the Column.
         """
+        if not isinstance(type_, BaseType):
+            raise TypeError("Column type must be a BaseType")
         self._type = type_
 
         # Our name.
@@ -40,10 +45,20 @@ class Column:
             return self
         # Get the mapper item that we refer to.
         item = instance.__field_mapper__.get(self._name, self.default)
+        # Cast it using our type
+        item = self._type.cast(item)
         return item
 
     def __set__(self, instance, value):
         """
         Sets our value on an instance.
         """
+        if instance is None:
+            # ???
+            raise Exception("What are you doing")
+
+        is_safe = self._type.check_type(value)
+        if not is_safe:
+            raise TypeError("Cannot insert `{}` into a column with type `{}`".format(value, self._type.name))
+
         instance.__mapper__[self._name] = value
