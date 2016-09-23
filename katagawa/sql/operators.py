@@ -18,10 +18,15 @@ class Operator(Token):
     This base class implements the actual SQL emitting for you; you only need to define the operator and it will
     autogenerate the SQL.
     """
+
     def __init__(self, field: Field, value):
         self.field = field
 
         self.value = value
+
+    @property
+    def name(self):
+        return "OPERATOR"
 
     @abc.abstractproperty
     def operator(self):
@@ -58,3 +63,22 @@ class Operator(Token):
         # Return the built string.
         return built
 
+
+class Eq(Operator):
+    """
+    Defines an equality operator.
+    """
+
+    @property
+    def operator(self):
+        return "="
+
+
+class Lt(Operator):
+    """
+    Defines a less than operator.
+    """
+
+    @property
+    def operator(self):
+        return "<"
