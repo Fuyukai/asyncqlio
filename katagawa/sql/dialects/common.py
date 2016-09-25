@@ -3,19 +3,15 @@ Common tokens.
 
 Something like this is the end goal of the reverse tokenizer:
 
-sql_statement = SELECT(
-    subtokens=[
-        FIELD("table1.id", as="table1_id"),
-        FROM("public.user", as="table1"),
-        WHERE(
-            subtokens=[
-                EQ("public.user.id", 1)
-            ]
-        )
-    ]
-)
-
+sql_statement = Select(subtokens=[
+    Field("user.id"),
+    From("user"),
+    Where(subtokens=[
+        Eq(Field("user.id"), 2)
+    ])
+])
 """
+import abc
 import typing
 
 from katagawa.exceptions import MissingTokenException
@@ -53,6 +49,12 @@ class Select(Token):
             raise MissingTokenException("Missing any FROM clauses in select statement")
 
         generated += ", ".join([f.generate_sql(include_from=False) for f in fr])
+
+        # Get any WHERE clauses.
+        fr = self.consume_tokens("WHERE")
+        if len(fr):
+            # THere is a where clause, so add it to the generated.
+            generated += " {}".format(fr[0].generate_sql())
 
         # Check if there is an ORDER_BY token.
         ob = self.consume_tokens("ORDERBY")
@@ -147,9 +149,146 @@ class Limit(WithIdentifier):
     """
     Defines a LIMIT token.
     """
+
     @property
     def name(self):
         return "LIMIT"
 
     def generate_sql(self):
         return "LIMIT {}".format(self.identifier)
+
+
+class Where(Token):
+    """
+    Defines a WHERE token.
+
+    This is just a container for several equality tokens.
+    """
+    @property
+    def name(self):
+        return "WHERE"
+
+    def generate_sql(self):
+        # Check if all tokens are Operators.
+        if not all(isinstance(token, (Operator, Or, And)) for token in self.subtokens):
+            raise TypeError("All tokens in a Where() clause must be operators")
+
+        # If subtokens >= 1, implicitly wrap in an OR.
+        if len(self.subtokens) > 1:
+            new_token = Or(subtokens=self.subtokens)
+        else:
+            # Use the first subtoken.
+            new_token = self.subtokens[0]
+
+        # Generate the SQL for that new_token.
+        genned = new_token.generate_sql()
+
+        # Add it to a WHERE clause.
+        final = "WHERE {}".format(genned)
+
+        return final
+
+
+# region Operators
+
+# These define common SQL operators.
+class Or(Token):
+    """
+    Represents an OR token.
+    """
+
+    @property
+    def name(self):
+        return "OR"
+
+    def generate_sql(self):
+        return " OR ".join((token.generate_sql() for token in self.subtokens))
+
+
+class And(Token):
+    """
+    Represents an AND token.
+    """
+
+    @property
+    def name(self):
+        return "AND"
+
+    def generate_sql(self):
+        return " AND ".join((token.generate_sql() for token in self.subtokens))
+
+
+class Operator(Token):
+    """
+    The base class for an operator.
+
+    An operator has three attributes - the field, the other value, and the actual operator itself.
+    The field is, obviously, a field object. The value can be either a field or another column to compare along,
+    useful for relationships (WHERE table1.field1 = table2.field2), etc.
+
+    This base class implements the actual SQL emitting for you; you only need to define the operator and it will
+    autogenerate the SQL.
+    """
+
+    def __init__(self, field: Field, value):
+        self.field = field
+
+        self.value = value
+
+    @property
+    def name(self):
+        return "OPERATOR"
+
+    @abc.abstractproperty
+    def operator(self):
+        """
+        :return: The SQL operator that this represents; for example, the Eq() class will return `=` here.
+        """
+
+    def generate_sql(self):
+        """
+        Generates the SQL for this interaction.
+        """
+        # Check the type of the field object.
+        # It should be a field.
+        if not isinstance(self.field, Field):
+            raise TypeError("Field in an operator must be a field")
+
+        # Use the identifier for this field.
+        field = self.field.identifier
+
+        # Next, check if the value is a string or a field object.
+        if isinstance(self.value, Field):
+            value = self.field.identifier
+        elif isinstance(self.value, str):
+            value = self.value
+        else:
+            raise TypeError("Value in an operator must be a field or a string, got {}".format(type(self.value)))
+
+        # Format the string.
+        built = '{f} {op} {v}'.format(f=field, op=self.operator, v=value)
+
+        # Return the built string.
+        return built
+
+
+class Eq(Operator):
+    """
+    Defines an equality operator.
+    """
+
+    @property
+    def operator(self):
+        return "="
+
+
+class Lt(Operator):
+    """
+    Defines a less than operator.
+    """
+
+    @property
+    def operator(self):
+        return "<"
+
+# endregion
