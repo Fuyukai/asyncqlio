@@ -164,6 +164,7 @@ class Where(Token):
 
     This is just a container for several equality tokens.
     """
+
     @property
     def name(self):
         return "WHERE"
@@ -216,6 +217,26 @@ class And(Token):
 
     def generate_sql(self):
         return " AND ".join((token.generate_sql() for token in self.subtokens))
+
+
+class IsNull(Aliased):
+    """
+    A special type of operator that represents if a token is NULL or not.
+    """
+
+    def name(self):
+        return "ISNULL"
+
+    def generate_sql(self):
+        return "{} IS NULL".format(self.alias)
+
+
+class IsNotNull(Aliased):
+    def name(self):
+        return "ISNOTNULL"
+
+    def generate_sql(self):
+        return "{} IS NOT NULL".format(self.alias)
 
 
 class Operator(Token):
@@ -290,5 +311,17 @@ class Lt(Operator):
     @property
     def operator(self):
         return "<"
+
+
+class Gt(Operator):
+    @property
+    def operator(self):
+        return ">"
+
+
+class Ne(Operator):
+    @property
+    def operator(self):
+        return "<>"
 
 # endregion
