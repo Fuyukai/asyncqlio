@@ -18,7 +18,7 @@ class _FakeContextManager:
         return self.connection
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        return
+        return False
 
 
 def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
@@ -54,6 +54,38 @@ class AsyncpgTransaction(Transaction):
     A transaction class specific to the asyncpg driver.
     """
 
+    def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed", read_only=False, deferrable=False):
+        super().__init__(engine, read_only=read_only)
+
+        #: The connection we've retrieved.
+        self.connection = None
+
+        #: The internal asyncpg transaction object.
+        self.internal_transaction = None
+
+        self.isolation = isolation
+        self.read_only = read_only
+        self.deferrable = deferrable
+
+    @classmethod
+    async def create(cls, engine: 'AsyncpgEngine',
+                     isolation="read_committed", read_only=False, deferrable=False) -> 'AsyncpgTransaction':
+        """
+        Creates the transaction.
+        
+        :param engine: The :class:`~.AsyncpgEngine` to use as this engine. 
+        """
+        obb = cls(engine, isolation, read_only, deferrable)
+        await obb._get_transaction()
+
+        return obb
+
+    async def _get_transaction(self):
+        self.connection = await self.engine.get_connection()
+
+        self.internal_transaction = self.connection.transaction(isolation=self.isolation, readonly=self.read_only,
+                                                                deferrable=self.deferrable)
+
     async def execute(self, sql: str, params: dict):
         """
         Executes SQL inside the connection.
@@ -68,23 +100,14 @@ class AsyncpgTransaction(Transaction):
 
         return result
 
-    def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed", read_only=False, deferrable=False):
-        super().__init__(engine, read_only=read_only)
-
-        self.connection = engine.get_connection()
-
-        # Define the asyncpg transaction object.
-        self.internal_transaction = self.connection.transaction(isolation=isolation, readonly=read_only,
-                                                                deferrable=deferrable)
-
     async def _acquire(self):
         # Start the transaction.
         await self.internal_transaction.start()
         return self
 
-    async def _release(self):
-        # Rollback if we're read-only, otherwise commit.
-        if self.read_only:
+    async def _release(self, errored: bool = False):
+        # Rollback if we encountered an error.
+        if errored:
             await self.internal_transaction.rollback()
         else:
             await self.internal_transaction.commit()
@@ -105,22 +128,42 @@ class AsyncpgEngine(BaseEngine):
 
         self.logger = logging.getLogger("Katagawa.engine.asyncpg")
 
-    def get_connection(self) -> asyncpg.connection.Connection:
+    async def _connect(self):
+        """
+        Connects using a pool if specified, else using a single connection.
+        """
+        if self.use_connection_pool:
+            # Create the connection pool.
+            self.pool = await asyncpg.create_pool(host=self.host, port=self.port, user=self.username,
+                                                  password=self.password, database=self.database,
+                                                  loop=self.loop, min_size=self.pool_min_size,
+                                                  max_size=self.pool_max_size)
+        else:
+            # Connect using a single connection.
+            self.connection = await asyncpg.connect(host=self.host, port=self.port, user=self.username,
+                                                    password=self.password, database=self.database,
+                                                    loop=self.loop)
+
+    async def get_connection(self) -> asyncpg.connection.Connection:
         """
         Returns an asyncpg connection.
         """
-        if self.pool is None:
+        if self.use_connection_pool is False:
+            if self.connection is None:
+                await self.connect()
             r = self.connection
             r = _FakeContextManager(r)
         else:
+            if self.pool is None:
+                await self.connect()
             # Acquire a new connection from the pool.
-            r = self.pool.acquire()
+            r = await self.pool.acquire()
 
         return r
 
-    def create_transaction(self, read_only=False, **kwargs) -> AsyncpgTransaction:
-        trans = AsyncpgTransaction(self, kwargs.get("isolation", "read_only"), read_only,
-                                   kwargs.get("deferrable", False))
+    async def create_transaction(self, read_only=False, **kwargs) -> AsyncpgTransaction:
+        trans = await AsyncpgTransaction.create(self, kwargs.get("isolation", "read_committed"), read_only,
+                                                kwargs.get("deferrable", False))
 
         return trans
 
@@ -128,6 +171,18 @@ class AsyncpgEngine(BaseEngine):
         return "{%s}" % name
 
     async def fetch(self, sql: str, rows: int = 1, params: dict = None):
+        """
+        Fetches <rows> rows from the database, using the specified query.
+        
+        .. warning::
+        
+            It is not recommended to use this method - use :meth:`.AsyncpgTransaction.execute` instead!
+        
+        :param sql: The SQL query to execute. 
+        :param rows: The number of rows to return.
+        :param params: The parameters to return.
+        :return: 
+        """
         async with self.get_connection() as conn:
             assert isinstance(conn, asyncpg.connection.Connection)
             # Parse the sql and the params.
@@ -144,19 +199,3 @@ class AsyncpgEngine(BaseEngine):
 
     async def fetchall(self, sql: str, params: dict = None):
         pass
-
-    async def _connect(self):
-        """
-        Connects using a pool if specified, else using a single connection.
-        """
-        if self.use_connection_pool:
-            # Create the connection pool.
-            self.pool = await asyncpg.create_pool(host=self.host, port=self.port, user=self.username,
-                                                  password=self.password, database=self.database,
-                                                  loop=self.loop, min_size=self.pool_min_size,
-                                                  max_size=self.pool_max_size)
-        else:
-            # Connect using a single connection.
-            self.connection = await asyncpg.connect(host=self.host, port=self.port, user=self.username,
-                                                    password=self.password, database=self.database,
-                                                    loop=self.loop)

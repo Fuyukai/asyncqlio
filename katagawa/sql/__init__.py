@@ -57,7 +57,7 @@ class Token(abc.ABC):
         """
 
 
-class WithIdentifier(Token):
+class WithIdentifier(Token, metaclass=abc.ABCMeta):
     """
     Class for a token that takes in an identifier, for example a column or a table.
     """
@@ -74,7 +74,7 @@ class WithIdentifier(Token):
         self.identifier = identifier
 
 
-class Aliased(WithIdentifier):
+class Aliased(WithIdentifier, metaclass=abc.ABCMeta):
     """
     Class for an aliased token.
 

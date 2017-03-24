@@ -39,6 +39,17 @@ class Transaction(abc.ABC):
         # This is used to signal the transaction should be discarded, and should not perform any more actions.
         self.completed = False
 
+    # magic methods
+    async def __aenter__(self):
+        await self.acquire()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        errored = exc_type is not None
+        await self.release(errored)
+
+        return not errored
+
     @abc.abstractmethod
     async def _acquire(self):
         """
@@ -60,16 +71,18 @@ class Transaction(abc.ABC):
         return await self._acquire()
 
     @abc.abstractmethod
-    async def _release(self):
+    async def _release(self, errored: bool = False):
         """
         The actual release logic.
         """
 
-    async def release(self):
+    async def release(self, errored: bool = False):
         """
         Releases the transaction.
 
         This cannot be done on a non-started transaction.
+        
+        :param errored: If this query errored. 
         :return: Ourselves.
         """
         if not self.started:
@@ -80,7 +93,7 @@ class Transaction(abc.ABC):
 
         self.completed = True
 
-        return await self._release()
+        return await self._release(errored)
 
     @abc.abstractmethod
     async def execute(self, sql: str, params: dict):

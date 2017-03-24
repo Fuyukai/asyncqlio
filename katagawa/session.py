@@ -43,7 +43,7 @@ class Session(object):
         :return: A ResultSet object.
         """
         # Open a new transaction.
-        transaction = self.engine.create_transaction(read_only=True)
+        transaction = await self.engine.create_transaction()
 
         # Handle the query.
         results = await query.run_query(transaction)

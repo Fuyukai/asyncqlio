@@ -36,8 +36,8 @@ class Select(Token):
         generated = "SELECT "
 
         # Filter in the subtokens.
-        # First, we want to append every "FIELD" token.
-        fields = self.consume_tokens("FIELD")
+        # First, we want to append every "COLUMN" token.
+        fields = self.consume_tokens("COLUMN")
 
         # Join the fetched fields with a `,`.
         generated += ", ".join([field.generate_sql() for field in fields])
@@ -74,19 +74,19 @@ class Select(Token):
         return generated
 
 
-class Field(Aliased):
+class Column(Aliased):
     """
-    Represents a field in a SELECT, or similar.
+    Represents a column in a SELECT, or similar.
     """
     __slots__ = ("identifier", "alias",)
 
     @property
     def name(self):
-        return "FIELD"
+        return "COLUMN"
 
     def generate_sql(self):
         """
-        Generate the SQL for a field.
+        Generate the SQL for a column.
 
         If no alias is specified, it will just return the column name.
         Otherwise, it will return the column named aliased with AS.
@@ -117,7 +117,7 @@ class From(Aliased):
             base = "FROM "
         else:
             base = ""
-        base += self.identifier
+        base += '"' + self.identifier + '"'
 
         if self.alias is not None:
             base += " AS {}".format(self.alias)
@@ -251,7 +251,7 @@ class Operator(Token):
     autogenerate the SQL.
     """
 
-    def __init__(self, field: Field, value):
+    def __init__(self, field: Column, value):
         self.field = field
 
         self.value = value
@@ -272,19 +272,17 @@ class Operator(Token):
         """
         # Check the type of the field object.
         # It should be a field.
-        if not isinstance(self.field, Field):
+        if not isinstance(self.field, Column):
             raise TypeError("Field in an operator must be a field")
 
         # Use the identifier for this field.
         field = self.field.identifier
 
         # Next, check if the value is a string or a field object.
-        if isinstance(self.value, Field):
+        if isinstance(self.value, Column):
             value = self.field.identifier
-        elif isinstance(self.value, str):
-            value = self.value
         else:
-            raise TypeError("Value in an operator must be a field or a string, got {}".format(type(self.value)))
+            value = str(self.value)
 
         # Format the string.
         built = '{f} {op} {v}'.format(f=field, op=self.operator, v=value)
