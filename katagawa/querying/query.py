@@ -6,6 +6,7 @@ import typing
 
 from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
+from katagawa.orm.column import _Operator, _CombinatorOperator
 from katagawa.orm.table import Table
 from katagawa.sql.dialects.common import Select, Column, From, Where, Operator
 
@@ -104,21 +105,31 @@ class BaseQuery(object):
         )
 
         # update subfields with WHERE query
-        where = Where()
-        param_count = 0
         params = {}
-        for op in self.conditions:
-            o = op.get_token()  # type: Operator
+        if self.conditions:
+            where = Where()
+            param_count = 0
+            for op in self.conditions:
+                if isinstance(op, _Operator):
+                    ops = [op]
+                elif isinstance(op, _CombinatorOperator):
+                    ops = op.operators
 
-            if isinstance(o.value, str):
-                name = "param_{}".format(param_count)
-                params[name] = o.value
-                o.value = "{{{n}}}".format(n=name)
-                param_count += 1
+                final = op.get_token()
 
-            where.subtokens.append(o)
+                for nop in ops:
+                    o = nop.get_token()
 
-        s.subtokens.append(where)
+                    # update parameterized queries
+                    if isinstance(o.value, str):
+                        name = "param_{}".format(param_count)
+                        params[name] = o.value
+                        o.value = "{{{n}}}".format(n=name)
+                        param_count += 1
+
+                where.subtokens.append(final)
+
+            s.subtokens.append(where)
 
         return s, params
 

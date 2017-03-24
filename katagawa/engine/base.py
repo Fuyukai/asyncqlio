@@ -7,6 +7,7 @@ import asyncio
 
 import dsnparse
 
+from katagawa.engine import transaction as tr
 from katagawa.exceptions import OperationalException
 
 
@@ -111,7 +112,7 @@ class BaseEngine(object):
             raise exc
 
     @abc.abstractmethod
-    async def create_transaction(self, read_only=False, **kwargs):
+    async def create_transaction(self, read_only=False, **kwargs) -> 'tr.Transaction':
         """
         Creates a new transaction and returns it.
         """

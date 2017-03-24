@@ -1,5 +1,8 @@
+import typing
+
+from katagawa.sql import Token
 from katagawa.sql.dialects.common import Eq, Gt, Lt, Ne, IsNotNull, IsNull, Column as sql_Column, \
-    Operator
+    Operator, And, Or
 from katagawa.sql.types import BaseType
 from katagawa.orm import table
 
@@ -13,10 +16,49 @@ d = {
 }
 
 
+class _CombinatorOperator(object):
+    """
+    Represents a combinator operator, such as `AND` or `OR`.
+    """
+
+    def __init__(self, type_: typing.Type[Token], *terms: '_Operator'):
+        """
+        :param token: The token type of this combinator.
+        :param terms: The operator terms for this statement.
+        """
+        self._type = type_
+        self.operators = list(terms)
+
+    def get_token(self) -> Token:
+        """
+        :return: The :class:`~.And` token for this column. 
+        """
+        token = self._type(
+            subtokens=[_operator.get_token() for _operator in self.operators]
+        )
+        return token
+
+    def __and__(self, other):
+        # used to chain ands
+        if self._type != And:
+            return NotImplemented
+
+        self.operators.append(other)
+        return self
+
+    def __or__(self, other):
+        if self._type != Or:
+            return NotImplemented
+
+        self.operators.append(other)
+        return self
+
+
 class _Operator(object):
     """
     Represents something returned from an equality comparison on some columns.
     """
+
     def __init__(self, operator: int, column: 'Column', other: str):
         """
         :param operator: The ID of the operator to use for this equality comparison. 
@@ -45,6 +87,13 @@ class _Operator(object):
         # Return the appropriate SQL operator token.
         return self.get_token()
 
+    # magic methods
+    def __and__(self, other):
+        return _CombinatorOperator(And, self, other)
+
+    def __or__(self, other):
+        return _CombinatorOperator(Or, self, other)
+
 
 class Column(object):
     """
@@ -57,8 +106,8 @@ class Column(object):
                  name: str,
                  type_: BaseType,
                  *,
-                 primary_key: bool=False,
-                 autoincrement: bool=False):
+                 primary_key: bool = False,
+                 autoincrement: bool = False):
         """
         :param name:
             The name of this column. Is used to create the column in the database.

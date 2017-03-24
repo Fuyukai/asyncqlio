@@ -4,7 +4,7 @@ of the transaction.
 """
 import abc
 
-from katagawa.engine import BaseEngine
+from katagawa import engine as en
 
 
 class Transaction(abc.ABC):
@@ -19,7 +19,7 @@ class Transaction(abc.ABC):
 
     If any errors happen in the transaction when used as a context manager, it will automatically ROLLBACK.
     """
-    def __init__(self, engine: BaseEngine, *, read_only: bool=False):
+    def __init__(self, engine: 'en.BaseEngine', *, read_only: bool=False):
         """
         Creates a new Transaction instance.
 
