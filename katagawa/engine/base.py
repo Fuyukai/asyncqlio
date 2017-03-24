@@ -74,6 +74,9 @@ class BaseEngine(object):
 
         self.loop = loop or asyncio.get_event_loop()
 
+    def __repr__(self):
+        return "<{.__name__} host='{}' port='{}' database='{}'>".format(type(self), self.host, self.port, self.database)
+
     @abc.abstractmethod
     async def emit_param(self, name: str):
         """

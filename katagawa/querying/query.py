@@ -47,10 +47,10 @@ class BaseQuery(object):
         """
         async with transaction:
             # todo: params
-            final_query = self.get_tokens()
+            final_query, params = self.get_token()
             final_sql = final_query.generate_sql()
             logger.debug("Running query: {}".format(final_sql))
-            results = await transaction.execute(final_sql, {})
+            results = await transaction.execute(final_sql, params)
 
         return results
 

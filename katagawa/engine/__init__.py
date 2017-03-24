@@ -4,6 +4,7 @@ server, and return the results produced.
 """
 
 import importlib
+import inspect
 
 import dsnparse
 import logging
@@ -20,7 +21,7 @@ def create_engine(dsn: str, **kwargs) -> BaseEngine:
     Creates an engine from the specified DSN.
 
     :param dsn: The DSN to use.
-    :return: A new :class:`katagawa.engine.base.BaseEngine` that was created from the specified DSN.
+    :return: A new :class:`~.BaseEngine` that was created from the specified DSN.
     """
     parsed = dsnparse.parse(dsn)
     # Get the DB type and the name of the driver, if applicable.
@@ -44,8 +45,7 @@ def create_engine(dsn: str, **kwargs) -> BaseEngine:
     imported = importlib.import_module(path)
 
     # Find a class that is a subclass of BaseEngine, and has the same `__module__` as the imported name.
-    for i in dir(imported):
-        item = getattr(imported, i)
+    for name, item in inspect.getmembers(imported):
         if issubclass(item, BaseEngine):
             if item.__module__ == path:
                 break
@@ -54,5 +54,7 @@ def create_engine(dsn: str, **kwargs) -> BaseEngine:
 
     # Initialize a new instance of the engine.
     engine = item(dsn, **kwargs)
+
+    logger.debug("Created engine `{}`".format(engine))
 
     return engine
