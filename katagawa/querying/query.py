@@ -7,7 +7,7 @@ import typing
 from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
 from katagawa.orm.table import Table
-from katagawa.sql.dialects.common import Select, Column, From, Where
+from katagawa.sql.dialects.common import Select, Column, From, Where, Operator
 
 logger = logging.getLogger("Katagawa.query")
 
@@ -83,7 +83,7 @@ class BaseQuery(object):
         return self
 
     # sql methods
-    def get_tokens(self) -> Select:
+    def get_token(self) -> typing.Tuple[Select, dict]:
         """
         Gets the Select tokens for this query.
         """
@@ -105,13 +105,22 @@ class BaseQuery(object):
 
         # update subfields with WHERE query
         where = Where()
+        param_count = 0
+        params = {}
         for op in self.conditions:
-            o = op(table=op)
+            o = op.get_token()  # type: Operator
+
+            if isinstance(o.value, str):
+                name = "param_{}".format(param_count)
+                params[name] = o.value
+                o.value = "{{{n}}}".format(n=name)
+                param_count += 1
+
             where.subtokens.append(o)
 
         s.subtokens.append(where)
 
-        return s
+        return s, params
 
     # return methods
 

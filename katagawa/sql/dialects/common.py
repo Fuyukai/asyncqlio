@@ -216,7 +216,7 @@ class And(Token):
         return "AND"
 
     def generate_sql(self):
-        return " AND ".join((token.generate_sql() for token in self.subtokens))
+        return "(" + " AND ".join((token.generate_sql() for token in self.subtokens)) + ")"
 
 
 class IsNull(Aliased):

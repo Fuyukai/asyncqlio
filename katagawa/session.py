@@ -51,10 +51,10 @@ class Session(object):
 
         # BEGIN
         async with transaction:
-            final_query, params = query.get_items()
+            final_query, params = query.get_token()
             final_sql = final_query.generate_sql()
-            logger.debug("Running query: {}".format(final_sql))
-            results = await transaction.execute(final_sql, {})
+            logger.debug("Running query `{}` with params `{}`".format(final_sql, params))
+            results = await transaction.execute(final_sql, params)
 
         # COMMIT/ROLLBACK
 
