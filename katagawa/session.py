@@ -1,5 +1,9 @@
+import logging
+
 from katagawa.engine import BaseEngine
 from katagawa.querying.query import BaseQuery
+
+logger = logging.getLogger("Katagawa.session")
 
 
 class Session(object):
@@ -28,24 +32,30 @@ class Session(object):
     def query(self, **kwargs) -> BaseQuery:
         """
         Produces a new Query object, bound to this session.
-        :return: A new :class:`BaseQuery` that can be used to query the database with.
+        :return: A new :class:`.BaseQuery` that can be used to query the database with.
         """
         query = self.query_class(session=self, **kwargs)
         return query
 
-    async def execute(self, query):
+    async def execute(self, query: BaseQuery):
         """
         Executes a query and runs it.
 
-        This takes in a :class:`katagawa.structures.query.BaseQuery` object and executes the actual query.
+        This takes in a :class:`.BaseQuery` object and executes the actual query.
 
         :param query: The query object.
         :return: A ResultSet object.
         """
-        # Open a new transaction.
+        # create the transaction for the sess
         transaction = await self.engine.create_transaction()
 
-        # Handle the query.
-        results = await query.run_query(transaction)
+        # BEGIN
+        async with transaction:
+            final_query, params = query.get_items()
+            final_sql = final_query.generate_sql()
+            logger.debug("Running query: {}".format(final_sql))
+            results = await transaction.execute(final_sql, {})
+
+        # COMMIT/ROLLBACK
 
         return results
