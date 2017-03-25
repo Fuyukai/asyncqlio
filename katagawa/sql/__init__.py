@@ -10,7 +10,7 @@ class Token(abc.ABC):
     Base class for a token.
     """
 
-    __slots__ = ()
+    __slots__ = ("subtokens", )
 
     def __init__(self, subtokens: typing.List['Token'] = None):
         """
@@ -83,7 +83,7 @@ class Aliased(WithIdentifier, metaclass=abc.ABCMeta):
 
     __slots__ = ("identifier", "alias",)
 
-    def __init__(self, identifier: str, subtokens: typing.List['Token'] = None, alias: str = None):
+    def __init__(self, identifier: str, subtokens: 'typing.List[Token]' = None, alias: str = None):
         """
         :param identifier: The identifier this token has.
         :param subtokens: Any subtokens this token has.

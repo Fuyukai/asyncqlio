@@ -198,8 +198,6 @@ class Where(Token):
 
 
 # region Operators
-
-# These define common SQL operators.
 class Or(Token):
     """
     Represents an OR token.
@@ -329,4 +327,84 @@ class Ne(Operator):
     def operator(self):
         return "<>"
 
+
+# endregion
+# region Create Table
+
+class CTColumn(Token):
+    """
+    Defines a column inside a CREATE TABLE block.
+    """
+
+    def __init__(self, name: str, typename: str, *,
+                 primary_key: bool = False,
+                 unique: bool = False,
+                 nullable: bool = True,
+                 extra_args: str = ""):
+        """
+        :param name: The name of this column. 
+        :param typename: The type name of this column.
+        :param primary_key: If this column is the primary key.
+        :param unique: If this column is unique.
+        :param nullable: If this column is nullable.
+        :param extra_args: Any extra args to append.
+        """
+        super().__init__(subtokens=[])
+
+        self._col_name = name
+        self.typename = typename
+        self.extra_args = extra_args
+
+        self.primary_key = primary_key
+        self.unique = unique
+        self.nullable = nullable
+
+    @property
+    def name(self):
+        return "CTCOLUMN"
+
+    def generate_sql(self):
+        """
+        Generates for a CREATE TABLE statement.
+        """
+        # consistency - quote the col_name
+        preamble = f'"{self._col_name}"  {self.typename} '
+        if self.primary_key:
+            preamble += "PRIMARY KEY "
+
+        if self.unique:
+            preamble += "UNIQUE "
+
+        if self.nullable is False:
+            preamble += "NOT NULL "
+
+        preamble += self.extra_args
+
+        return preamble
+
+
+class CreateTable(WithIdentifier):
+    """
+    Defines a CREATE TABLE token. 
+    """
+    @property
+    def name(self):
+        return "CREATE TABLE"
+
+    def generate_sql(self):
+        # generate the preamble
+        final = f"CREATE TABLE {self.identifier} (\n"
+
+        # extract the columns
+        cols = self.consume_tokens("CTCOLUMN")
+        for col in cols:
+            final += col.generate_sql().rstrip() + ",\n"
+
+        # remove the last comma and newline
+        final = final[:-2] + "\n);"
+
+        return final
+
+
+...
 # endregion
