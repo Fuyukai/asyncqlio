@@ -153,7 +153,7 @@ class BaseQuery(object):
                 col = self.from_.column_mapping[key]
 
             # update the current values
-            row._values[col.name] = result[key]
+            row._values[col.name] = col.type_.cast(result[key])
 
         return row
 

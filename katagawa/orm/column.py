@@ -124,7 +124,7 @@ class Column(object):
         """
         self.name = name
 
-        self.type_ = type_
+        self.type_: BaseType = type_
         if not isinstance(self.type_, BaseType):
             # Try and instantiate it.
             if not issubclass(self.type_, BaseType):
