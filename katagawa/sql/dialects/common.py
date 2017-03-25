@@ -142,7 +142,9 @@ class OrderBy(Token):
         return "ORDERBY"
 
     def generate_sql(self):
-        return ", ".join(["{} {}".format(column, order.upper()) for (column, order) in self.columns])
+        return ", ".join(
+            ["{} {}".format(column, order.upper()) for (column, order) in self.columns]
+        )
 
 
 class Limit(WithIdentifier):
@@ -244,11 +246,11 @@ class Operator(Token):
     The base class for an operator.
 
     An operator has three attributes - the field, the other value, and the actual operator itself.
-    The field is, obviously, a field object. The value can be either a field or another column to compare along,
-    useful for relationships (WHERE table1.field1 = table2.field2), etc.
+    The field is, obviously, a field object. The value can be either a field or another column to 
+    compare along, useful for relationships (WHERE table1.field1 = table2.field2), etc.
 
-    This base class implements the actual SQL emitting for you; you only need to define the operator and it will
-    autogenerate the SQL.
+    This base class implements the actual SQL emitting for you; you only need to define the operator 
+    and it will autogenerate the SQL.
     """
 
     def __init__(self, field: Column, value):

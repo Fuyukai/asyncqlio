@@ -57,3 +57,9 @@ class Table(object):
             return self._field_mapping[item]
         except KeyError:
             raise AttributeError(item) from None
+
+
+class TableRow(object):
+    """
+    
+    """

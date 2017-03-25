@@ -11,13 +11,14 @@ class Transaction(abc.ABC):
     """
     The base class for a transaction.
 
-    This requires implementation of some methods which are DBAPI specific, but also provides some common methods
-    across different ones that can be used.
+    This requires implementation of some methods which are DBAPI specific, but also provides some 
+    common methods across different ones that can be used.
 
     For example, ``__aenter__`` or ``acquire`` should implicitly emit a BEGIN TRANSACTION operator.
     This is an async context manager.
 
-    If any errors happen in the transaction when used as a context manager, it will automatically ROLLBACK.
+    If any errors happen in the transaction when used as a context manager, it will automatically 
+    ROLLBACK.
     """
     def __init__(self, engine: 'en.BaseEngine', *, read_only: bool=False):
         """
@@ -36,7 +37,8 @@ class Transaction(abc.ABC):
         self.started = False
 
         # Define the completed status.
-        # This is used to signal the transaction should be discarded, and should not perform any more actions.
+        # This is used to signal the transaction should be discarded,
+        # and should not perform any more actions.
         self.completed = False
 
     # magic methods

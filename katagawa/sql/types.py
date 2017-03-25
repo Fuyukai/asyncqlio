@@ -20,15 +20,16 @@ class BaseType(abc.ABC):
     """
     Defines an abstract base class for a type.
 
-    These types define the underlying SQL type that is used for this type, and the restraints that this type can have
-    when adding values to it.
+    These types define the underlying SQL type that is used for this type, and the restraints that 
+    this type can have when adding values to it.
     """
 
     def __init__(self, *args, **kwargs):
         """
         Initializes the BaseType.
 
-        The args and kwargs form here are required because some types (such as strings) may take in optional arguments.
+        The args and kwargs form here are required because some types (such as strings) may take in 
+        optional arguments.
         """
         pass
 
@@ -41,10 +42,11 @@ class BaseType(abc.ABC):
         :return: The SQL string that is used to define this type.
         """
 
-    @abc.abstractproperty
+    @abc.abstractmethod
     def check_type(self, arg: object):
         """
-        Checks the type of the argument provided to ensure it is compatible with the database underneath.
+        Checks the type of the argument provided to ensure it is compatible with the database 
+        underneath.
 
         :param arg: The argument that is to be checked.
         :return: True if the argument is compatible, False if the argument isn't compatible.

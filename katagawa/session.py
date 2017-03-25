@@ -13,7 +13,8 @@ class Session(object):
     """
     A session represents a database transaction in progress.
 
-    A new session should be created every time a unique function wants to make a query or insert data into the database.
+    A new session should be created every time a unique function wants to make a query or insert 
+    data into the database.
     """
 
     def __init__(self, engine: BaseEngine, **kwargs):

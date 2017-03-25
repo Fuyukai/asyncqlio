@@ -1,6 +1,6 @@
 """
-Katagawa engines are the actual SQL connections behind the scenes. They actually emit the raw SQL to the database
-server, and return the results produced.
+Katagawa engines are the actual SQL connections behind the scenes. They actually emit the raw SQL 
+to the database server, and return the results produced.
 """
 
 import importlib
@@ -40,11 +40,12 @@ def create_engine(dsn: str, **kwargs) -> BaseEngine:
     path = BASE_PATH + ".{}.{}".format(db, driver)
     logger.debug("Attempting to load database engine {}".format(path))
 
-    # This will raise an ImportError/ModuleNotFoundError (3.6+) if it failed to import, so we don't care about error
-    # handling here.
+    # This will raise an ImportError/ModuleNotFoundError (3.6+) if it failed to import,
+    # so we don't care about error handling here.
     imported = importlib.import_module(path)
 
-    # Find a class that is a subclass of BaseEngine, and has the same `__module__` as the imported name.
+    # Find a class that is a subclass of BaseEngine, and has the same `__module__` as the
+    # imported name.
     for name, item in inspect.getmembers(imported):
         if issubclass(item, BaseEngine):
             if item.__module__ == path:

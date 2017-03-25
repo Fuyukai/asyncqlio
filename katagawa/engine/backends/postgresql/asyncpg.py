@@ -82,7 +82,8 @@ class AsyncpgTransaction(Transaction):
     A transaction class specific to the asyncpg driver.
     """
 
-    def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed", read_only=False, deferrable=False):
+    def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed",
+                 read_only=False, deferrable=False):
         super().__init__(engine, read_only=read_only)
 
         #: The connection we've retrieved.
@@ -97,7 +98,8 @@ class AsyncpgTransaction(Transaction):
 
     @classmethod
     async def create(cls, engine: 'AsyncpgEngine',
-                     isolation="read_committed", read_only=False, deferrable=False) -> 'AsyncpgTransaction':
+                     isolation="read_committed",
+                     read_only=False, deferrable=False) -> 'AsyncpgTransaction':
         """
         Creates the transaction.
         
@@ -111,7 +113,8 @@ class AsyncpgTransaction(Transaction):
     async def _get_transaction(self):
         self.connection = await self.engine.get_connection()
 
-        self.internal_transaction = self.connection.transaction(isolation=self.isolation, readonly=self.read_only,
+        self.internal_transaction = self.connection.transaction(isolation=self.isolation,
+                                                                readonly=self.read_only,
                                                                 deferrable=self.deferrable)
 
     async def execute(self, sql: str, params: dict):

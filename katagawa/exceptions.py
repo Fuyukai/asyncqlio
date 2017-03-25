@@ -13,8 +13,8 @@ class KatagawaException(Exception):
 
 class OperationalException(KatagawaException):
     """
-    Similar to SQLAlchemy's operational error, this is a catch-all exception for when something internally in the
-    database fails.
+    Similar to SQLAlchemy's operational error, this is a catch-all exception for when something
+    internally in the database fails.
     """
 
 

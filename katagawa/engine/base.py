@@ -23,7 +23,9 @@ class BaseEngine(object):
         engine = AsyncpgEngine(url="postgresql://user:password@127.0.0.1:5432/database")
         await engine.connect()
         results = await engine.fetch('''SELECT a, b, c FROM sometable''', rows=1)
-        other_results = await engine.execute('''INSERT INTO sometable (a, b, c) VALUES (100), (200), (300)''')
+        other_results = await engine.execute('''
+            INSERT INTO sometable (a, b, c) VALUES (100), (200), (300)
+        ''')
         await engine.close()
     """
 
@@ -44,7 +46,8 @@ class BaseEngine(object):
         :param database: The specific database to use.
 
         :param use_connection_pool: Should a connection pool be used to connect to the database?
-            Note that variances between the connectors means that this is not always guaranteed to be used.
+            Note that variances between the connectors means that this is not always guaranteed to 
+            be used.
 
         :param pool_min_size: The minimum size of the connection pool, if applicable.
         :param pool_max_size: The maximum size of the connection pool, if applicable.
@@ -83,7 +86,8 @@ class BaseEngine(object):
         """
         Emits a parameter for the current engine.
 
-        This will return the param you need to add to the SQL string for the DBAPI to complete successfully,
+        This will return the param you need to add to the SQL string for the DBAPI to complete 
+        successfully,
         for example asyncpg will emit ``{name}``.
 
         :param name: The name of the parameter.
@@ -105,7 +109,8 @@ class BaseEngine(object):
         """
         # Create a new future which is wait_for'd
         try:
-            coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout, loop=self.loop)
+            coro = asyncio.wait_for(asyncio.ensure_future(self._connect()), timeout=timeout,
+                                    loop=self.loop)
             return await coro
         except ConnectionError as e:
             exc = OperationalException("Could not connect to server: {}\n\t"
@@ -148,7 +153,8 @@ class BaseEngine(object):
         """
         Fetches data from the database using the underlying connection.
 
-        This returns an iterator that can be used to iterate over the rows of the database that are returned.
+        This returns an iterator that can be used to iterate over the rows of the database that 
+        are returned.
 
         :param sql: The SQL statement to execute on the connection.
         :param params: A dictionary of parameters to insert into the query.
@@ -158,9 +164,11 @@ class BaseEngine(object):
 
 class ResultSet(collections.AsyncIterator, metaclass=abc.ABCMeta):
     """
-    Represents a set of results returned from a query. This can be iterated over asynchronously to return new results.
+    Represents a set of results returned from a query. This can be iterated over asynchronously 
+    to return new results.
     
-    Typically, an underlying cursor is used that gets the next set of results, but any method can be used.
+    Typically, an underlying cursor is used that gets the next set of results, but any method can b
+    e used.
     
     .. code-block:: python
     
