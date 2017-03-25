@@ -4,6 +4,7 @@ Module containing the actual query
 import logging
 import typing
 
+from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
 from katagawa.orm.column import _Operator, _CombinatorOperator
@@ -34,25 +35,6 @@ class BaseQuery(object):
         self.conditions = []
 
     # internal workhouse methods
-    async def run_query(self, transaction: Transaction):
-        """
-        Runs a query in a transaction.
-        
-        This will execute the query on the current engine, and return the results set.
-        
-        :param transaction: An instance of a type that implements :class:`~.engine.Transaction`.
-            This will be used to actually run the query.
-         
-        :return: 
-        """
-        async with transaction:
-            # todo: params
-            final_query, params = self.get_token()
-            final_sql = final_query.generate_sql()
-            logger.debug("Running query: {}".format(final_sql))
-            results = await transaction.execute(final_sql, params)
-
-        return results
 
     # query methods
 
@@ -135,3 +117,10 @@ class BaseQuery(object):
 
     # return methods
 
+    async def all(self) -> ResultSet:
+        """
+        Returns a :class:`.ResultSet` iterator for the specified query.
+        """
+        r = await self.session.execute(self)
+
+        return r

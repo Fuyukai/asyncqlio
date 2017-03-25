@@ -6,7 +6,9 @@ import typing
 import asyncpg
 import logging
 
-from katagawa.engine.base import BaseEngine
+from asyncpg.cursor import Cursor
+
+from katagawa.engine.base import BaseEngine, ResultSet
 from katagawa.engine.transaction import Transaction
 
 
@@ -49,15 +51,42 @@ def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
     return sql_statement, tuple(items)
 
 
+class AsyncpgResultSet(ResultSet):
+    """
+    A result set class specific to the asyncpg driver.
+    """
+
+    def __init__(self, cursor: Cursor):
+        #: The cursor used for this request.
+        self.cursor = cursor
+
+    async def get_next(self, *, count: int = None):
+        """
+        Gets the next <count> rows from this query.
+        
+        :param count: The number of rows to fetch. If this is None, the next row is fetched.
+        """
+        if count is None:
+            row = await self.cursor.fetchrow()
+        else:
+            row = await self.cursor.fetch(count)
+
+        if row is None:
+            raise StopAsyncIteration
+
+        return row
+
+
 class AsyncpgTransaction(Transaction):
     """
     A transaction class specific to the asyncpg driver.
     """
+
     def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed", read_only=False, deferrable=False):
         super().__init__(engine, read_only=read_only)
 
         #: The connection we've retrieved.
-        self.connection = None    # type: asyncpg.connection.Connection
+        self.connection = None  # type: asyncpg.connection.Connection
 
         #: The internal asyncpg transaction object.
         self.internal_transaction = None  # type: asyncpg.connection.transaction.Transaction
@@ -113,14 +142,15 @@ class AsyncpgTransaction(Transaction):
 
         return self
 
-    async def fetch(self, sql: str, params: dict = None):
+    async def fetch(self, sql: str, params: dict = None) -> AsyncpgResultSet:
         if not self.started:
             raise RuntimeError("Cannot execute SQL inside non-started transaction")
 
         # Create tuples from the params.
         sql, args = get_param_query(sql, params)
 
-        return await self.connection.fetch(sql, *args)
+        cursor = await self.connection.cursor(sql, *args)
+        return AsyncpgResultSet(cursor=cursor)
 
     def commit(self):
         return self.internal_transaction.commit()
@@ -129,8 +159,11 @@ class AsyncpgTransaction(Transaction):
         return self.internal_transaction.rollback()
 
 
-
 class AsyncpgEngine(BaseEngine):
+    """
+    An engine type that uses ``asyncpg`` as the SQL backend.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

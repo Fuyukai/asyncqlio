@@ -1,6 +1,7 @@
 import logging
 
 from katagawa.engine import BaseEngine
+from katagawa.engine.transaction import Transaction
 from katagawa.querying.query import BaseQuery
 
 logger = logging.getLogger("Katagawa.session")
@@ -19,9 +20,13 @@ class Session(object):
         :param engine: The engine to bind to.
         :param kwargs: Any keyword arguments used by the session.
         """
+        #: The :class:`~.BaseEngine` that is connected to this session.
         self.engine = engine
 
-        # Define the query class.
+        #: The :class:`~.Transaction` that is connected to this session.
+        self.transaction = None  # type: Transaction
+
+        #: The query class to use to create new query items.
         self.query_class = kwargs.pop("query_cls", BaseQuery)
 
         # Added, dirty, and deleted items.
@@ -29,13 +34,43 @@ class Session(object):
         self.dirty = []
         self.deleted = []
 
-    def query(self, **kwargs) -> BaseQuery:
+    @property
+    def query(self) -> BaseQuery:
+        """
+        Alias of :meth:`.Session.get_query`.
+        """
+        return self.get_query()
+
+    def get_query(self, **kwargs) -> BaseQuery:
         """
         Produces a new Query object, bound to this session.
+        
         :return: A new :class:`.BaseQuery` that can be used to query the database with.
         """
         query = self.query_class(session=self, **kwargs)
         return query
+
+    # magic methods
+
+    async def begin(self, **transaction_kwargs) -> 'Session':
+        """
+        Starts the session.
+        
+        This will open a new transaction to execute this query inside of.
+        :return: This :class:`.Session`.
+        """
+        self.transaction = await self.engine.create_transaction(**transaction_kwargs)
+
+        return self
+
+    async def commit(self):
+        """
+        Commits this session, writing the results of the actions to the database.
+        
+        Once a session is committed, the session must be re-opened with :meth:`.Session.begin`.
+        """
+        # todo: added, dirty, deleted
+        await self.transaction.commit()
 
     async def execute(self, query: BaseQuery):
         """
@@ -47,15 +82,17 @@ class Session(object):
         :return: A ResultSet object.
         """
         # create the transaction for the sess
-        transaction = await self.engine.create_transaction()
+        if self.transaction is None:
+            await self.begin()
+
+        await self.transaction.acquire()
 
         # BEGIN
-        async with transaction:
-            final_query, params = query.get_token()
-            final_sql = final_query.generate_sql()
-            logger.debug("Running query `{}` with params `{}`".format(final_sql, params))
-            results = await transaction.execute(final_sql, params)
+        final_query, params = query.get_token()
+        final_sql = final_query.generate_sql()
+        logger.debug("Running query `{}` with params `{}`".format(final_sql, params))
+        results = await self.transaction.fetch(final_sql, params)
 
-        # COMMIT/ROLLBACK
+        # no implicit ROLLBACK
 
         return results

@@ -4,6 +4,7 @@ The base class for any Katagawa back-end engine.
 
 import abc
 import asyncio
+import collections
 
 import dsnparse
 
@@ -153,3 +154,29 @@ class BaseEngine(object):
         :param params: A dictionary of parameters to insert into the query.
         :return:
         """
+
+
+class ResultSet(collections.AsyncIterator, metaclass=abc.ABCMeta):
+    """
+    Represents a set of results returned from a query. This can be iterated over asynchronously to return new results.
+    
+    Typically, an underlying cursor is used that gets the next set of results, but any method can be used.
+    
+    .. code-block:: python
+    
+        results = await sess.query.select(User).where(User.id == 2).all()
+        
+        async for user in results:
+            ...
+    """
+    @abc.abstractmethod
+    async def get_next(self):
+        """
+        Gets the next item in the result set.
+        """
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return await self.get_next()
