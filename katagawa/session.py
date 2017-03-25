@@ -1,6 +1,7 @@
 import logging
 
 from katagawa.engine import BaseEngine
+from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
 from katagawa.querying.query import BaseQuery
 
@@ -96,7 +97,7 @@ class Session(object):
         await self.transaction.rollback()
         await self.transaction.release(errored=errored)
 
-    async def execute(self, query: BaseQuery):
+    async def execute(self, query: BaseQuery) -> ResultSet:
         """
         Executes a query and runs it.
 

@@ -9,6 +9,7 @@ from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
 from katagawa.orm.column import _Operator, _CombinatorOperator
 from katagawa.orm.table import Table
+from katagawa import session as md_sess
 from katagawa.sql.dialects.common import Select, Column, From, Where, Operator
 
 logger = logging.getLogger("Katagawa.query")
@@ -18,15 +19,15 @@ class BaseQuery(object):
     """
     A BaseQuery object is used to query the database with SELECT statements or otherwise.
 
-    It is produced from a :meth:`katagawa.sessions.session.Session.query` and is used to actually query the database.
+    It is produced from a :meth:`.Session.query` and is used to actually query the database.
     """
-    def __init__(self, session, **kwargs):
+    def __init__(self, session: 'md_sess.Session', **kwargs):
         """
         Creates a new BaseQuery.
 
         :param session: The session to bind this query to.
         """
-        self.session = session
+        self.session = session  # type: md_sess.Session
 
         # Define a dict of tables to access in this query.
         self.tables = {}
@@ -124,3 +125,12 @@ class BaseQuery(object):
         r = await self.session.execute(self)
 
         return r
+
+    async def first(self):
+        """
+        Returns the first result that matches.
+        """
+        rset = await self.session.execute(self)
+        next = await rset.get_next()
+
+        return next
