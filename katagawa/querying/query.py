@@ -108,11 +108,13 @@ class BaseQuery(object):
             where = Where()
             param_count = 0
             for op in self.conditions:
+                # extract the condition subtokens from the operators
                 if isinstance(op, _Operator):
                     ops = [op]
                 elif isinstance(op, _CombinatorOperator):
                     ops = op.operators
 
+                # unfuck the final tokens to prevent sql injection
                 final = op.get_token()
 
                 for nop in ops:
@@ -122,7 +124,7 @@ class BaseQuery(object):
                     if isinstance(o.value, str):
                         name = "param_{}".format(param_count)
                         params[name] = o.value
-                        o.value = "{{{n}}}".format(n=name)
+                        o.value = self.session.engine.emit_param(name)
                         param_count += 1
 
                 where.subtokens.append(final)
