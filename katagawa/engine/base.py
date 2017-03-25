@@ -5,6 +5,7 @@ The base class for any Katagawa back-end engine.
 import abc
 import asyncio
 import collections
+import typing
 
 import dsnparse
 
@@ -79,7 +80,26 @@ class BaseEngine(object):
         self.loop = loop or asyncio.get_event_loop()
 
     def __repr__(self):
-        return "<{.__name__} host='{}' port='{}' database='{}'>".format(type(self), self.host, self.port, self.database)
+        return "<{.__name__} host='{}' port='{}' database='{}'>".format(type(self), self.host,
+                                                                        self.port, self.database)
+
+    def get_session(self, session_cls = None):
+        """
+        Gets a new session attached to this engine.
+        
+        .. code-block:: python
+        
+            async with engine.get_session() as sess:
+                ...
+        
+        :param session_cls: The :class:`.Session` to create a new instance of. 
+        :return: A new :class:`.Session` attached to this engine.
+        """
+        if session_cls is None:
+            from katagawa.session import Session
+            session_cls = Session
+
+        return session_cls(engine=self)
 
     @abc.abstractmethod
     async def emit_param(self, name: str):

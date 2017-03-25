@@ -1,6 +1,6 @@
 import logging
 
-from katagawa.engine import BaseEngine
+from katagawa import engine as md_engine
 from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
 from katagawa.orm.table import Table
@@ -17,7 +17,7 @@ class Session(object):
     data into the database.
     """
 
-    def __init__(self, engine: BaseEngine, **kwargs):
+    def __init__(self, engine: 'md_engine.BaseEngine', **kwargs):
         """
         Creates a new session instance.
         :param engine: The engine to bind to.
