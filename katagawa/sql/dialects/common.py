@@ -84,18 +84,23 @@ class Column(Aliased):
     def name(self):
         return "COLUMN"
 
-    def generate_sql(self):
+    def generate_sql(self, use_as: bool = True):
         """
         Generate the SQL for a column.
 
         If no alias is specified, it will just return the column name.
         Otherwise, it will return the column named aliased with AS.
+        
+        :param use_as: Use `AS` clause?
         """
         if self.alias is None:
             return self.identifier
 
         else:
-            return "{} AS {}".format(self.identifier, self.alias)
+            if use_as:
+                return "{} AS {}".format(self.identifier, self.alias)
+            else:
+                return self.alias
 
 
 class From(Aliased):

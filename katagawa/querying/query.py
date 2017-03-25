@@ -8,7 +8,7 @@ from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
 from katagawa.orm.column import _Operator, _CombinatorOperator
-from katagawa.orm.table import Table
+from katagawa.orm.table import Table, TableRow
 from katagawa import session as md_sess
 from katagawa.sql.dialects.common import Select, Column, From, Where, Operator
 
@@ -32,11 +32,15 @@ class BaseQuery(object):
         #: The table being queried.
         self.from_ = table
 
-        # Define a dict of tables to access in this query.
+        #: A dict of tables being joined, or similar.
         self.tables = {}
 
-        # Define a list of conditions to generate in the SELECT.
+        #: A list of conditions being used.
         self.conditions = []
+
+        # internal alias mapping
+        # this is used once the query returns to get the right column from the response
+        self._alias_mapping: typing.Mapping[str, Column] = {}
 
     # internal workhouse methods
 
@@ -128,6 +132,28 @@ class BaseQuery(object):
         return s, params
 
     # return methods
+    def _convert_result(self, result: typing.Mapping[str, typing.Any]) -> TableRow:
+        """
+        Converts a result from the raw DB connection into a :class:`.TableRow`.
+        
+        :param result: The result to convert from. 
+            This should be a dictionary-like object, with keys and values methods that can be used 
+            to get the columns and values from the result.
+        
+        :return: A new :class:`.TableRow` representing the result.
+        """
+        row = TableRow(self.from_)
+        for key in result.keys():
+            if key in self._alias_mapping:
+                col = self._alias_mapping[key]
+            else:
+                # try and find the column from the main table
+                col = self.from_.column_mapping[key]
+
+            # update the current values
+            row._values[col.name] = result[key]
+
+        return row
 
     async def all(self) -> typing.Generator[typing.Mapping, None, None]:
         """
@@ -136,6 +162,7 @@ class BaseQuery(object):
         r = await self.session.execute(self)
 
         async for result in r:
+            result = self._convert_result(result)
             yield result
 
     async def first(self):

@@ -61,5 +61,61 @@ class Table(object):
 
 class TableRow(object):
     """
-    
+    Represents a row in a table. This is created when a table is called, or from query results. 
     """
+    def __init__(self, table: 'Table'):
+        """
+        :param table: The :class:`~.Table` instance that this row is associated with. 
+        """
+
+        #: The :class:`~.Table` that this row is associated with.
+        self.table = table
+
+        # internal mappings
+
+        #: A dict of Column: Previous value.
+        #: Used when updating a column, it will store the previous value to know an update happened.
+        self._previous_values = {}
+
+        #: A dict of Column: Current value.
+        #: Used when updating a column, it will store the current values.
+        #: When created, this is initialized to the current values of all columns.
+        self._values = {}
+
+    # workhouse methods
+    def get_value(self, col_name: str) -> typing.Any:
+        """
+        Gets the current value of the column by name ``col_name``.
+        
+        :param col_name: The name of the column to get.
+        :return: The value of the column.
+        """
+        col = self.table.column_mapping[col_name]
+        val = self._values.get(col.name)  # col.default)
+        return val
+
+    def update_value(self, col_name: str, new_val: typing.Any):
+        """
+        Updates or inserts the value into a result.
+        
+        :param col_name: The name of the column to update. 
+        :param new_val: The new value of the data to insert or update.
+        """
+        if col_name not in self._previous_values and col_name in self._values:
+            self._previous_values[col_name] = self._values[col_name]
+
+        self._values[col_name] = new_val
+
+    def __iter__(self):
+        """
+        Alias for ``iter(row._values)``. 
+        """
+        return iter(self._values)
+
+    def __getattr__(self, item):
+        # called when all else failed
+        # this means we need to return the column value
+        try:
+            return self.get_value(item)
+        except KeyError as e:
+            raise AttributeError(item) from e
