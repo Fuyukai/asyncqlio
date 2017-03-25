@@ -21,13 +21,16 @@ class BaseQuery(object):
 
     It is produced from a :meth:`.Session.query` and is used to actually query the database.
     """
-    def __init__(self, session: 'md_sess.Session', **kwargs):
+    def __init__(self, session: 'md_sess.Session', table: 'Table', **kwargs):
         """
         Creates a new BaseQuery.
 
         :param session: The session to bind this query to.
         """
         self.session = session  # type: md_sess.Session
+
+        #: The table being queried.
+        self.from_ = table
 
         # Define a dict of tables to access in this query.
         self.tables = {}
@@ -73,6 +76,14 @@ class BaseQuery(object):
         """
         # get the fields
         fields = []
+
+        # add the main table's fields
+        for column in self.from_.columns:
+            fields.append(
+                Column('"{}"."{}"'.format(self.from_.name, column.name))
+            )
+
+        # add any joined tables fields
         for tbl_name, table in self.tables.items():
             for column in table.columns:
                 fields.append(Column(
@@ -83,7 +94,7 @@ class BaseQuery(object):
             subtokens=[
                 # expand out the fields and tables as From queries
                 *fields,
-                *[From(name) for name in self.tables]
+                From(self.from_.name)
             ]
         )
 
@@ -118,13 +129,14 @@ class BaseQuery(object):
 
     # return methods
 
-    async def all(self) -> ResultSet:
+    async def all(self) -> typing.Generator[typing.Mapping, None, None]:
         """
-        Returns a :class:`.ResultSet` iterator for the specified query.
+        Gets
         """
         r = await self.session.execute(self)
 
-        return r
+        async for result in r:
+            yield result
 
     async def first(self):
         """

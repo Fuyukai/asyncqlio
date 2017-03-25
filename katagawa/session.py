@@ -3,6 +3,7 @@ import logging
 from katagawa.engine import BaseEngine
 from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
+from katagawa.orm.table import Table
 from katagawa.querying.query import BaseQuery
 
 logger = logging.getLogger("Katagawa.session")
@@ -35,20 +36,14 @@ class Session(object):
         self.dirty = []
         self.deleted = []
 
-    @property
-    def query(self) -> BaseQuery:
-        """
-        Alias of :meth:`.Session.get_query`.
-        """
-        return self.get_query()
-
-    def get_query(self, **kwargs) -> BaseQuery:
+    def query(self, tbl: Table, **kwargs) -> BaseQuery:
         """
         Produces a new Query object, bound to this session.
         
+        :param tbl: The :class:`~.Table` to query.
         :return: A new :class:`.BaseQuery` that can be used to query the database with.
         """
-        query = self.query_class(session=self, **kwargs)
+        query = self.query_class(session=self, table=tbl, **kwargs)
         return query
 
     # magic methods
