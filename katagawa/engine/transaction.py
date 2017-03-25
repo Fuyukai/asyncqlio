@@ -40,7 +40,7 @@ class Transaction(abc.ABC):
         self.completed = False
 
     # magic methods
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'Transaction':
         await self.acquire()
         return self
 
@@ -96,12 +96,32 @@ class Transaction(abc.ABC):
         return await self._release(errored)
 
     @abc.abstractmethod
+    async def commit(self):
+        """
+        Commits this transaction, flushing the results to the database.
+        """
+
+    @abc.abstractmethod
+    async def rollback(self):
+        """
+        Rolls back this transaction, undoing the changes made.
+        """
+
+    @abc.abstractmethod
     async def execute(self, sql: str, params: dict):
         """
         Executes a SQL command inside a transaction.
 
         :param sql: The SQL query to use.
         :param params: Parameters to pass into the query.
+        """
 
-        :return: The results of the query.
+    @abc.abstractmethod
+    async def fetch(self, sql: str, params: dict = None):
+        """
+        Fetches a result from a SQL query.
+        
+        :param sql: The SQL query to execute.  
+        :param params: Parameters to pass into the query.
+        :return: The results of the query as an iterable.
         """

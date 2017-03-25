@@ -53,15 +53,14 @@ class AsyncpgTransaction(Transaction):
     """
     A transaction class specific to the asyncpg driver.
     """
-
     def __init__(self, engine: 'AsyncpgEngine', isolation="read_committed", read_only=False, deferrable=False):
         super().__init__(engine, read_only=read_only)
 
         #: The connection we've retrieved.
-        self.connection = None
+        self.connection = None    # type: asyncpg.connection.Connection
 
         #: The internal asyncpg transaction object.
-        self.internal_transaction = None
+        self.internal_transaction = None  # type: asyncpg.connection.transaction.Transaction
 
         self.isolation = isolation
         self.read_only = read_only
@@ -96,7 +95,7 @@ class AsyncpgTransaction(Transaction):
         # Create tuples from the params.
         sql, args = get_param_query(sql, params)
         # Execute the query.
-        result = await self.connection.fetch(sql, *args)
+        result = await self.connection.execute(sql, *args)
 
         return result
 
@@ -108,11 +107,27 @@ class AsyncpgTransaction(Transaction):
     async def _release(self, errored: bool = False):
         # Rollback if we encountered an error.
         if errored:
-            await self.internal_transaction.rollback()
+            await self.rollback()
         else:
-            await self.internal_transaction.commit()
+            await self.commit()
 
         return self
+
+    async def fetch(self, sql: str, params: dict = None):
+        if not self.started:
+            raise RuntimeError("Cannot execute SQL inside non-started transaction")
+
+        # Create tuples from the params.
+        sql, args = get_param_query(sql, params)
+
+        return await self.connection.fetch(sql, *args)
+
+    def commit(self):
+        return self.internal_transaction.commit()
+
+    def rollback(self):
+        return self.internal_transaction.rollback()
+
 
 
 class AsyncpgEngine(BaseEngine):
