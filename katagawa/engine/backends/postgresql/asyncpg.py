@@ -134,11 +134,11 @@ class AsyncpgTransaction(Transaction):
         return self
 
     async def _release(self, errored: bool = False):
-        # Rollback if we encountered an error.
-        if errored:
-            await self.rollback()
-        else:
-            await self.commit()
+        # Release our connection.
+        await self.engine.release_connection(self.connection)
+        # allow gc to clean up
+        self.internal_transaction = None
+        self.connection = None
 
         return self
 
@@ -208,6 +208,15 @@ class AsyncpgEngine(BaseEngine):
             r = await self.pool.acquire()
 
         return r
+
+    async def release_connection(self, connection: asyncpg.connection.Connection):
+        """
+        Releases an asyncpg connection.
+        """
+        if self.use_connection_pool is False:
+            return
+
+        await self.pool.release(connection)
 
     async def create_transaction(self, read_only=False, **kwargs) -> AsyncpgTransaction:
         trans = await AsyncpgTransaction.create(self, kwargs.get("isolation", "read_committed"), read_only,

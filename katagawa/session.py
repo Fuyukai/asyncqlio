@@ -51,6 +51,19 @@ class Session(object):
         return query
 
     # magic methods
+    async def __aenter__(self):
+        await self.begin()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            await self.rollback(errored = True)
+            return False
+
+        else:
+            await self.commit()
+            # never suppress
+            return False
 
     async def begin(self, **transaction_kwargs) -> 'Session':
         """
@@ -60,6 +73,7 @@ class Session(object):
         :return: This :class:`.Session`.
         """
         self.transaction = await self.engine.create_transaction(**transaction_kwargs)
+        await self.transaction.acquire()
 
         return self
 
@@ -70,7 +84,17 @@ class Session(object):
         Once a session is committed, the session must be re-opened with :meth:`.Session.begin`.
         """
         # todo: added, dirty, deleted
+        # commit the transaction
         await self.transaction.commit()
+        # release the transaction away from us
+        await self.transaction.release(errored=False)
+
+    async def rollback(self, errored: bool = False):
+        """
+        Rolls back this session, undoing any changes.
+        """
+        await self.transaction.rollback()
+        await self.transaction.release(errored=errored)
 
     async def execute(self, query: BaseQuery):
         """
@@ -84,8 +108,6 @@ class Session(object):
         # create the transaction for the sess
         if self.transaction is None:
             await self.begin()
-
-        await self.transaction.acquire()
 
         # BEGIN
         final_query, params = query.get_token()
