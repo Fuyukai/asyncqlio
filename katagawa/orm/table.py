@@ -4,6 +4,9 @@ Represents tables.
 import typing
 from types import MappingProxyType
 
+from cached_property import cached_property
+
+from katagawa.exceptions import OperationalException
 from katagawa.orm import column as cl
 
 
@@ -50,6 +53,16 @@ class Table(object):
         :return: A list of columns for this table.
         """
         return self.column_mapping.values()
+
+    @cached_property
+    def primary_key(self):
+        """
+        :return: The :class:`~.Column` that represents the primary key for this table. 
+        """
+        try:
+            return next(filter(lambda column: column.primary_key is True, self.columns))
+        except StopIteration:
+            raise OperationalException("Table `{}` has no primary key".format(self.name))
 
     # magic method overrides
     def __getattr__(self, item):
