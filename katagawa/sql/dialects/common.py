@@ -340,13 +340,17 @@ class CTColumn(Token):
                  primary_key: bool = False,
                  unique: bool = False,
                  nullable: bool = True,
+                 references: str = None,
                  extra_args: str = ""):
         """
         :param name: The name of this column. 
         :param typename: The type name of this column.
+        
         :param primary_key: If this column is the primary key.
         :param unique: If this column is unique.
         :param nullable: If this column is nullable.
+        :param references: What does this column reference (FK relationship), if any?
+        
         :param extra_args: Any extra args to append.
         """
         super().__init__(subtokens=[])

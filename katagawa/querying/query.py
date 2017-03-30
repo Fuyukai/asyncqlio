@@ -4,6 +4,8 @@ Module containing the actual query
 import logging
 import typing
 
+import async_generator
+
 from katagawa.engine.base import ResultSet
 from katagawa.engine.transaction import Transaction
 from katagawa.exceptions import TableConflictException
@@ -40,7 +42,7 @@ class BaseQuery(object):
 
         # internal alias mapping
         # this is used once the query returns to get the right column from the response
-        self._alias_mapping: typing.Mapping[str, Column] = {}
+        self._alias_mapping = {}  # type: typing.Mapping[str, Column]
 
     # internal workhouse methods
 
@@ -165,7 +167,7 @@ class BaseQuery(object):
 
         async for result in r:
             result = self._convert_result(result)
-            yield result
+            await async_generator.yield_(result)
 
     async def first(self):
         """
