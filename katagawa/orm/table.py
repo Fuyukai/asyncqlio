@@ -34,20 +34,20 @@ class Table(object):
             raise TypeError("Columns arguments must be instances of Column")
 
         # register a field mapping
-        self._field_mapping = {}
+        self._column_mapping = {}
 
         for column in self._columns:
-            self._field_mapping[column.name] = column
+            self._column_mapping[column.name] = column
             column.register_table(self)
 
-    @property
+    @cached_property
     def column_mapping(self) -> 'typing.Mapping[str, cl.Column]':
         """
         :return: A read-only mapping of column_name -> column. 
         """
-        return MappingProxyType(self._field_mapping)
+        return MappingProxyType(self._column_mapping)
 
-    @property
+    @cached_property
     def columns(self) -> 'typing.ValuesView[cl.Column]':
         """
         :return: A list of columns for this table.
@@ -67,22 +67,34 @@ class Table(object):
     # magic method overrides
     def __getattr__(self, item):
         try:
-            return self._field_mapping[item]
+            return self._column_mapping[item]
         except KeyError:
             raise AttributeError(item) from None
+
+    def __call__(self, *args, **kwargs) -> 'TableRow':
+        row = TableRow(self)
+        # update values
+        for name, val in kwargs.items():
+            if name not in self._column_mapping:
+                raise ValueError("{} is not a column in this table".format(name))
+
+            row.update_value(name, val)
+
+        return row
 
 
 class TableRow(object):
     """
     Represents a row in a table. This is created when a table is called, or from query results. 
     """
+
     def __init__(self, table: 'Table'):
         """
         :param table: The :class:`~.Table` instance that this row is associated with. 
         """
 
         #: The :class:`~.Table` that this row is associated with.
-        self.table = table
+        self._table = table
 
         # internal mappings
 
@@ -103,7 +115,7 @@ class TableRow(object):
         :param col_name: The name of the column to get.
         :return: The value of the column.
         """
-        col = self.table.column_mapping[col_name]
+        col = self._table.column_mapping[col_name]
         val = self._values.get(col.name)  # col.default)
         return val
 
@@ -119,6 +131,14 @@ class TableRow(object):
 
         self._values[col_name] = new_val
 
+    def __repr__(self):
+        fmt = " "
+        for col in self._table.columns:
+            val = self.get_value(col.name)
+            fmt += "{}='{}'".format(col.name, val)
+
+        return "<{.name}{}>".format(self._table, fmt)
+
     def __iter__(self):
         """
         Alias for ``iter(row._values)``. 
@@ -132,3 +152,12 @@ class TableRow(object):
             return self.get_value(item)
         except KeyError as e:
             raise AttributeError(item) from e
+
+    def __setattr__(self, key: str, value: typing.Any):
+        if key.startswith("_"):
+            super().__setattr__(key, value)
+
+        if key in self._table.column_mapping:
+            self.update_value(key, new_val=value)
+        else:
+            super().__setattr__(key, value)
