@@ -26,7 +26,9 @@ class Katagawa(object):
         dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/joku"
         my_database = Katagawa(dsn)
         # or provide it in the `.connect()` call
-        await my_database.connect(dsn)    
+        await my_database.connect(dsn)
+        
+    
     """
 
     def __init__(self, dsn: str = None):
@@ -38,7 +40,7 @@ class Katagawa(object):
         self._dsn = dsn
 
         #: The current connector instance.
-        self.connector = None
+        self.connector = None  # type: BaseConnector
 
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
         """
@@ -78,3 +80,29 @@ class Katagawa(object):
         await self.connector.connect(**kwargs)
 
         return self.connector
+
+    @property
+    def transaction(self):
+        """
+        Gets a low-level :class:`.BaseTransaction`.
+         
+        .. code-block:: python
+            async with db.transaction as transaction:
+                results = await transaction.cursor("SELECT 1;")
+        """
+        return self.connector.get_transaction()
+
+    async def close(self):
+        """
+        Closes the current database interface.
+        """
+        await self.connector.close()
+
+    async def get_db_server_info(self):
+        """
+        Gets DB server info.
+        
+        .. warning::
+            This is **not** supported on SQLite3 connections. 
+        """
+        # todo: make this do something
