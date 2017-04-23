@@ -12,7 +12,7 @@ from dsnparse import ParseResult
 
 from katagawa.backends.base import BaseConnector, BaseTransaction, BaseResultSet
 
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
