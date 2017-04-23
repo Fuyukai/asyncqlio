@@ -96,6 +96,7 @@ class Column(object):
         :param owner: The :class:`.Table` this Column is on. 
         :param name: The str name of this table.
         """
+        logger.debug("Column created with name {} on {}".format(name, owner))
         self.name = name
         self.table = owner
 
@@ -259,6 +260,7 @@ def table_base(name: str = "Table", bases=(object,)):
             if pk_cols:
                 pk = PrimaryKey(*pk_cols)
                 pk.table = self
+                logger.debug("Calculated new primary key {}".format(pk))
                 return pk
 
             return None
