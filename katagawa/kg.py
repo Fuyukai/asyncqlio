@@ -6,7 +6,8 @@ import logging
 
 import dsnparse
 
-from katagawa.backends.base import BaseConnector
+from katagawa.backends.base import BaseConnector, BaseTransaction
+from katagawa.orm import session as md_session
 
 # sentinels
 NO_CONNECTOR = object()
@@ -81,16 +82,21 @@ class Katagawa(object):
 
         return self.connector
 
-    @property
-    def transaction(self):
+    def get_transaction(self) -> BaseTransaction:
         """
         Gets a low-level :class:`.BaseTransaction`.
          
         .. code-block:: python
-            async with db.transaction as transaction:
+            async with db.get_transaction() as transaction:
                 results = await transaction.cursor("SELECT 1;")
         """
         return self.connector.get_transaction()
+
+    def get_session(self) -> 'md_session.Session':
+        """
+        Gets a new :class:`.Session` bound to this Katagawa instance.
+        """
+        return md_session.Session(self)
 
     async def close(self):
         """

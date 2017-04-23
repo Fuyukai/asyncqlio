@@ -229,12 +229,18 @@ def table_base(name: str = "Table", bases=(object,)):
             # TABLE ATTRIBUTES #
             # ================ #
 
-            #: The name of this table.
-            self.__tablename__ = tblname
+            try:
+                self.__tablename__
+            except AttributeError:
+                #: The name of this table.
+                self.__tablename__ = tblname
 
             #: The primary key for this table.
             #: This should be a :class:`.PrimaryKey`.
             self._primary_key = self._calculate_primary_key()
+
+            #: The :class:`.Katagawa` this table is bound to.
+            self.__bind = None
 
         def iter_columns(self) -> typing.Generator['Column', None, None]:
             """
