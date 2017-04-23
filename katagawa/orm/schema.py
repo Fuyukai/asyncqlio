@@ -6,6 +6,8 @@ import logging
 import typing
 import sys
 
+from katagawa.orm import session as md_session
+from katagawa.exc import NoSuchColumnError
 from katagawa.orm.types import ColumnType
 
 PY36 = sys.version_info[0:2] >= (3, 6)
@@ -161,6 +163,109 @@ class TableMetaRoot(type):
         self._tbl_registry[tbl.__name__] = tbl
 
 
+class TableRow(object):
+    """
+    Represents a single row in a table.  
+    :class:`.Table` objects cannot be instantiated (not without hacking at the object level), so as
+    such they return TableRow objects when called.
+    
+    TableRow objects are representative of a single row in said table - the column names are the 
+    keys, and the value in that row are the items.
+     
+    .. code-block:: python
+        class User(Table):
+            id = Column(Integer, primary_key=True)
+            
+        user = User(id=1)  # user is actually a TableRow bound to the User table
+    """
+
+    def __init__(self, tbl):
+        """
+        :param tbl: The table object to bind this row to.
+        """
+        self._table = tbl
+
+        #: If this row existed before.
+        #: If this is True, this row was fetched from the DB previously.
+        #: Otherwise, it is a fresh row.
+        self.__existed = False
+
+        #: The session this row is attached to.
+        self._session = None  # type: md_session.Session
+
+        #: A mapping of Column -> Previous values for this row.
+        #: Used in update generation.
+        self._previous_values = {}
+
+        #: A mapping of Column -> Current value for this row.
+        self._values = {}
+
+        # BECAUSE PYTHON
+        self.__setattr__ = self._setattr__
+
+    def __repr__(self):
+        gen = ("{}={}".format(col.name, self._get_column_value(col)) for col in self._table.columns)
+        return "<{} {}>".format(self._table.__name__, " ".join(gen))
+
+    def __getattr__(self, item):
+        col = next(filter(lambda col: col.name == item, self._table.columns), None)
+        if col is None:
+            raise NoSuchColumnError(item)
+
+        return self._values[col]
+
+    def _setattr__(self, key, value):
+        col = next(filter(lambda col: col.name == key, self._table.columns), None)
+        if col is None:
+            return super().__setattr__(key, value)
+
+        return self.update_column(col, value)
+
+    def _get_column_value(self, column: 'Column'):
+        """
+        Gets the value from the specified column in this row.
+        """
+        if column.table != self._table:
+            raise ValueError("Column table must match row table")
+
+        try:
+            return self._values[column]
+        except KeyError:
+            return column.default
+
+    def update_column(self, column: 'Column', value: typing.Any):
+        """
+        Updates the value of a column in this row.
+        """
+        if column not in self._previous_values:
+            if column in self._values:
+                self._previous_values[column] = self._values[column]
+
+        self._values[column] = value
+
+        return self
+
+    @property
+    def primary_key(self) -> typing.Union[typing.Any, typing.Iterable[typing.Any]]:
+        """
+        Gets the primary key for this row.
+          
+        If this table only has one primary key column, this property will be a single value.  
+        If this table has multiple columns in a primary key, this property will be a tuple. 
+        """
+        pk = self._table.primary_key  # type: PrimaryKey
+        result = []
+
+        for col in pk.columns:
+            val = self._get_column_value(col)
+            result.append(val)
+
+        if len(result) == 1:
+            return result[0]
+
+        return tuple(result)
+
+
 def table_base(name: str = "Table", bases=(object,)):
     """
     Gets a new base object to use for OO-style tables.  
@@ -205,6 +310,9 @@ def table_base(name: str = "Table", bases=(object,)):
 
     # metaclass is defined inside a function because we need to add specific-state to it
     class TableMeta(type, metaclass=TableMetaRoot):
+        def __new__(mcs, n, b, c, register: bool = True):
+            return type.__new__(mcs, n, b, c)
+
         def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True):
             """
             Creates a new Table instance. 
@@ -233,7 +341,7 @@ def table_base(name: str = "Table", bases=(object,)):
                 self.__tablename__
             except AttributeError:
                 #: The name of this table.
-                self.__tablename__ = tblname
+                self.__tablename__ = tblname.lower()
 
             #: The primary key for this table.
             #: This should be a :class:`.PrimaryKey`.
@@ -242,15 +350,22 @@ def table_base(name: str = "Table", bases=(object,)):
             #: The :class:`.Katagawa` this table is bound to.
             self.__bind = None
 
+        def __call__(self, *args, **kwargs):
+            return self._get_table_row(**kwargs)
+
+        @property
+        def columns(self) -> 'typing.List[Column]':
+            """
+            :return: A list of :class:`.Column` this Table has. 
+            """
+            return list(self.iter_columns())
+
         def iter_columns(self) -> typing.Generator['Column', None, None]:
             """
             :return: A generator that yields :class:`.Column` objects for this table. 
             """
             for name, col in inspect.getmembers(self, predicate=lambda x: isinstance(x, Column)):
                 yield col
-
-        def __new__(mcs, n, b, c, register: bool = True):
-            return type.__new__(mcs, n, b, c)
 
         def _calculate_primary_key(self) -> PrimaryKey:
             """
@@ -287,6 +402,21 @@ def table_base(name: str = "Table", bases=(object,)):
         def primary_key(self, key: PrimaryKey):
             key.table = self
             self._primary_key = key
+
+        def _get_table_row(self, **kwargs) -> 'TableRow':
+            """
+            Gets a :class:`.TableRow` that represents this table.
+            """
+            col_map = {col.name: col for col in self.columns}
+            row = TableRow(tbl=self)
+
+            for name, val in kwargs.items():
+                if name not in col_map:
+                    raise NoSuchColumnError(name)
+
+                row.update_column(col_map[name], val)
+
+            return row
 
     class Table(metaclass=TableMeta, register=False):
         pass
