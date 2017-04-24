@@ -82,6 +82,15 @@ class Katagawa(object):
 
         return self.connector
 
+    def emit_param(self, name: str) -> str:
+        """
+        Emits a param in the format that the DB driver specifies.
+        
+        :param name: The name of the parameter to emit. 
+        :return: A str representing the emitted param.
+        """
+        return self.connector.emit_param(name)
+
     def get_transaction(self) -> BaseTransaction:
         """
         Gets a low-level :class:`.BaseTransaction`.
