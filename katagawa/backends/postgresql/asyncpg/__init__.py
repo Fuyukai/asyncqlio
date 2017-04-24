@@ -156,7 +156,7 @@ class AsyncpgConnector(BaseConnector):
         # so we have to do a "fun" re-parsing pass
         # which has the potential to KILL performance
         # inst
-        return "{{{name}}}}".format(name=name)
+        return "{{{name}}}".format(name=name)
 
     async def connect(self) -> 'BaseConnector':
         # create our connection pool
