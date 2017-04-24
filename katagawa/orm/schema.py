@@ -6,6 +6,8 @@ import logging
 import typing
 import sys
 
+from cached_property import cached_property
+
 from katagawa.orm import session as md_session
 from katagawa.exc import NoSuchColumnError
 from katagawa.orm.types import ColumnType
@@ -101,6 +103,15 @@ class Column(object):
         logger.debug("Column created with name {} on {}".format(name, owner))
         self.name = name
         self.table = owner
+
+    @cached_property
+    def quoted_name(self) -> str:
+        """
+        Gets the full quoted name for this column.
+         
+        This returns the column name in "table"."column" format.
+        """
+        return r'"{}"."{}"'.format(self.table.__tablename__, self.name)
 
 
 # OO-like objects
