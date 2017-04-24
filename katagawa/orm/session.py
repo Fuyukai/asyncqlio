@@ -4,6 +4,7 @@ import typing
 import enum
 
 from katagawa import kg as md_kg
+from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,18 @@ class Session(object):
             await self.close()
 
         return False
+
+    # Query builders
+    def select(self, table) -> 'md_query.SelectQuery':
+        """
+        Creates a new SELECT query that can be built upon.
+        
+        :param table: The :class:`.Table` to select. 
+        :return: A new :class:`.SelectQuery`.
+        """
+        q = md_query.SelectQuery(self)
+        q.set_table(table)
+        return q
 
     async def start(self) -> 'Session':
         """
