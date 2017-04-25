@@ -1,6 +1,8 @@
 """
 Classes for query objects.
 """
+import itertools
+
 from katagawa.orm import session as md_session
 
 
@@ -40,6 +42,41 @@ class SelectQuery(object):
 
         # TODO: Order by, limit, etc
 
+    def generate_sql(self) -> str:
+        """
+        Generates the SQL for this query. 
+        """
+        counter = itertools.count()
+
+        # calculate the column names
+        columns = [r'"{}"."{}"'.format(column.table.__tablename__, column.name)
+                   for column in self.table.columns]
+
+        # format the basic select
+        fmt = "SELECT {} FROM {} ".format(','.join(columns), self.table.__tablename__)
+        # format conditions
+        params = {}
+        c_sql = []
+        for condition in self.conditions:
+            # pass the condition offset
+            condition_sql, name, val = condition.generate_sql(self.session.bind.emit_param, counter)
+            if val is not None:
+                # special-case
+                # this means it's a coalescing token
+                if isinstance(val, dict) and name is None:
+                    params.update(val)
+                else:
+                    params[name] = val
+
+            c_sql.append(condition_sql)
+
+        # append the fmt with the conditions
+        # these are assumed to be And if there are multiple!
+        if c_sql:
+            fmt += "WHERE {}".format(" AND ".join(c_sql))
+
+        return fmt, params
+
     def set_table(self, tbl) -> 'SelectQuery':
         """
         Sets the table to query on.
@@ -54,6 +91,8 @@ class SelectQuery(object):
         """
         Adds a condition to the query/
         
-        :param condition: The :class:`.BaseCondition` to add.
+        :param condition: The :class:`.BaseOperator` to add.
         :return: This query.
         """
+        self.conditions.append(condition)
+        return self
