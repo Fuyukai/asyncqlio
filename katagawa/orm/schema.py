@@ -9,6 +9,7 @@ import sys
 from cached_property import cached_property
 
 from katagawa.orm import session as md_session
+from katagawa.orm import operators as md_operators
 from katagawa.exc import NoSuchColumnError
 from katagawa.orm.types import ColumnType
 
@@ -93,6 +94,9 @@ class Column(object):
         #: If this Column is unique.
         self.unique = unique
 
+    def __hash__(self):
+        return super().__hash__()
+
     def __set_name__(self, owner, name):
         """
         Called to update the table and the name of this Column.
@@ -103,6 +107,9 @@ class Column(object):
         logger.debug("Column created with name {} on {}".format(name, owner))
         self.name = name
         self.table = owner
+
+    def __eq__(self, other: typing.Any) -> 'md_operators.Eq':
+        return md_operators.Eq(self, other)
 
     @cached_property
     def quoted_name(self) -> str:
