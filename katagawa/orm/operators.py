@@ -67,8 +67,14 @@ class BaseOperator(abc.ABC):
 
     @requires_bop
     def __or__(self, other: 'BaseOperator'):
-        # todo: return Or operator
-        return None
+        if isinstance(self, Or):
+            self.operators.append(other)
+            return self
+        elif isinstance(other, Or):
+            other.operators.append(self)
+            return other
+        else:
+            return Or(self, other)
 
     # copies that signify bitwise operators too
     __rand__ = __and__
@@ -103,6 +109,20 @@ class Or(BaseOperator):
     
     This will join multiple other :class:`.BaseOperator` objects together.
     """
+    def __init__(self, *ops: 'BaseOperator'):
+        self.operators = list(ops)
+
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        final = []
+        vals = {}
+        for op in self.operators:
+            sql, name, val = op.generate_sql(emitter, counter)
+            final.append(sql)
+            if name is not None and val is not None:
+                vals[name] = val
+
+        fmt = "({})".format(" OR ".join(final))
+        return fmt, None, vals
 
 
 class ColumnValueMixin(object):
