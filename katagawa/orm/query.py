@@ -2,8 +2,10 @@
 Classes for query objects.
 """
 import itertools
+import typing
 
 from katagawa.orm import session as md_session
+from katagawa.orm.operators import BaseOperator
 
 
 class SelectQuery(object):
@@ -42,7 +44,7 @@ class SelectQuery(object):
 
         # TODO: Order by, limit, etc
 
-    def generate_sql(self) -> str:
+    def generate_sql(self) -> typing.Tuple[str, dict]:
         """
         Generates the SQL for this query. 
         """
@@ -77,6 +79,22 @@ class SelectQuery(object):
 
         return fmt, params
 
+    # Helper methods for natural builder-style queries
+    def where(self, *conditions: BaseOperator):
+        """
+        Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
+        
+        .. code-block:: python
+            sess.select(User).where(User.id == 1)
+        
+        :param conditions: The conditions to use for this WHERE clause.
+        :return: This query.
+        """
+        for condition in conditions:
+            self.add_condition(condition)
+
+        return self
+
     def set_table(self, tbl) -> 'SelectQuery':
         """
         Sets the table to query on.
@@ -87,7 +105,7 @@ class SelectQuery(object):
         self.table = tbl
         return self
 
-    def add_condition(self, condition) -> 'SelectQuery':
+    def add_condition(self, condition: BaseOperator) -> 'SelectQuery':
         """
         Adds a condition to the query/
         

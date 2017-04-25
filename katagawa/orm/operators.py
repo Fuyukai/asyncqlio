@@ -32,7 +32,6 @@ class BaseOperator(abc.ABC):
     """
     The base operator class.
     """
-
     def get_param(self, emitter, counter: itertools.count):
         name = "param_{}".format(next(counter))
         return emitter(name), name
