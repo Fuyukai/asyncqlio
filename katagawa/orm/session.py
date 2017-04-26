@@ -3,6 +3,8 @@ import typing
 
 import enum
 
+import functools
+
 from katagawa import kg as md_kg
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
@@ -14,6 +16,18 @@ class SessionState(enum.Enum):
     NOT_READY = 0
     READY = 1
     CLOSED = 2
+
+
+# decorators
+def enforce_open(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self._state is not SessionState.READY:
+            raise RuntimeError("Session is not ready or closed")
+        else:
+            return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Session(object):
@@ -102,6 +116,7 @@ class Session(object):
         self._state = SessionState.READY
         return self
 
+    @enforce_open
     async def commit(self):
         """
         Commits the current session, running inserts/updates/deletes.
@@ -112,6 +127,7 @@ class Session(object):
         await self.transaction.commit()
         return self
 
+    @enforce_open
     async def rollback(self, checkpoint: str = None):
         """
         Rolls the current session back.  
@@ -122,6 +138,7 @@ class Session(object):
         await self.transaction.rollback(checkpoint=checkpoint)
         return self
 
+    @enforce_open
     async def close(self):
         """
         Closes the current session.
@@ -133,6 +150,7 @@ class Session(object):
         self._state = SessionState.CLOSED
         del self.transaction
 
+    @enforce_open
     async def execute(self, sql: str, params: typing.Union[typing.Container, typing.Iterable]):
         """
         Executes SQL inside the current session.
@@ -141,5 +159,16 @@ class Session(object):
         
         :param sql: The SQL to execute.
         :param params: The parameters to use inside the query.
-        :return: A :class:`.BaseResultSet` representing the results.
         """
+        # TODO
+
+    @enforce_open
+    async def cursor(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
+                                                          typing.Iterable[typing.Any]]):
+        """
+        Executes SQL inside the current session, and returns a new :class:`.BaseResultSet.`
+        
+        :param sql: The SQL to execute.
+        :param params: The parameters to use inside the query.
+        """
+        return await self.transaction.cursor(sql, params)
