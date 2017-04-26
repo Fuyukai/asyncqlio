@@ -34,6 +34,8 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
     async def fetch_row(self):
         """
         Fetches the **next row** in this query. 
+        
+        This should return None if the row could not be fetched.
         """
 
     @abstractmethod

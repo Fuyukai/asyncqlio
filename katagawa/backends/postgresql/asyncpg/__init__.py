@@ -61,12 +61,12 @@ class AsyncpgResultSet(BaseResultSet):
     @property
     def keys(self) -> typing.Iterable[str]:
         if self._keys is None:
-            raise RuntimeError("Cursor is not started - no keys have been fetched")
+            raise RuntimeError("No keys have been fetched")
         return self._keys
 
     async def fetch_row(self):
         row = await self.cur.fetchrow()  # type: Record
-        if self._keys is None:
+        if self._keys is None and row is not None:
             self._keys = row.keys()
 
         return row

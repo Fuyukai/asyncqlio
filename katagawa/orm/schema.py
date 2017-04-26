@@ -120,6 +120,26 @@ class Column(object):
         """
         return r'"{}"."{}"'.format(self.table.__tablename__, self.name)
 
+    def alias_name(self, table=None, quoted: bool = False) -> str:
+        """
+        Gets the alias name for a column, given the table.
+        
+        This is in the format of `t_<table name>_<column_name>`.
+         
+        :param table: The :class:`.Table` to use to generate the alias name.
+            This is useful for aliased tables.
+        :param quoted: Should the name be quoted?
+        :return: A str representing the alias name.
+        """
+        if table is None:
+            table = self.table
+
+        fmt = "t_{}_{}".format(table.__tablename__, self.name)
+        if quoted:
+            return '"{}"'.format(fmt)
+
+        return fmt
+
 
 # OO-like objects
 class PrimaryKey(object):
@@ -370,6 +390,10 @@ def table_base(name: str = "Table", bases=(object,)):
 
         def __call__(self, *args, **kwargs):
             return self._get_table_row(**kwargs)
+
+        @property
+        def __quoted_name__(self):
+            return '"{}"'.format(self.__tablename__)
 
         @property
         def columns(self) -> 'typing.List[Column]':

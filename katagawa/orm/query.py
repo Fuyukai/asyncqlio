@@ -1,12 +1,51 @@
 """
 Classes for query objects.
 """
+import collections
 import itertools
 import typing
+import warnings
 
+from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
+from katagawa.orm import schema as md_schema
 from katagawa.orm.operators import BaseOperator
 
+
+class _ResultGenerator(collections.AsyncIterator):
+    """
+    A helper class that will generate new results from a query when iterated over.
+    """
+
+    def __init__(self, q: 'SelectQuery'):
+        """
+        :param q: The :class:`.SelectQuery` to use. 
+        """
+        self.query = q
+
+        self._results = None  # type: BaseResultSet
+
+    async def __anext__(self):
+        # ensure we have a BaseResultSet
+        if self._results is None:
+            self._results = await self.query._execute()  # type: BaseResultSet
+
+        row = await self._results.fetch_row()
+        if row is None:
+            raise StopAsyncIteration
+
+        mapped = self.query.map_columns(row)
+        return row
+
+    async def flatten(self) -> 'typing.List[md_schema.TableRow]':
+        """
+        Flattens this query into a single list.
+        """
+        l = []
+        async for result in self:
+            l.append(self.query.map_columns(result))
+
+        return l
 
 class SelectQuery(object):
     """
@@ -51,11 +90,12 @@ class SelectQuery(object):
         counter = itertools.count()
 
         # calculate the column names
-        columns = [r'"{}"."{}"'.format(column.table.__tablename__, column.name)
+        columns = [r'"{}"."{}" AS {}'.format(column.table.__tablename__,
+                                             column.name, column.alias_name(quoted=True))
                    for column in self.table.columns]
 
         # format the basic select
-        fmt = "SELECT {} FROM {} ".format(','.join(columns), self.table.__tablename__)
+        fmt = "SELECT {} FROM {} ".format(','.join(columns), self.table.__quoted_name__)
         # format conditions
         params = {}
         c_sql = []
@@ -79,8 +119,68 @@ class SelectQuery(object):
 
         return fmt, params
 
+    # "fetch" methods
+    async def _execute(self) -> BaseResultSet:
+        """
+        Executes this query in the session bound.
+        :return: A :class:`.BaseResultSet` representing the results of this query.
+        """
+        sql, params = self.generate_sql()
+        results = await self.session.cursor(sql, params)
+        return results
+
+    async def first(self) -> 'typing.Union[md_schema.TableRow, None]':
+        """
+        Gets the first result that matches from this query.
+        
+        :return: A :class:`.TableRow` representing the first item, or None if no item matched.
+        """
+        result_set = await self._execute()
+        row = await result_set.fetch_row()
+
+        # only map if the row isn't none
+        if row is not None:
+            return self.map_columns(row)
+
+    async def all(self) -> '_ResultGenerator':
+        """
+        Gets all results that match from this query.
+        
+        :return: A :class:`._ResultGenerator` that can be iterated over.
+        """
+        # note: why is all a coroutine?
+        # it looks more consistent, especially with .first().
+        return _ResultGenerator(self)
+
+    # ORM methods
+    def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_schema.TableRow':
+        """
+        Maps columns in a result row to a :class:`.TableRow` object.
+        
+        :param results: A single row of results from the query cursor.
+        :return: A new :class:`.TableRow` that represents the row returned.
+        """
+        # try and map columns to our Table
+        mapping = {column.alias_name(self.table, quoted=False): column
+                   for column in self.table.iter_columns()}
+        row_expando = {}
+
+        for colname in results.keys():
+            # TODO: Joins
+            if colname in mapping:
+                column = mapping[colname]
+                row_expando[column.name] = results[colname]
+
+        # create a new TableRow
+        row = self.table(**row_expando)  # type: md_schema.TableRow
+        # update the existed
+        row._TableRow__existed = True
+
+        return row
+
     # Helper methods for natural builder-style queries
     def where(self, *conditions: BaseOperator):
+
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
         
@@ -95,6 +195,7 @@ class SelectQuery(object):
 
         return self
 
+    # "manual" methods
     def set_table(self, tbl) -> 'SelectQuery':
         """
         Sets the table to query on.
