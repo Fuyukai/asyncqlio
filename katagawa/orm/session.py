@@ -68,11 +68,11 @@ class Session(object):
         #: These are table rows that are ready to be deleted.
         self.deleted = []
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'Session':
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> 'Session':
         try:
             if exc_type is None:
                 await self.commit()
@@ -164,7 +164,7 @@ class Session(object):
 
     @enforce_open
     async def cursor(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
-                                                          typing.Iterable[typing.Any]]):
+                                                          typing.Iterable[typing.Any]] = None):
         """
         Executes SQL inside the current session, and returns a new :class:`.BaseResultSet.`
         

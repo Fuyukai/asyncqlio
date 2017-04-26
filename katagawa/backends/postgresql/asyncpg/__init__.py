@@ -121,6 +121,7 @@ class AsyncpgTransaction(BaseTransaction):
         :param params: The parameters to excuse with.
         """
         # re-paramatarize the query
+        logger.debug("Executing query {} with params {}".format(sql, params))
         query, params = get_param_query(sql, params)
         results = await self.acquired_connection.execute(query, *params)
         return results
@@ -130,6 +131,7 @@ class AsyncpgTransaction(BaseTransaction):
         """
         Executes a SQL statement and returns a cursor to iterate over the rows of the result.
         """
+        logger.debug("Executing query {} with params {}".format(sql, params))
         query, params = get_param_query(sql, params)
         cur = await self.acquired_connection.cursor(query, *params)
         result = AsyncpgResultSet(cur)

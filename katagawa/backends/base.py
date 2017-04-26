@@ -133,7 +133,7 @@ class BaseTransaction(AsyncABC):
         """
 
     @abstractmethod
-    async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable]):
+    async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None):
         """
         Executes SQL and returns a database cursor for the rows.
         
