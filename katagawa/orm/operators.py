@@ -152,6 +152,10 @@ class ComparisonOp(ColumnValueMixin, BaseOperator):
     operator = None
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        if isinstance(self.value, md_schema.Column):
+            # special-case columns
+            return "{} {} {}".format(self.column.quoted_name, self.operator, self.value.quoted_name)
+
         param_name, name = self.get_param(emitter, counter)
         return "{} {} {}".format(self.column.quoted_name, self.operator, param_name), \
                name, self.value
