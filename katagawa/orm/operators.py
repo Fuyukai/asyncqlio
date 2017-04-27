@@ -32,6 +32,7 @@ class BaseOperator(abc.ABC):
     """
     The base operator class.
     """
+
     def get_param(self, emitter, counter: itertools.count):
         name = "param_{}".format(next(counter))
         return emitter(name), name
@@ -86,6 +87,7 @@ class And(BaseOperator):
     
     This will join multiple other :class:`.BaseOperator` objects together.
     """
+
     def __init__(self, *ops: 'BaseOperator'):
         self.operators = list(ops)
 
@@ -108,6 +110,7 @@ class Or(BaseOperator):
     
     This will join multiple other :class:`.BaseOperator` objects together.
     """
+
     def __init__(self, *ops: 'BaseOperator'):
         self.operators = list(ops)
 
@@ -140,12 +143,74 @@ class ColumnValueMixin(object):
         self.value = value
 
 
-class Eq(ColumnValueMixin, BaseOperator):
+class ComparisonOp(ColumnValueMixin, BaseOperator):
     """
-    Represents an equality operator.
+    A helper class that implements easy generation of comparison-based operators.
+    
+    To customize the operator provided, set the value of ``operator`` in the class body.
     """
+    operator = None
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
         param_name, name = self.get_param(emitter, counter)
-        return "{} = {}".format(self.column.quoted_name, param_name), \
+        return "{} {} {}".format(self.column.quoted_name, self.operator, param_name), \
                name, self.value
+
+
+class Eq(ComparisonOp):
+    """
+    Represents an equality operator.
+    """
+    operator = "="
+
+
+class NEq(ComparisonOp):
+    """
+    Represents a non-equality operator.
+    """
+    operator = "!="
+
+
+class Lt(ComparisonOp):
+    """
+    Represents a less than operator.
+    """
+    operator = "<"
+
+
+class Gt(ComparisonOp):
+    """
+    Represents a more than operator.
+    """
+    operator = ">"
+
+
+class Lte(ComparisonOp):
+    """
+    Represents a less than or equals to operator.
+    """
+    operator = "<="
+
+
+class Gte(ComparisonOp):
+    """
+    Represents a more than or equals to operator.
+    """
+    operator = ">="
+
+
+class Like(ComparisonOp):
+    """
+    Represents a LIKE operator.
+    """
+    operator = "LIKE"
+
+
+class ILike(ComparisonOp):
+    """
+    Represents an ILIKE operator.
+    
+    .. warning::
+        This operator is not available on all dialects.
+    """
+    operator = "ILIKE"
