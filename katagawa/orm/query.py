@@ -47,6 +47,7 @@ class _ResultGenerator(collections.AsyncIterator):
 
         return l
 
+
 class SelectQuery(object):
     """
     Represents a SELECT query, which fetches data from the database.
@@ -175,6 +176,7 @@ class SelectQuery(object):
         row = self.table(**row_expando)  # type: md_schema.TableRow
         # update the existed
         row._TableRow__existed = True
+        row._session = self.session
 
         return row
 
