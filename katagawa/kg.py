@@ -43,6 +43,13 @@ class Katagawa(object):
         #: The current connector instance.
         self.connector = None  # type: BaseConnector
 
+    @property
+    def connected(self):
+        """
+        Checks if this DB is connected. 
+        """
+        return self.connector is not None
+
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
         """
         Connects the interface to the database server.
@@ -78,7 +85,12 @@ class Katagawa(object):
         connector_mod = importlib.import_module(mod_path)
         connector_ins = connector_mod.CONNECTOR_TYPE(parsed_dsn)  # type: BaseConnector
         self.connector = connector_ins
-        await self.connector.connect(**kwargs)
+        try:
+            await self.connector.connect(**kwargs)
+        except Exception:
+            # delete self.connector and re-raise in the event that it fucks up
+            self.connector = None
+            raise
 
         return self.connector
 
