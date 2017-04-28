@@ -8,6 +8,7 @@ import functools
 from katagawa import kg as md_kg
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
+from katagawa.orm.schema import TableRow
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,8 @@ class Session(object):
         del self.transaction
 
     @enforce_open
-    async def execute(self, sql: str, params: typing.Union[typing.Container, typing.Iterable]):
+    async def execute(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
+                                                           typing.Iterable[typing.Any]] = None):
         """
         Executes SQL inside the current session.
         
@@ -172,3 +174,15 @@ class Session(object):
         :param params: The parameters to use inside the query.
         """
         return await self.transaction.cursor(sql, params)
+
+    def add(self, row: TableRow) -> 'Session':
+        """
+        Adds a row to this session, storing it for a later commit.
+        
+        :param row: The :class:`.TableRow` to add to this session.
+        :return: This session.
+        """
+        if row._TableRow__existed is True:
+            self.dirty.append(row)
+        else:
+            self.new.append(row)
