@@ -11,6 +11,31 @@ from dsnparse import ParseResult
 from katagawa.meta import AsyncABC
 
 
+class BaseDialect(abc.ABC):
+    """
+    The base class for a SQL dialect describer.
+    
+    This class signifies what features the SQL dialect can use, and as such can be used to customize
+    query creation for faster results on certain servers, or new features on certain servers, etc.
+    
+    By default, all ``has_`` properties will default to False, so that none of them need be 
+    implemented. Regular methods will raise NotImplementedError, however.
+    """
+    @property
+    def has_checkpoints(self) -> bool:
+        """
+        Returns True if this dialect can use transaction checkpoints. 
+        """
+        return False
+
+    @property
+    def has_serial(self) -> bool:
+        """
+        Returns True if this dialect can use the SERIAL datatype.
+        """
+        return False
+
+
 class BaseResultSet(collections.AsyncIterator, AsyncABC):
     """
     The base class for a result set. This represents the results from a database query, as an async 
