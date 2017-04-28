@@ -84,13 +84,15 @@ class TableRow(object):
             pass
         else:
             # proxy to the table
-            if hasattr(item, "__row_attr__"):
-                return item(self)
+            # but don't proxy column accesses
+            if not isinstance(item, Column):
+                if hasattr(item, "__row_attr__"):
+                    return item(self)
 
-            if inspect.isfunction(item):
-                # bind it to ourselves, and return it
-                return types.MethodType(item, self)
-            return item
+                if inspect.isfunction(item):
+                    # bind it to ourselves, and return it
+                    return types.MethodType(item, self)
+                return item
 
         # failed to load item, so load a column value instead
         col = next(filter(lambda col: col.name == item, self._table.columns), None)
