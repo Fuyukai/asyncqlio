@@ -10,6 +10,7 @@ from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
 from katagawa.orm import schema as md_schema
 from katagawa.orm.operators import BaseOperator
+from katagawa.orm.schema import TableRow
 
 
 class _ResultGenerator(collections.AsyncIterator):
@@ -130,7 +131,7 @@ class SelectQuery(object):
         results = await self.session.cursor(sql, params)
         return results
 
-    async def first(self) -> 'typing.Union[md_schema.TableRow, None]':
+    async def first(self) -> 'TableRow':
         """
         Gets the first result that matches from this query.
         
