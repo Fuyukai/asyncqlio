@@ -2,6 +2,7 @@ import logging
 import sys
 import inspect
 import typing
+from collections import OrderedDict
 
 from katagawa.exc import NoSuchColumnError
 from katagawa.orm.schema.column import Column
@@ -78,7 +79,19 @@ def table_base(name: str = "Table", bases=(object,)):
 
     # metaclass is defined inside a function because we need to add specific-state to it
     class TableMeta(type, metaclass=TableMetaRoot):
+        def __prepare__(*args, **kwargs):
+            return OrderedDict()
+
         def __new__(mcs, n, b, c, register: bool = True):
+            # hijack columns
+            columns = {}
+            for col_name, value in c.copy().items():
+                if isinstance(value, Column):
+                    columns[col_name] = value
+                    # nuke the column
+                    c.pop(col_name)
+
+            c["_columns"] = columns
             return type.__new__(mcs, n, b, c)
 
         def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True):
@@ -88,11 +101,13 @@ def table_base(name: str = "Table", bases=(object,)):
             # table metaclassery shit
             # calculate the new bases
             new_bases = tuple(list(tblbases) + list(bases))
+
+            # create the new type object
             super().__init__(tblname, new_bases, class_body)
 
             if not PY36:
                 # emulate __set_name__ for descriptors on python 3.5
-                for name, value in class_body.items():
+                for name, value in zip(class_body.items(), self._columns.items()):
                     if hasattr(value, "__set_name__"):
                         value.__set_name__(self, name)
 
@@ -111,12 +126,15 @@ def table_base(name: str = "Table", bases=(object,)):
                 #: The name of this table.
                 self.__tablename__ = tblname.lower()
 
+            #: The :class:`.Katagawa` this table is bound to.
+            self.__bind = None
+
+            #: A dict of columns for this table.
+            self._columns = self._columns
+
             #: The primary key for this table.
             #: This should be a :class:`.PrimaryKey`.
             self._primary_key = self._calculate_primary_key()
-
-            #: The :class:`.Katagawa` this table is bound to.
-            self.__bind = None
 
         def __call__(self, *args, **kwargs):
             return self._get_table_row(**kwargs)
@@ -136,7 +154,7 @@ def table_base(name: str = "Table", bases=(object,)):
             """
             :return: A generator that yields :class:`.Column` objects for this table. 
             """
-            for name, col in inspect.getmembers(self, predicate=lambda x: isinstance(x, Column)):
+            for col in self._columns.values():
                 yield col
 
         def _calculate_primary_key(self) -> typing.Union[PrimaryKey, None]:
