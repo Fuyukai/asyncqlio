@@ -57,12 +57,6 @@ class TableRow(object):
         obb = self._resolve_item(item)
         return obb
 
-        col = next(filter(lambda col: col.name == item, self._table.columns), None)
-        if col is None:
-            raise NoSuchColumnError(item)
-
-        return self._values[col]
-
     def _setattr__(self, key, value):
         col = next(filter(lambda col: col.name == key, self._table.columns), None)
         if col is None:
