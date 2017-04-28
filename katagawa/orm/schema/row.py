@@ -8,6 +8,8 @@ from katagawa.orm.schema import Column
 from katagawa.orm.schema import table as md_table
 from katagawa.orm import session as md_session
 
+NO_VALUE = object()
+
 
 class TableRow(object):
     """
@@ -47,7 +49,7 @@ class TableRow(object):
         self._values = {}
 
     def __repr__(self):
-        gen = ("{}={}".format(col.name, self._get_column_value(col)) for col in self._table.columns)
+        gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self._table.columns)
         return "<{} {}>".format(self._table.__name__, " ".join(gen))
 
     def __getattr__(self, item: str):
@@ -103,11 +105,14 @@ class TableRow(object):
             raise AttributeError("{} was not a function or attribute on the associated table, "
                                  "and was not a column".format(name))
 
-        return self._get_column_value(col)
+        return self.get_column_value(col)
 
-    def _get_column_value(self, column: 'Column'):
+    def get_column_value(self, column: 'Column', return_default: bool=True):
         """
         Gets the value from the specified column in this row.
+        
+        :param column: The column.
+        :param return_default: If this should return the column default, or NO_VALUE.
         """
         if column.table != self._table:
             raise ValueError("Column table must match row table")
@@ -136,7 +141,7 @@ class TableRow(object):
         :param include_attrs: Should this include row_attrs?
         """
         # todo: include row attrs
-        d = {col: self._get_column_value(col) for col in self._table.columns}
+        d = {col: self.get_column_value(col) for col in self._table.columns}
         return d
 
     @property
@@ -151,7 +156,7 @@ class TableRow(object):
         result = []
 
         for col in pk.columns:
-            val = self._get_column_value(col)
+            val = self.get_column_value(col)
             result.append(val)
 
         if len(result) == 1:

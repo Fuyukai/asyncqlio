@@ -143,6 +143,15 @@ class Column(object):
     @cached_property
     def quoted_name(self) -> str:
         """
+        Gets the quoted name for this column.
+         
+        This returns the column name in "column" format.
+        """
+        return r'"{}"'.format(self.name)
+
+    @cached_property
+    def quoted_fullname(self) -> str:
+        """
         Gets the full quoted name for this column.
          
         This returns the column name in "table"."column" format.

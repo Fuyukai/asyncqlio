@@ -5,10 +5,13 @@ import enum
 
 import functools
 
+import itertools
+
 from katagawa import kg as md_kg
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
 from katagawa.orm.schema import TableRow
+from katagawa.orm.schema.row import NO_VALUE
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +98,54 @@ class Session(object):
         q = md_query.SelectQuery(self)
         q.set_table(table)
         return q
+
+    def _generate_inserts(self) -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
+        """
+        Generates INSERT INTO queries for the current session.
+        """
+        queries = []
+        counter = itertools.count()
+
+        # group the rows
+        for tbl, row in itertools.groupby(self.new, lambda row: row._table):
+            rows = list(row)
+            # insert into the quoted table
+            base_query = "INSERT INTO {} ".format(tbl.__quoted_name__)
+            # add the columns (quoted names)
+            base_query += "({})".format(", ".join(column.quoted_name
+                                                  for column in tbl.iter_columns()))
+            # get the values
+            base_query += " VALUES "
+
+            # build the params dict and VALUES section
+            # this is done by looping over the rows
+            # looping over the columns of the row's table
+            # checking for the new value, then emitting it
+            # if no value is available, it will emit DEFAULT
+            params = {}
+            for row in rows:
+                prms_so_far = []
+                assert isinstance(row, TableRow)
+                for column in tbl.iter_columns():
+                    value = row.get_column_value(column, return_default=False)
+                    if value is NO_VALUE:
+                        prms_so_far.append("DEFAULT")
+                    else:
+                        # emit a new param
+                        number = next(counter)
+                        name = "param_{}".format(number)
+                        param_name = self.bind.emit_param(name)
+                        # set the params to value
+                        # then add the {param_name} to the VALUES
+                        params[name] = value
+                        prms_so_far.append(param_name)
+
+                # join the params together
+                base_query += "({}), ".format(", ".join(prms_so_far))
+
+            queries.append((base_query, params))
+
+        return queries
 
     async def start(self) -> 'Session':
         """
@@ -186,3 +237,7 @@ class Session(object):
             self.dirty.append(row)
         else:
             self.new.append(row)
+
+        return self
+
+    insert = add

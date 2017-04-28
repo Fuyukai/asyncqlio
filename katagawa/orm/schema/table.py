@@ -85,7 +85,7 @@ def table_base(name: str = "Table", bases=(object,)):
 
         def __new__(mcs, n, b, c, register: bool = True):
             # hijack columns
-            columns = {}
+            columns = OrderedDict()
             for col_name, value in c.copy().items():
                 if isinstance(value, Column):
                     columns[col_name] = value
@@ -213,7 +213,7 @@ def table_base(name: str = "Table", bases=(object,)):
             row = md_row.TableRow(tbl=self)
 
             # lol
-            if self.__init__ != TableMeta.__init__:
+            if self.__init__ != TableMeta.__init__ and self.__init__ != object.__init__:
                 self.__init__(row, **kwargs)
             else:
                 for name, val in kwargs.items():

@@ -179,7 +179,7 @@ class SelectQuery(object):
         except TypeError:
             # probably the unexpected argument error
             raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"
-                            "all columns to be passed as values?") from None
+                            "all columns to be passed as values?")
         # update the existed
         row._TableRow__existed = True
         row._session = self.session
