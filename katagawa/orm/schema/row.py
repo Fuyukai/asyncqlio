@@ -1,5 +1,6 @@
 import typing
 
+from katagawa.exc import NoSuchColumnError
 from katagawa.orm.schema import Column
 
 

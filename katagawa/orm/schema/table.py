@@ -139,7 +139,7 @@ def table_base(name: str = "Table", bases=(object,)):
             for name, col in inspect.getmembers(self, predicate=lambda x: isinstance(x, Column)):
                 yield col
 
-        def _calculate_primary_key(self) -> PrimaryKey:
+        def _calculate_primary_key(self) -> typing.Union[PrimaryKey, None]:
             """
             Calculates the current primary key for a table, given all the columns.
             
@@ -175,7 +175,7 @@ def table_base(name: str = "Table", bases=(object,)):
             key.table = self
             self._primary_key = key
 
-        def _get_table_row(self, **kwargs) -> 'TableRow':
+        def _get_table_row(self, **kwargs) -> 'md_row.TableRow':
             """
             Gets a :class:`.TableRow` that represents this table.
             """
