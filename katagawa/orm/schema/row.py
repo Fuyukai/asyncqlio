@@ -46,9 +46,6 @@ class TableRow(object):
         #: A mapping of Column -> Current value for this row.
         self._values = {}
 
-        # BECAUSE PYTHON
-        self.__setattr__ = self._setattr__
-
     def __repr__(self):
         gen = ("{}={}".format(col.name, self._get_column_value(col)) for col in self._table.columns)
         return "<{} {}>".format(self._table.__name__, " ".join(gen))
@@ -57,7 +54,13 @@ class TableRow(object):
         obb = self._resolve_item(item)
         return obb
 
-    def _setattr__(self, key, value):
+    def __setattr__(self, key, value):
+        # ensure we're not doing stupid shit until we get _values
+        try:
+            object.__getattribute__(self, "_values")
+        except AttributeError:
+            return super().__setattr__(key, value)
+
         col = next(filter(lambda col: col.name == key, self._table.columns), None)
         if col is None:
             return super().__setattr__(key, value)
@@ -95,10 +98,10 @@ class TableRow(object):
                 return item
 
         # failed to load item, so load a column value instead
-        col = next(filter(lambda col: col.name == item, self._table.columns), None)
+        col = next(filter(lambda col: col.name == name, self._table.columns), None)
         if col is None:
-            raise AttributeError(name, "was not a function or attribute on the associated table, "
-                                       "and was not a column")
+            raise AttributeError("{} was not a function or attribute on the associated table, "
+                                 "and was not a column".format(name))
 
         return self._get_column_value(col)
 

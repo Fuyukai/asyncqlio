@@ -212,11 +212,15 @@ def table_base(name: str = "Table", bases=(object,)):
             col_map = {col.name: col for col in self.columns}
             row = md_row.TableRow(tbl=self)
 
-            for name, val in kwargs.items():
-                if name not in col_map:
-                    raise NoSuchColumnError(name)
+            # lol
+            if self.__init__ != TableMeta.__init__:
+                self.__init__(row, **kwargs)
+            else:
+                for name, val in kwargs.items():
+                    if name not in col_map:
+                        raise NoSuchColumnError(name)
 
-                row.update_column(col_map[name], val)
+                    row.update_column(col_map[name], val)
 
             return row
 

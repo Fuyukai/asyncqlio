@@ -174,7 +174,12 @@ class SelectQuery(object):
                 row_expando[column.name] = results[colname]
 
         # create a new TableRow
-        row = self.table(**row_expando)  # type: md_schema.TableRow
+        try:
+            row = self.table(**row_expando)  # type: md_schema.TableRow
+        except TypeError:
+            # probably the unexpected argument error
+            raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"
+                            "all columns to be passed as values?") from None
         # update the existed
         row._TableRow__existed = True
         row._session = self.session
