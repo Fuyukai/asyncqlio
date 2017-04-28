@@ -130,6 +130,16 @@ class TableRow(object):
 
         return self
 
+    def to_dict(self, *, include_attrs: bool = False) -> dict:
+        """
+        Converts this row to a dict, indexed by Column.
+         
+        :param include_attrs: Should this include row_attrs?
+        """
+        # todo: include row attrs
+        d = {col: self._get_column_value(col) for col in self._table.columns}
+        return d
+
     @property
     def primary_key(self) -> typing.Union[typing.Any, typing.Iterable[typing.Any]]:
         """
