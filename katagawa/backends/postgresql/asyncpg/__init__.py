@@ -3,7 +3,9 @@ The :ref:`asyncpg` connector for PostgreSQL databases.
 """
 import typing
 import logging
+import warnings
 
+import asyncio
 import asyncpg
 from asyncpg import Record
 from asyncpg.cursor import Cursor
@@ -147,8 +149,16 @@ class AsyncpgConnector(BaseConnector):
     def __init__(self, parsed: ParseResult):
         super().__init__(parsed)
 
+        self.loop = asyncio.get_event_loop()
+
         #: The :class:`asyncpg.pool.Pool` connection pool.
         self.pool = None  # type: asyncpg.pool.Pool
+
+    def __del__(self):
+        if not self.pool._closed:
+            warnings.warn("Unclosed asyncpg pool {}".format(self.pool))
+
+        self.loop.create_task(self.close())
 
     async def close(self):
         await self.pool.close()
