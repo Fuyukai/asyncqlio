@@ -123,6 +123,7 @@ class Session(object):
             # checking for the new value, then emitting it
             # if no value is available, it will emit DEFAULT
             params = {}
+            value_sets = []
             for row in rows:
                 prms_so_far = []
                 assert isinstance(row, TableRow)
@@ -141,8 +142,11 @@ class Session(object):
                         prms_so_far.append(param_name)
 
                 # join the params together
-                base_query += "({}), ".format(", ".join(prms_so_far))
+                value_sets.append("({})".format(", ".join(prms_so_far)))
 
+            # join all of the value sets together
+            base_query += ", ".join(value_sets)
+            base_query += ";"
             queries.append((base_query, params))
 
         return queries
@@ -175,7 +179,12 @@ class Session(object):
          
         This will **not** close the session; it can be re-used after a commit.
         """
-        # TODO: Write INSERT, UPDATE and DELETE statements here
+        # TODO: Update generation
+        # TODO: Checkpoints
+        inserts = self._generate_inserts()
+        for query, params in inserts:
+            await self.transaction.execute(query, params=params)
+
         await self.transaction.commit()
         return self
 
