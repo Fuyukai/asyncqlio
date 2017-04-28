@@ -1,7 +1,12 @@
+import inspect
 import typing
+
+import types
 
 from katagawa.exc import NoSuchColumnError
 from katagawa.orm.schema import Column
+from katagawa.orm.schema import table as md_table
+from katagawa.orm import session as md_session
 
 
 class TableRow(object):
@@ -48,7 +53,10 @@ class TableRow(object):
         gen = ("{}={}".format(col.name, self._get_column_value(col)) for col in self._table.columns)
         return "<{} {}>".format(self._table.__name__, " ".join(gen))
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str):
+        obb = self._resolve_item(item)
+        return obb
+
         col = next(filter(lambda col: col.name == item, self._table.columns), None)
         if col is None:
             raise NoSuchColumnError(item)
@@ -61,6 +69,42 @@ class TableRow(object):
             return super().__setattr__(key, value)
 
         return self.update_column(col, value)
+
+    def _resolve_item(self, name: str):
+        """
+        Resolves an item on this TableRow.
+        
+        This will check:
+        
+            - Functions decorated with :func:`.row_attr`
+            - Non-column :class:`.Table` members
+            - Columns
+        
+        :param name: The name to resolve. 
+        :return: The object returned, if applicable.
+        """
+        # try and getattr the name from the Table object
+        try:
+            item = getattr(self._table, name)
+        except AttributeError:
+            pass
+        else:
+            # proxy to the table
+            if hasattr(item, "__row_attr__"):
+                return item(self)
+
+            if inspect.isfunction(item):
+                # bind it to ourselves, and return it
+                return types.MethodType(item, self)
+            return item
+
+        # failed to load item, so load a column value instead
+        col = next(filter(lambda col: col.name == item, self._table.columns), None)
+        if col is None:
+            raise AttributeError(name, "was not a function or attribute on the associated table, "
+                                       "and was not a column")
+
+        return self._get_column_value(col)
 
     def _get_column_value(self, column: 'Column'):
         """
@@ -94,7 +138,7 @@ class TableRow(object):
         If this table only has one primary key column, this property will be a single value.  
         If this table has multiple columns in a primary key, this property will be a tuple. 
         """
-        pk = self._table.primary_key  # type: PrimaryKey
+        pk = self._table.primary_key  # type: md_table.PrimaryKey
         result = []
 
         for col in pk.columns:
