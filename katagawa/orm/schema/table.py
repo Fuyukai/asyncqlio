@@ -1,6 +1,7 @@
 import logging
 import sys
 import inspect
+import itertools
 import typing
 from collections import OrderedDict
 
@@ -105,11 +106,16 @@ def table_base(name: str = "Table", bases=(object,)):
             # create the new type object
             super().__init__(tblname, new_bases, class_body)
 
+            # emulate `__set_name__` on Python 3.5
+            # also, set names on columns unconditionally
             if not PY36:
-                # emulate __set_name__ for descriptors on python 3.5
-                for name, value in zip(class_body.items(), self._columns.items()):
-                    if hasattr(value, "__set_name__"):
-                        value.__set_name__(self, name)
+                it = itertools.chain(class_body.items(), self._columns.items())
+            else:
+                it = self._columns.items()
+
+            for name, value in it:
+                if hasattr(value, "__set_name__"):
+                    value.__set_name__(self, name)
 
             if register is False:
                 return
@@ -138,6 +144,12 @@ def table_base(name: str = "Table", bases=(object,)):
 
         def __call__(self, *args, **kwargs):
             return self._get_table_row(**kwargs)
+
+        def __getattr__(self, item):
+            try:
+                return next(filter(lambda col: col.name == item, self.columns))
+            except StopIteration:
+                raise AttributeError(item) from None
 
         @property
         def __quoted_name__(self):
