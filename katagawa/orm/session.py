@@ -107,8 +107,8 @@ class Session(object):
         counter = itertools.count()
 
         # group the rows
-        for tbl, row in itertools.groupby(self.new, lambda row: row._table):
-            rows = list(row)
+        for tbl, rows in itertools.groupby(self.new, lambda r: r._table):
+            rows = list(rows)
             # insert into the quoted table
             base_query = "INSERT INTO {} ".format(tbl.__quoted_name__)
             # add the columns (quoted names)
