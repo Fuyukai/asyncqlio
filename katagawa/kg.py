@@ -8,6 +8,7 @@ import dsnparse
 
 from katagawa.backends.base import BaseConnector, BaseTransaction
 from katagawa.orm import session as md_session
+from katagawa.orm.schema import table as md_table
 
 # sentinels
 NO_CONNECTOR = object()
@@ -23,13 +24,12 @@ class Katagawa(object):
     Creating a new database object is simple:
     
     .. code-block:: python
+    
         # pass the DSN in the constructor
         dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/joku"
         my_database = Katagawa(dsn)
         # or provide it in the `.connect()` call
         await my_database.connect(dsn)
-        
-    
     """
 
     def __init__(self, dsn: str = None):
@@ -49,6 +49,13 @@ class Katagawa(object):
         Checks if this DB is connected. 
         """
         return self.connector is not None
+
+    def bind_tables(self, md: 'md_table.TableMetadata'):
+        """
+        Binds tables to this DB instance. 
+        """
+        md.bind = self
+        return md
 
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
         """
