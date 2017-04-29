@@ -147,7 +147,7 @@ class Session(object):
             # join all of the value sets together
             base_query += ", ".join(value_sets)
             base_query += ";"
-            queries.append((base_query, params))
+            queries.append((base_query, params, rows))
 
         return queries
 
@@ -182,8 +182,10 @@ class Session(object):
         # TODO: Update generation
         # TODO: Checkpoints
         inserts = self._generate_inserts()
-        for query, params in inserts:
+        for query, params, rows in inserts:
             await self.transaction.execute(query, params=params)
+            for row in rows:
+                self.new.remove(row)
 
         await self.transaction.commit()
         return self
