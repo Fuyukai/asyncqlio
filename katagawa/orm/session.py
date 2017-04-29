@@ -183,7 +183,7 @@ class Session(object):
         # TODO: Checkpoints
         inserts = self._generate_inserts()
         for query, params, rows in inserts:
-            await self.transaction.execute(query, params=params)
+            await self.execute(query, params=params)
             for row in rows:
                 self.new.remove(row)
 
@@ -224,7 +224,7 @@ class Session(object):
         :param sql: The SQL to execute.
         :param params: The parameters to use inside the query.
         """
-        # TODO
+        return await self.transaction.execute(sql, params)
 
     @enforce_open
     async def cursor(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
