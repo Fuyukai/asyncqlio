@@ -1,34 +1,144 @@
 import abc
 import typing
 
+from katagawa.exc import DatabaseException
+from katagawa.orm.schema import row as md_row
+from katagawa.orm.schema import column as md_column
+
+
+class ColumnValidationError(DatabaseException):
+    """
+    Raised when a column fails validation.
+    """
+
 
 class ColumnType(abc.ABC):
     """
-    Represents the type of a column.
+    Implements some underlying mechanisms for a :class:`.Column`.
+    
+    The only method that is required to be implemented on children is :meth:`.ColumnType.sql` - 
+    which is used in CREATE TABLE declarations, etc. :meth:`.ColumnType.on_set`, 
+    :meth:`.ColumnType.on_get` and so on are not required to be implemented - the defaults will
+    work fine.
+    
+    The ColumnType is responsible for actually loading the data from the row's internal storage
+    and to the user code.
+    
+    .. code-block:: python
+    
+        # we hate fun
+        def on_get(self, row, column):
+            return "lol"
+        
+        ...
+        
+        # row is a random row object
+        # load the `fun` column which has this weird type
+        value = row.fun
+        print(value)  # "lol", regardless of what was stored in the database.
+    
+    Accordingly, it is also responsible for storing the data into the row's internal storage.
+    
+    .. code-block:: python
+        
+        def on_set(*args, **kwargs):
+            return None
+            
+        row.not_fun = 1
+        print(row.not_fun)  # None - no value was stored in the row
+        
+    To actually insert a value into the row's storage table, use :meth:`.ColumnType.store_value`.
+    Correspondingly, loading a value from the row's storage table can be achieved with 
+    :meth:`.ColumnType.load_value`. These functions should be used, as they are guarenteed to work
+    across all versions.
+    
+    Columns will proxy bad attribute accesses from the Column object to this type object - meaning
+    types can implement custom operators, if applicable.  
+    
+    .. code-block:: python
+    
+        class User(Table):
+            id = Column(MyWeirdType())
+            
+        ...
+        
+        # MyWeirdType implements `.contains`
+        # the contains call is proxied to (MyWeirdType instance).contains("heck") 
+        q = await sess.select(User).where(User.id.contains("heck")).first()
+
     """
+
     @abc.abstractmethod
     def sql(self) -> str:
         """
         :return: The str SQL name of this type. 
         """
 
-    @abc.abstractmethod
-    def cast(self, value: typing.Any) -> str:
+    def validate_set(self, row: 'md_row.TableRow', column: 'md_column.Column',
+                     value: typing.Any) -> bool:
         """
-        Casts a Python value to a SQL value in a string.
+        Validates that the item being set is valid.
+        This is called by the default ``on_set``.
         
-        :param value: The value to cast. 
-        :return: A string representing the value. 
+        :param row: The row being set.
+        :param column: The column associated with this type.
+        :param value: The value to set. 
+        :return: A bool indicating if this is valid or not.
         """
+        return True
 
-    @abc.abstractmethod
-    def reverse_cast(self, sql: str) -> typing.Any:
+    def store_value(self, row: 'md_row.TableRow', column: typing.Union['md_column.Column', str],
+                    value: typing.Any):
         """
-        Casts the SQL value to a Python value.
+        Stores a value in the row's storage table.
         
-        :param sql: The SQL value. 
-        :return: The Python value created.
+        This is for internal usage only.
+        
+        :param row: The row to store in.
+        :param column: Either a column, or the name of a column, to use as a key.
+        :param value: The value to store in the row.
         """
+        if isinstance(column, str):
+            column = next(filter(lambda column: column.name == column, row._table.iter_columns()))
+
+        row.store_column_value(column, value)
+
+    def on_set(self, row: 'md_row.TableRow', column: 'md_column.Column',
+               value: typing.Any) -> typing.Any:
+        """
+        Called when a value is a set on this column.
+        
+        This is the default method - it will call :meth:`.ColumnType.validate_set` to validate the
+        type before storing it. This is useful for simple column types.
+        
+        :param row: The row this value is being set on.
+        :param column: The column this type is associated with.
+        :param value: The value being set.
+        """
+        valid = self.validate_set(row, column, value)
+        if not valid:
+            raise ColumnValidationError("Value {} failed to validate in type {}"
+                                        .format(value, type(self).__name__))
+
+        self.store_value(row, column, value)
+
+    def on_get(self, row: 'md_row.TableRow', column: 'md_column.Column') -> typing.Any:
+        """
+        Called when a value is retrieved from this column.
+        
+        :param row: The row that is being retrieved.
+        :param column: The column that is being loaded.
+        :return: The value of the row's internal storage.
+        """
+        return row.get_column_value(column)
+
+    @classmethod
+    def create_default(cls):
+        """
+        Creates the default object for this table in the event that a type is passed to a column,
+        instead of an instance.
+        """
+        return cls()
 
 
 class String(ColumnType):
@@ -48,16 +158,21 @@ class String(ColumnType):
         else:
             return "VARCHAR(MAX)"
 
-    def cast(self, value: typing.Any) -> str:
-        return str(value)
+    def validate_set(self, row, column, value: typing.Any):
+        if self.size < 0:
+            return True
 
-    def reverse_cast(self, sql: str) -> str:
-        return sql
+        if value > self.size:
+            raise ColumnValidationError("Value {} is more than {} chars long".format(value,
+                                                                                     self.size))
+
+        return True
 
 
-class Text(ColumnType):
+class Text(String):
     """
-    Represents a TEXT type.
+    Represents a TEXT type.  
+    TEXT type columns are very similar to String type objects, except that they have no size limit.
     
     .. note::
         This is preferable to the String type in some databases.
@@ -66,14 +181,12 @@ class Text(ColumnType):
         This is deprecated in MSSQL.
     """
 
+    def __init__(self):
+        # unlimited size
+        super().__init__(size=-1)
+
     def sql(self):
         return "TEXT"
-
-    def cast(self, value: typing.Any):
-        return str(value)
-
-    def reverse_cast(self, sql: str):
-        return sql
 
 
 class Integer(ColumnType):
@@ -83,42 +196,42 @@ class Integer(ColumnType):
     .. warning::
         This represents a 32-bit integer (2**31-1 to -2**32)
     """
+
     def sql(self):
         return "INTEGER"
 
-    def check_cap(self, value: int) -> bool:
+    def validate_set(self, row, column, value: typing.Any):
         """
         Checks if this int is in range for the type.
         """
         return -2147483648 < value < 2147483647
 
-    def cast(self, value: typing.Any) -> str:
-        if not self.check_cap(value):
-            raise ValueError("Value `{}` out of range for type `{.__class__.__name__}`")
+    def on_set(self, row, column: 'md_column.Column', value: typing.Any):
+        if not isinstance(value, int):
+            raise ColumnValidationError("Value {} is not an int".format(value))
 
-        return str(value)
-
-    def reverse_cast(self, sql: str):
-        return int(sql)
+        return super().on_set(row, column, value)
 
 
 class SmallInt(Integer):
     """
     Represents a SMALLINT type.
     """
+
     def sql(self):
         return "SMALLINT"
 
-    def check_cap(self, value: int):
-        return -32767 < value < 32767
+    def validate_set(self, row, column, value: typing.Any):
+        return -32768 < value < 32767
 
 
 class BigInt(Integer):
     """
     Represents a BIGINT type.
     """
+
     def sql(self):
         return "BIGINT"
 
-    def check_cap(self, value: int):
+    def validate_set(self, row, column, value):
         return -9223372036854775808 < value < 9223372036854775807

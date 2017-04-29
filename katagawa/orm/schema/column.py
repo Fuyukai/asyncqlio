@@ -5,7 +5,7 @@ import typing
 from cached_property import cached_property
 
 from katagawa.orm import operators as md_operators
-from katagawa.orm.schema.types import ColumnType
+from katagawa.orm.schema import types as md_types
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
@@ -30,7 +30,8 @@ class Column(object):
 
     """
 
-    def __init__(self, type_: typing.Union[ColumnType, typing.Type[ColumnType]], *,
+    def __init__(self, type_: 'typing.Union[md_types.ColumnType, typing.Type[md_types.ColumnType]]',
+                 *,
                  primary_key: bool = False,
                  nullable: bool = True,
                  default: typing.Any = None,
@@ -70,6 +71,10 @@ class Column(object):
         #: The :class:`.ColumnType` that represents the type of this column.
         self.type = type_
 
+        if not isinstance(self.type, md_types.ColumnType):
+            # assume we need to create the "default" type
+            self.type = self.type.create_default()
+
         #: The default for this column.
         self.default = default
 
@@ -87,6 +92,9 @@ class Column(object):
 
         #: If this Column is unique.
         self.unique = unique
+
+    def __repr__(self):
+        return "<Column name={} type={}>".format(self.name, self.type.sql())
 
     def __hash__(self):
         return super().__hash__()

@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 from katagawa.exc import NoSuchColumnError
 from katagawa import kg as md_kg
-from katagawa.orm.schema.column import Column
+from katagawa.orm.schema import column as md_column
 from katagawa.orm.schema import row as md_row
 
 PY36 = sys.version_info[0:2] >= (3, 6)
@@ -52,7 +52,7 @@ class TableMeta(type):
         # hijack columns
         columns = OrderedDict()
         for col_name, value in c.copy().items():
-            if isinstance(value, Column):
+            if isinstance(value, md_column.Column):
                 columns[col_name] = value
                 # nuke the column
                 c.pop(col_name)
@@ -118,13 +118,13 @@ class TableMeta(type):
         return '"{}"'.format(self.__tablename__)
 
     @property
-    def columns(self) -> 'typing.List[Column]':
+    def columns(self) -> 'typing.List[md_column.Column]':
         """
         :return: A list of :class:`.Column` this Table has. 
         """
         return list(self.iter_columns())
 
-    def iter_columns(self) -> typing.Generator['Column', None, None]:
+    def iter_columns(self) -> 'typing.Generator[md_column.Column, None, None]':
         """
         :return: A generator that yields :class:`.Column` objects for this table. 
         """
@@ -182,7 +182,7 @@ class TableMeta(type):
                 if name not in col_map:
                     raise NoSuchColumnError(name)
 
-                row.update_column(col_map[name], val)
+                col_map[name].type.on_set(row, col_map[name], val)
 
         return row
 
@@ -262,9 +262,9 @@ class PrimaryKey(object):
         print(Something.primary_key)
     """
 
-    def __init__(self, *cols: 'Column'):
+    def __init__(self, *cols: 'md_column.Column'):
         #: A list of :class:`.Column` that this primary key encompasses.
-        self.columns = list(cols)  # type: typing.List[Column]
+        self.columns = list(cols)  # type: typing.List[md_column.Column]
 
         #: The table this primary key is bound to.
         self.table = None

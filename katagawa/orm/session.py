@@ -127,6 +127,7 @@ class Session(object):
             for row in rows:
                 prms_so_far = []
                 assert isinstance(row, TableRow)
+                #row._validate()
                 for column in tbl.iter_columns():
                     value = row.get_column_value(column, return_default=False)
                     if value is NO_VALUE:

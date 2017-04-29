@@ -4,7 +4,7 @@ import typing
 import types
 
 from katagawa.exc import NoSuchColumnError
-from katagawa.orm.schema import Column
+from katagawa.orm.schema import column as md_column
 from katagawa.orm.schema import table as md_table
 from katagawa.orm import session as md_session
 
@@ -27,7 +27,7 @@ class TableRow(object):
         user = User(id=1)  # user is actually a TableRow bound to the User table
     """
 
-    def __init__(self, tbl):
+    def __init__(self, tbl: 'md_table.TableMeta'):
         """
         :param tbl: The table object to bind this row to.
         """
@@ -67,7 +67,8 @@ class TableRow(object):
         if col is None:
             return super().__setattr__(key, value)
 
-        return self.update_column(col, value)
+        # call on_set for the column
+        return col.type.on_set(self, col, value)
 
     def _resolve_item(self, name: str):
         """
@@ -90,7 +91,7 @@ class TableRow(object):
         else:
             # proxy to the table
             # but don't proxy column accesses
-            if not isinstance(item, Column):
+            if not isinstance(item, md_column.Column):
                 if hasattr(item, "__row_attr__"):
                     return item(self)
 
@@ -105,9 +106,9 @@ class TableRow(object):
             raise AttributeError("{} was not a function or attribute on the associated table, "
                                  "and was not a column".format(name))
 
-        return self.get_column_value(col)
+        return col.type.on_get(self, col)
 
-    def get_column_value(self, column: 'Column', return_default: bool=True):
+    def get_column_value(self, column: 'md_column.Column', return_default: bool=True):
         """
         Gets the value from the specified column in this row.
         
@@ -122,9 +123,11 @@ class TableRow(object):
         except KeyError:
             return column.default
 
-    def update_column(self, column: 'Column', value: typing.Any):
+    def store_column_value(self, column: 'md_column.Column', value: typing.Any):
         """
         Updates the value of a column in this row.
+        
+        This will also update the history of the value, if applicable.
         """
         if column not in self._previous_values:
             if column in self._values:
