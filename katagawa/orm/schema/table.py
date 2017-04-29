@@ -38,7 +38,7 @@ class TableMetadata(object):
         
         :param tbl: The table to register. 
         """
-        tbl._metadata = tbl
+        tbl._metadata = self
         self.tables[tbl.__tablename__] = tbl
 
         return tbl
@@ -233,7 +233,6 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
 
     class Table(metaclass=TableMeta, register=False):
         _metadata = meta
-        pass
 
     Table.__name__ = name
     return Table
