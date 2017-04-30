@@ -1,6 +1,10 @@
-from distutils.core import setup
+import sys
 
+from distutils.core import setup
 from setuptools import find_packages
+
+if sys.version_info[0:2] < (3, 5):
+    raise RuntimeError("This package requires Python 3.5+.")
 
 setup(
     name='katagawa',
