@@ -12,6 +12,7 @@ from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
 from katagawa.backends.base import BaseConnector, BaseTransaction, BaseResultSet
+from katagawa.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,12 @@ class AsyncpgTransaction(BaseTransaction):
         # re-paramatarize the query
         logger.debug("Executing query {} with params {}".format(sql, params))
         query, params = get_param_query(sql, params)
-        results = await self.acquired_connection.execute(query, *params)
+
+        try:
+            results = await self.acquired_connection.execute(query, *params)
+        except asyncpg.IntegrityConstraintViolationError as e:
+            raise IntegrityError(*e.args) from e
+
         return results
 
     async def cursor(self, sql: str, params: typing.Mapping[str, typing.Any] = None) \

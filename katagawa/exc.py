@@ -11,7 +11,13 @@ class DatabaseException(Exception):
     """
 
 
-class NoSuchColumnError(Exception):
+class IntegrityError(DatabaseException):
+    """
+    Raised when a column's integrity is not preserved (e.g. null or unique violations).
+    """
+
+
+class NoSuchColumnError(DatabaseException):
     """
     Raised when a non-existing column is requested.
     """
