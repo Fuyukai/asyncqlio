@@ -82,6 +82,10 @@ class Session(object):
                 await self.commit()
             else:
                 await self.rollback()
+        except Exception:
+            # error in committing, etc
+            await self.rollback()
+            raise
         finally:
             await self.close()
 
