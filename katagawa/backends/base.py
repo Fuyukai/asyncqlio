@@ -206,13 +206,14 @@ class BaseConnector(AsyncABC):
 
     def __init__(self, dsn: ParseResult):
         """
-        :param dsn: The :class:`dsnparse.ParseResult` created from parsing a DSN. 
+        :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN. 
         """
         self.dsn = dsn.geturl()
         self.host = dsn.hostname
         self.port = dsn.port
         self.username = dsn.username
         self.password = dsn.password
+        self.db = dsn.query
 
     @abstractmethod
     async def connect(self) -> 'BaseConnector':
