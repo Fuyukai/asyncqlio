@@ -10,5 +10,8 @@ setup(
     license='MIT',
     author='Laura Dickinson',
     author_email='l@veriny.tf',
-    description='An asyncio ORM for Python 3.5'
+    description='An asyncio ORM for Python 3.5',
+    install_requires=[
+        "cached_property==1.3.0"
+    ]
 )
