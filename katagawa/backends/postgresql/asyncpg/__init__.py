@@ -10,7 +10,6 @@ import asyncpg
 from asyncpg import Record
 from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
-from dsnparse import ParseResult
 
 from katagawa.backends.base import BaseConnector, BaseTransaction, BaseResultSet
 
@@ -146,7 +145,7 @@ class AsyncpgConnector(BaseConnector):
     A connector that uses the `asyncpg <https://github.com/MagicStack/asyncpg>`_ library.
     """
 
-    def __init__(self, parsed: ParseResult):
+    def __init__(self, parsed):
         super().__init__(parsed)
 
         self.loop = asyncio.get_event_loop()

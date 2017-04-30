@@ -3,8 +3,7 @@ The main Katagawa object. This is the "database interface" to the actual DB serv
 """
 import importlib
 import logging
-
-import dsnparse
+from urllib.parse import urlparse, ParseResult
 
 from katagawa.backends.base import BaseConnector, BaseTransaction
 from katagawa.orm import session as md_session
@@ -70,13 +69,14 @@ class Katagawa(object):
         if dsn is not None:
             self._dsn = dsn
 
-        parsed_dsn = dsnparse.parse(self._dsn)
+        parsed_dsn = urlparse(self._dsn)  # type: ParseResult
         # db type must always exist
         # the connector doesn't have to exist, however
         # if so we use a sentinel value
-        db_type = parsed_dsn.schemes[0]
+        schemes = parsed_dsn.scheme.split("+")
+        db_type = schemes[0]
         try:
-            db_connector = parsed_dsn.schemes[1]
+            db_connector = schemes[1]
         except IndexError:
             db_connector = NO_CONNECTOR
 

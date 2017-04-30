@@ -6,7 +6,7 @@ import typing
 from abc import abstractmethod
 
 import collections
-from dsnparse import ParseResult
+from urllib.parse import ParseResult
 
 from katagawa.meta import AsyncABC
 
@@ -209,7 +209,7 @@ class BaseConnector(AsyncABC):
         :param dsn: The :class:`dsnparse.ParseResult` created from parsing a DSN. 
         """
         self.dsn = dsn.geturl()
-        self.host = dsn.host
+        self.host = dsn.hostname
         self.port = dsn.port
         self.username = dsn.username
         self.password = dsn.password
