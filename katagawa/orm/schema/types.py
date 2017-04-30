@@ -113,10 +113,11 @@ class ColumnType(abc.ABC):
         :param row: The row this value is being set on.
         :param value: The value being set.
         """
-        valid = self.validate_set(row, value)
-        if not valid:
-            raise ColumnValidationError("Value {} failed to validate in type {}"
-                                        .format(value, type(self).__name__))
+        if value is not None:
+            valid = self.validate_set(row, value)
+            if not valid:
+                raise ColumnValidationError("Value {} failed to validate in type {}"
+                                            .format(value, type(self).__name__))
 
         self.store_value(row, value)
 
