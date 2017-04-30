@@ -1,7 +1,7 @@
 import abc
 import typing
 
-from katagawa.exc import DatabaseException
+from katagawa.exc import DatabaseException, NoSuchColumnError
 from katagawa.orm.schema import row as md_row
 from katagawa.orm.schema import column as md_column
 
@@ -99,7 +99,11 @@ class ColumnType(abc.ABC):
         :param value: The value to store in the row.
         """
         if isinstance(column, str):
-            column = next(filter(lambda column: column.name == column, row._table.iter_columns()))
+            try:
+                column = next(filter(lambda column: column.name == column,
+                                     row._table.iter_columns()))
+            except StopIteration:
+                raise NoSuchColumnError(column)
 
         row.store_column_value(column, value)
 

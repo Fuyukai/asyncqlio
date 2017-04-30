@@ -63,8 +63,9 @@ class TableRow(object):
         except AttributeError:
             return super().__setattr__(key, value)
 
-        col = next(filter(lambda col: col.name == key, self._table.columns), None)
-        if col is None:
+        try:
+            col = next(filter(lambda col: col.name == key, self._table.columns))
+        except StopIteration:
             return super().__setattr__(key, value)
 
         # call on_set for the column
@@ -101,10 +102,11 @@ class TableRow(object):
                 return item
 
         # failed to load item, so load a column value instead
-        col = next(filter(lambda col: col.name == name, self._table.columns), None)
-        if col is None:
+        try:
+            col = next(filter(lambda col: col.name == name, self._table.columns))
+        except StopIteration:
             raise AttributeError("{} was not a function or attribute on the associated table, "
-                                 "and was not a column".format(name))
+                                 "and was not a column".format(name)) from None
 
         return col.type.on_get(self, col)
 
