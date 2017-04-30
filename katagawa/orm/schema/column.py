@@ -171,7 +171,7 @@ class Column(object):
         
         This is in the format of `t_<table name>_<column_name>`.
          
-        :param table: The :class:`.Table` to use to generate the alias name.
+        :param table: The :class:`.Table` to use to generate the alias name. \
             This is useful for aliased tables.
         :param quoted: Should the name be quoted?
         :return: A str representing the alias name.
