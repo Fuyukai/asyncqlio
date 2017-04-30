@@ -71,11 +71,12 @@ class Column(object):
         self.table = None
 
         #: The :class:`.ColumnType` that represents the type of this column.
-        self.type = type_
-
+        self.type = type_  # type: md_types.ColumnType
         if not isinstance(self.type, md_types.ColumnType):
             # assume we need to create the "default" type
-            self.type = self.type.create_default()
+            self.type = self.type.create_default()  # type: md_types.ColumnType
+        # update our own object on the column
+        self.type.column = self
 
         #: The default for this column.
         self.default = default

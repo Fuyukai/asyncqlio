@@ -67,6 +67,11 @@ class ColumnType(abc.ABC):
         q = await sess.select(User).where(User.id.contains("heck")).first()
 
     """
+    __slots__ = ("column", )
+
+    def __init__(self):
+        #: The column this type object is associated with.
+        self.column = None  # type: md_column.Column
 
     @abc.abstractmethod
     def sql(self) -> str:
@@ -74,20 +79,19 @@ class ColumnType(abc.ABC):
         :return: The str SQL name of this type. 
         """
 
-    def validate_set(self, row: 'md_row.TableRow', column: 'md_column.Column',
+    def validate_set(self, row: 'md_row.TableRow',
                      value: typing.Any) -> bool:
         """
         Validates that the item being set is valid.
         This is called by the default ``on_set``.
         
         :param row: The row being set.
-        :param column: The column associated with this type.
         :param value: The value to set. 
         :return: A bool indicating if this is valid or not.
         """
         return True
 
-    def store_value(self, row: 'md_row.TableRow', column: typing.Union['md_column.Column', str],
+    def store_value(self, row: 'md_row.TableRow',
                     value: typing.Any):
         """
         Stores a value in the row's storage table.
@@ -95,20 +99,11 @@ class ColumnType(abc.ABC):
         This is for internal usage only.
         
         :param row: The row to store in.
-        :param column: Either a column, or the name of a column, to use as a key.
         :param value: The value to store in the row.
         """
-        if isinstance(column, str):
-            try:
-                column = next(filter(lambda column: column.name == column,
-                                     row._table.iter_columns()))
-            except StopIteration:
-                raise NoSuchColumnError(column)
+        row.store_column_value(self.column, value)
 
-        row.store_column_value(column, value)
-
-    def on_set(self, row: 'md_row.TableRow', column: 'md_column.Column',
-               value: typing.Any) -> typing.Any:
+    def on_set(self, row: 'md_row.TableRow', value: typing.Any) -> typing.Any:
         """
         Called when a value is a set on this column.
         
@@ -116,28 +111,26 @@ class ColumnType(abc.ABC):
         type before storing it. This is useful for simple column types.
         
         :param row: The row this value is being set on.
-        :param column: The column this type is associated with.
         :param value: The value being set.
         """
-        valid = self.validate_set(row, column, value)
+        valid = self.validate_set(row, value)
         if not valid:
             raise ColumnValidationError("Value {} failed to validate in type {}"
                                         .format(value, type(self).__name__))
 
-        self.store_value(row, column, value)
+        self.store_value(row, value)
 
-    def on_get(self, row: 'md_row.TableRow', column: 'md_column.Column') -> typing.Any:
+    def on_get(self, row: 'md_row.TableRow') -> typing.Any:
         """
         Called when a value is retrieved from this column.
         
         :param row: The row that is being retrieved.
-        :param column: The column that is being loaded.
         :return: The value of the row's internal storage.
         """
-        return row.get_column_value(column)
+        return row.get_column_value(self.column)
 
     @classmethod
-    def create_default(cls):
+    def create_default(cls) -> 'ColumnType':
         """
         Creates the default object for this table in the event that a type is passed to a column,
         instead of an instance.
@@ -151,6 +144,7 @@ class String(ColumnType):
     """
 
     def __init__(self, size: int = -1):
+        super().__init__()
         #: The max size of this String.
         self.size = size
 
@@ -162,7 +156,7 @@ class String(ColumnType):
         else:
             return "VARCHAR(MAX)"
 
-    def validate_set(self, row, column, value: typing.Any):
+    def validate_set(self, row, value: typing.Any):
         if self.size < 0:
             return True
 
@@ -204,17 +198,17 @@ class Integer(ColumnType):
     def sql(self):
         return "INTEGER"
 
-    def validate_set(self, row, column, value: typing.Any):
+    def validate_set(self, row, value: typing.Any):
         """
         Checks if this int is in range for the type.
         """
         return -2147483648 < value < 2147483647
 
-    def on_set(self, row, column: 'md_column.Column', value: typing.Any):
+    def on_set(self, row, value: typing.Any):
         if not isinstance(value, int):
             raise ColumnValidationError("Value {} is not an int".format(value))
 
-        return super().on_set(row, column, value)
+        return super().on_set(row, value)
 
 
 class SmallInt(Integer):
@@ -225,7 +219,7 @@ class SmallInt(Integer):
     def sql(self):
         return "SMALLINT"
 
-    def validate_set(self, row, column, value: typing.Any):
+    def validate_set(self, row, value: typing.Any):
         return -32768 < value < 32767
 
 
@@ -237,5 +231,5 @@ class BigInt(Integer):
     def sql(self):
         return "BIGINT"
 
-    def validate_set(self, row, column, value):
+    def validate_set(self, row, value):
         return -9223372036854775808 < value < 9223372036854775807
