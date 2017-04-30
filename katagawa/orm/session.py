@@ -8,6 +8,7 @@ import functools
 import itertools
 
 from katagawa import kg as md_kg
+from katagawa.orm import inspection as md_inspection
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
 from katagawa.orm.schema import TableRow
@@ -156,6 +157,55 @@ class Session(object):
 
         return queries
 
+    def _generate_updates(self) -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
+        """
+        Generates UPDATE queries for all dirty rows in the current session.
+        """
+        queries = []
+        counter = itertools.count()
+        # helper functions
+        next_param = lambda: "param_{}".format(next(counter))
+        emit = self.bind.emit_param
+
+        # don't group by - we can't do multi updates in one go (yet)
+        for row in self.dirty:
+            assert isinstance(row, TableRow)
+            params = {}
+            base_query = "UPDATE {} SET ".format(row._table.__quoted_name__)
+
+            # extract the row history
+            history = md_inspection.get_row_history(row)
+            sets = []
+            for col, d in history.items():
+                # don't bother setting it
+                if d["old"] is None:
+                    continue
+
+                # get the next param from the counter
+                # then store the name and the value in the row
+                p = next_param()
+                params[p] = d["new"]
+                sets.append("{} = {}".format(col.quoted_name, emit(p)))
+
+            # join the set actions, and add it to the base query
+            base_query += ", ".join(sets)
+
+            wheres = []
+            for col in row._table.primary_key.columns:
+                # get the param name
+                # then store it in the params counter
+                # and build a new condition for the WHERE clause
+                p = next_param()
+                params[p] = history[col]["old"]
+                wheres.append("{} = {}".format(col.quoted_name, emit(p)))
+            base_query += " WHERE "
+            base_query += " AND ".join(wheres)
+            base_query += ";"
+
+            queries.append((base_query, params, [row]))
+
+        return queries
+
     async def start(self) -> 'Session':
         """
         Starts the session, acquiring a transaction connection which will be used to modify the DB.
@@ -184,13 +234,20 @@ class Session(object):
          
         This will **not** close the session; it can be re-used after a commit.
         """
-        # TODO: Update generation
         # TODO: Checkpoints
+        # TODO: More complex logic relating to dependants and relationships
         inserts = self._generate_inserts()
         for query, params, rows in inserts:
             await self.execute(query, params=params)
             for row in rows:
                 self.new.remove(row)
+
+        # TODO: Investigate update performance increase possibilities
+        updates = self._generate_updates()
+        for query, params, rows in updates:
+            await self.execute(query, params=params)
+            for row in rows:
+                self.dirty.remove(row)
 
         await self.transaction.commit()
         return self
