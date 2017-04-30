@@ -69,7 +69,7 @@ class TableRow(object):
             return super().__setattr__(key, value)
 
         # call on_set for the column
-        return col.type.on_set(self, col, value)
+        return col.type.on_set(self, value)
 
     def _resolve_item(self, name: str):
         """
@@ -108,7 +108,7 @@ class TableRow(object):
             raise AttributeError("{} was not a function or attribute on the associated table, "
                                  "and was not a column".format(name)) from None
 
-        return col.type.on_get(self, col)
+        return col.type.on_get(self)
 
     def get_column_value(self, column: 'md_column.Column', return_default: bool=True):
         """

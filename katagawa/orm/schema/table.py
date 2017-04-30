@@ -182,7 +182,7 @@ class TableMeta(type):
                 if name not in col_map:
                     raise NoSuchColumnError(name)
 
-                col_map[name].type.on_set(row, col_map[name], val)
+                col_map[name].type.on_set(row, val)
 
         return row
 
