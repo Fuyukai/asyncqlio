@@ -5,7 +5,7 @@ import importlib
 import logging
 from urllib.parse import urlparse, ParseResult
 
-from katagawa.backends.base import BaseConnector, BaseTransaction
+from katagawa.backends.base import BaseConnector, BaseTransaction, BaseDialect
 from katagawa.orm import session as md_session
 from katagawa.orm.schema import table as md_table
 
@@ -41,6 +41,9 @@ class Katagawa(object):
 
         #: The current connector instance.
         self.connector = None  # type: BaseConnector
+
+        #: The current Dialect instance.
+        self.dialect = None  # type: BaseDialect
 
     @property
     def connected(self):
@@ -86,6 +89,8 @@ class Katagawa(object):
             mod_path = import_path + ".{}".format(db_connector)
         else:
             mod_path = import_path + ".{}".format(package.DEFAULT_CONNECTOR)
+
+        self.dialect = getattr(package, "{}Dialect".format(db_type.title()))
 
         logger.debug("Loading connector {}".format(mod_path))
 
