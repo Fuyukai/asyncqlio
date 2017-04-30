@@ -1,7 +1,9 @@
+import inspect
 import logging
 import sys
 import typing
 
+import functools
 from cached_property import cached_property
 
 from katagawa.orm import operators as md_operators
@@ -109,6 +111,22 @@ class Column(object):
         logger.debug("Column created with name {} on {}".format(name, owner))
         self.name = name
         self.table = owner
+
+    def __getattr__(self, item):
+        # try and get it from the columntype
+        try:
+            i = getattr(self.type, item)
+        except AttributeError:
+            raise AttributeError("Column object '{}' has no attribute '{}'".format(self.name,
+                                                                                   item)) from None
+
+        # if it's a function, return a partial that uses this Column
+        if inspect.isfunction(i):
+            # can be called like Column.whatever(val) and it will pass Column in too
+            return functools.partial(i, self)
+
+        # otherwise just return the attribute
+        return i
 
     def __eq__(self, other: typing.Any) -> 'md_operators.Eq':
         return md_operators.Eq(self, other)
