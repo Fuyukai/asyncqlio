@@ -147,26 +147,6 @@ class Column(object):
     def __ge__(self, other) -> 'md_operators.Gte':
         return md_operators.Gte(self, other)
 
-    def like(self, other: str) -> 'md_operators.Like':
-        """
-        Returns a LIKE operator, checking if this string is LIKE another string.
-        
-        :param other: The other string to check. 
-        """
-        return md_operators.Like(self, other)
-
-    def ilike(self, other: str) -> 'md_operators.ILike':
-        """
-        Returns an ILIKE operator, checking if this string is case-insensitive LIKE another string.
-        
-        .. warning::
-            This is not supported in all DB backends.
-        
-        :param other: The other string to check. 
-        """
-        # TODO: Check for ILIKE support.
-        return md_operators.ILike(self, other)
-
     @cached_property
     def quoted_name(self) -> str:
         """

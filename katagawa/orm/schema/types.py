@@ -2,6 +2,7 @@ import abc
 import typing
 
 from katagawa.exc import DatabaseException, NoSuchColumnError
+from katagawa.orm import operators as md_operators
 from katagawa.orm.schema import row as md_row
 from katagawa.orm.schema import column as md_column
 
@@ -166,6 +167,26 @@ class String(ColumnType):
                                                                                      self.size))
 
         return True
+
+    def like(self, other: str) -> 'md_operators.Like':
+        """
+        Returns a LIKE operator, checking if this column is LIKE another string.
+
+        :param other: The other string to check. 
+        """
+        return md_operators.Like(self.column, other)
+
+    def ilike(self, other: str) -> 'md_operators.ILike':
+        """
+        Returns an ILIKE operator, checking if this column is case-insensitive LIKE another string.
+
+        .. warning::
+            This is not supported in all DB backends.
+
+        :param other: The other string to check. 
+        """
+        # TODO: Check for ILIKE support.
+        return md_operators.ILike(self.column, other)
 
 
 class Text(String):
