@@ -92,10 +92,12 @@ class AsyncpgTransaction(BaseTransaction):
         """
         Begins the transaction.
         """
+        logger.debug("Acquiring new transaction...")
         self.acquired_connection = \
             await self.connector.pool.acquire()  # type: asyncpg.connection.Connection
         self.transaction = self.acquired_connection.transaction(**transaction_options)
         await self.transaction.start()
+        logger.debug("Acquired and started transaction {}".format(self.transaction))
 
         return self
 
@@ -176,9 +178,8 @@ class AsyncpgConnector(BaseConnector):
 
     async def connect(self) -> 'BaseConnector':
         # create our connection pool
-        logger.debug("Creating new asyncpg pool...")
+        logger.debug("Connecting to postgresql://{}:{}/{}".format(self.host, self.port, self.db))
         self.pool = await asyncpg.create_pool(self.dsn)
-        logger.debug("Created pool.")
         return self
 
     def get_transaction(self) -> 'AsyncpgTransaction':
