@@ -124,6 +124,12 @@ class TableMeta(type):
         """
         return list(self.iter_columns())
 
+    def __repr__(self):
+        try:
+            return "<Table object='{}' name='{}'>".format(self.__name__, self.__tablename__)
+        except AttributeError:
+            return super().__repr__()
+
     def iter_columns(self) -> 'typing.Generator[md_column.Column, None, None]':
         """
         :return: A generator that yields :class:`.Column` objects for this table. 
