@@ -50,11 +50,14 @@ class Session(object):
         sess = db.get_session()
     """
 
-    def __init__(self, bind: 'md_kg.Katagawa'):
+    def __init__(self, bind: 'md_kg.Katagawa', allow_notifications: bool = False):
         """
         :param bind: The :class:`.Katagawa` instance we are bound to. 
         """
         self.bind = bind
+
+        #: If this session allows row notifications.
+        self.allow_notifications = allow_notifications
 
         #: The current state for the session.
         self._state = SessionState.NOT_READY
@@ -102,6 +105,9 @@ class Session(object):
         
         :param row: The :class:`.TableRow` to be notified of.
         """
+        if not self.allow_notifications:
+            return
+
         if row._TableRow__existed is True:
             if not [row in x for x in [self.new, self.dirty, self.deleted]]:
                 self.dirty.append(row)
