@@ -24,7 +24,7 @@ def get_row_history(row: 'md_row.TableRow') -> typing.Dict[Column, typing.Dict[s
     that represent the old and new values of the item.
     """
     d = {}
-    for column in row._table.iter_columns():
+    for column in row.table.iter_columns():
         old_value = row._previous_values.get(column)
         new_value = row.get_column_value(column, return_default=False)
 

@@ -31,7 +31,8 @@ class TableRow(object):
         """
         :param tbl: The table object to bind this row to.
         """
-        self._table = tbl
+        #: The :class:`.Table` object to use for this table row.
+        self.table = tbl
 
         #: If this row existed before.
         #: If this is True, this row was fetched from the DB previously.
@@ -49,8 +50,8 @@ class TableRow(object):
         self._values = {}
 
     def __repr__(self):
-        gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self._table.columns)
-        return "<{} {}>".format(self._table.__name__, " ".join(gen))
+        gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self.table.columns)
+        return "<{} {}>".format(self.table.__name__, " ".join(gen))
 
     def __getattr__(self, item: str):
         obb = self._resolve_item(item)
@@ -64,7 +65,7 @@ class TableRow(object):
             return super().__setattr__(key, value)
 
         try:
-            col = next(filter(lambda col: col.name == key, self._table.columns))
+            col = next(filter(lambda col: col.name == key, self.table.columns))
         except StopIteration:
             return super().__setattr__(key, value)
 
@@ -86,7 +87,7 @@ class TableRow(object):
         """
         # try and getattr the name from the Table object
         try:
-            item = getattr(self._table, name)
+            item = getattr(self.table, name)
         except AttributeError:
             pass
         else:
@@ -103,27 +104,32 @@ class TableRow(object):
 
         # failed to load item, so load a column value instead
         try:
-            col = next(filter(lambda col: col.name == name, self._table.columns))
+            col = next(filter(lambda col: col.name == name, self.table.columns))
         except StopIteration:
             raise AttributeError("{} was not a function or attribute on the associated table, "
                                  "and was not a column".format(name)) from None
 
         return col.type.on_get(self)
 
-    def get_column_value(self, column: 'md_column.Column', return_default: bool=True):
+    def get_column_value(self, column: 'md_column.Column', return_default: bool = True):
         """
         Gets the value from the specified column in this row.
         
         :param column: The column.
         :param return_default: If this should return the column default, or NO_VALUE.
         """
-        if column.table != self._table:
+        if column.table != self.table:
             raise ValueError("Column table must match row table")
 
         try:
             return self._values[column]
         except KeyError:
-            return column.default
+            if return_default:
+                default = column.default
+                if default is md_column.NO_DEFAULT:
+                    return NO_VALUE
+            else:
+                return NO_VALUE
 
     def store_column_value(self, column: 'md_column.Column', value: typing.Any):
         """
@@ -146,7 +152,7 @@ class TableRow(object):
         :param include_attrs: Should this include row_attrs?
         """
         # todo: include row attrs
-        d = {col: self.get_column_value(col) for col in self._table.columns}
+        d = {col: self.get_column_value(col) for col in self.table.columns}
         return d
 
     @property
@@ -157,7 +163,7 @@ class TableRow(object):
         If this table only has one primary key column, this property will be a single value.  
         If this table has multiple columns in a primary key, this property will be a tuple. 
         """
-        pk = self._table.primary_key  # type: md_table.PrimaryKey
+        pk = self.table.primary_key  # type: md_table.PrimaryKey
         result = []
 
         for col in pk.columns:
