@@ -115,7 +115,7 @@ class Katagawa(object):
         """
         return self.connector.emit_param(name)
 
-    def get_transaction(self) -> BaseTransaction:
+    def get_transaction(self, **kwargs) -> BaseTransaction:
         """
         Gets a low-level :class:`.BaseTransaction`.
          
@@ -123,13 +123,13 @@ class Katagawa(object):
             async with db.get_transaction() as transaction:
                 results = await transaction.cursor("SELECT 1;")
         """
-        return self.connector.get_transaction()
+        return self.connector.get_transaction(**kwargs)
 
-    def get_session(self) -> 'md_session.Session':
+    def get_session(self, **kwargs) -> 'md_session.Session':
         """
         Gets a new :class:`.Session` bound to this Katagawa instance.
         """
-        return md_session.Session(self)
+        return md_session.Session(self, **kwargs)
 
     async def close(self):
         """
