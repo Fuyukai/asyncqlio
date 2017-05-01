@@ -121,6 +121,7 @@ class ColumnType(abc.ABC):
                                             .format(value, type(self).__name__))
 
         self.store_value(row, value)
+        row._session.notify_set(row)
 
     def on_get(self, row: 'md_row.TableRow') -> typing.Any:
         """

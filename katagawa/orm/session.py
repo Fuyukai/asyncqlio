@@ -92,6 +92,18 @@ class Session(object):
 
         return False
 
+    def notify_set(self, row: 'TableRow'):
+        """
+        Notifies that a row has been set. Typically called by ``ColumnType.on_set``.  
+        This will put the row into the ``dirty`` list of rows, if it isn't in ``new`` or 
+        ``deleted``.
+        
+        :param row: The :class:`.TableRow` to be notified of.
+        """
+        if row._TableRow__existed is True:
+            if not [row in x for x in [self.new, self.dirty, self.deleted]]:
+                self.dirty.append(row)
+
     # Query builders
     def select(self, table) -> 'md_query.SelectQuery':
         """
