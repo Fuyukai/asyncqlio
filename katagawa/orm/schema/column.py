@@ -12,6 +12,8 @@ from katagawa.orm.schema import types as md_types
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
 
+NO_DEFAULT = object()
+
 
 class Column(object):
     """
@@ -36,7 +38,7 @@ class Column(object):
                  *,
                  primary_key: bool = False,
                  nullable: bool = True,
-                 default: typing.Any = None,
+                 default: typing.Any = NO_DEFAULT,
                  autoincrement: bool = False,
                  index: bool = True,
                  unique: bool = True):
