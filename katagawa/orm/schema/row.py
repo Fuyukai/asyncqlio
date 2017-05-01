@@ -127,7 +127,9 @@ class TableRow(object):
             if return_default:
                 default = column.default
                 if default is md_column.NO_DEFAULT:
-                    return NO_VALUE
+                    return None
+                else:
+                    return default
             else:
                 return NO_VALUE
 

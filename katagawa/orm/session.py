@@ -13,6 +13,7 @@ from katagawa.orm import inspection as md_inspection
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
 from katagawa.orm.schema import TableRow
+from katagawa.orm.schema.column import NO_DEFAULT
 from katagawa.orm.schema.row import NO_VALUE
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,7 @@ class Session(object):
             new = self.new
 
         # group the rows
-        for tbl, rows in itertools.groupby(new, lambda r: r._table):
+        for tbl, rows in itertools.groupby(new, lambda r: r.table):
             rows = list(rows)
             # insert into the quoted table
             base_query = "INSERT INTO {} ".format(tbl.__quoted_name__)
@@ -151,8 +152,8 @@ class Session(object):
                 assert isinstance(row, TableRow)
                 # row._validate()
                 for column in tbl.iter_columns():
-                    value = row.get_column_value(column, return_default=False)
-                    if value is NO_VALUE:
+                    value = row.get_column_value(column, return_default=True)
+                    if value is NO_VALUE or (value is None and column.default is NO_DEFAULT):
                         prms_so_far.append("DEFAULT")
                     else:
                         # emit a new param
@@ -188,7 +189,7 @@ class Session(object):
         for row in self.dirty:
             assert isinstance(row, TableRow)
             params = {}
-            base_query = "UPDATE {} SET ".format(row._table.__quoted_name__)
+            base_query = "UPDATE {} SET ".format(row.table.__quoted_name__)
 
             # extract the row history
             history = md_inspection.get_row_history(row)
@@ -208,7 +209,7 @@ class Session(object):
             base_query += ", ".join(sets)
 
             wheres = []
-            for col in row._table.primary_key.columns:
+            for col in row.table.primary_key.columns:
                 # get the param name
                 # then store it in the params counter
                 # and build a new condition for the WHERE clause
@@ -299,7 +300,7 @@ class Session(object):
         """
         cur = await self.transaction.cursor(sql, params)
         next = await cur.fetch_row()
-        await next.close()
+        await cur.close()
         return next
 
     @enforce_open
@@ -334,6 +335,9 @@ class Session(object):
         .. warning::
             This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
+            
+            Also, tables with auto-incrementing compound primary keys will not have all fields 
+            filled properly.
         
         :param row: The :class:`.TableRow` to insert.
         :return: The row, with primary key included.
@@ -342,18 +346,25 @@ class Session(object):
         await self.execute(generated[0], generated[1])
 
         # check if the row already had a primary key
-        if any(row.primary_key):
-            return row.primary_key
+        pk = row.primary_key
+        if not isinstance(pk, tuple):
+            pk = (pk,)
+
+        if any(pk):
+            return row
         else:
             # fetch LASTVAL() or the equivalent
             lastval_func = self.bind.dialect.lastval_method
-            fmt = "SELECT {};".format(lastval_func)
+            fmt = "SELECT {}".format(lastval_func, lastval_func)
             try:
-                pkey = await self.execute(fmt)
+                pkey = await self.fetch(fmt)
             except OperationalError:
                 raise OperationalError("Unable to determine the primary key of this row.")
 
-            print(pkey)
+            for col, val in itertools.zip_longest(row.table.primary_key.columns, pkey):
+                row.store_column_value(col, val)
+
+            return row
 
     def add(self, row: TableRow) -> 'Session':
         """
