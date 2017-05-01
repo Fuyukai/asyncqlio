@@ -11,7 +11,7 @@ from urllib.parse import ParseResult
 from katagawa.meta import AsyncABC
 
 
-class BaseDialect(abc.ABC):
+class BaseDialect:
     """
     The base class for a SQL dialect describer.
     
@@ -34,6 +34,13 @@ class BaseDialect(abc.ABC):
         Returns True if this dialect can use the SERIAL datatype.
         """
         return False
+
+    @property
+    def lastval_method(self):
+        """
+        The last value method for a dialect. For example, in PostgreSQL this is LASTVAL();
+        """
+        raise NotImplementedError
 
 
 class BaseResultSet(collections.AsyncIterator, AsyncABC):
@@ -71,12 +78,25 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         :param n: The number of rows to fetch. 
         """
 
+    @abstractmethod
+    async def close(self):
+        """
+        Closes this result set.
+        """
+
     async def __anext__(self):
         res = await self.fetch_row()
         if not res:
             raise StopAsyncIteration
 
         return res
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+        return False
 
 
 class BaseTransaction(AsyncABC):
@@ -160,7 +180,8 @@ class BaseTransaction(AsyncABC):
         """
 
     @abstractmethod
-    async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None):
+    async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None) \
+            -> 'BaseResultSet':
         """
         Executes SQL and returns a database cursor for the rows.
         

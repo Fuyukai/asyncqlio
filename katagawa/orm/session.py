@@ -8,6 +8,7 @@ import functools
 import itertools
 
 from katagawa import kg as md_kg
+from katagawa.exc import OperationalError
 from katagawa.orm import inspection as md_inspection
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
@@ -116,15 +117,19 @@ class Session(object):
         q.set_table(table)
         return q
 
-    def _generate_inserts(self) -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
+    def _generate_inserts(self, new: list = None) \
+            -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
         """
         Generates INSERT INTO queries for the current session.
         """
         queries = []
         counter = itertools.count()
 
+        if new is None:
+            new = self.new
+
         # group the rows
-        for tbl, rows in itertools.groupby(self.new, lambda r: r._table):
+        for tbl, rows in itertools.groupby(new, lambda r: r._table):
             rows = list(rows)
             # insert into the quoted table
             base_query = "INSERT INTO {} ".format(tbl.__quoted_name__)
@@ -144,7 +149,7 @@ class Session(object):
             for row in rows:
                 prms_so_far = []
                 assert isinstance(row, TableRow)
-                #row._validate()
+                # row._validate()
                 for column in tbl.iter_columns():
                     value = row.get_column_value(column, return_default=False)
                     if value is NO_VALUE:
@@ -288,6 +293,16 @@ class Session(object):
         del self.transaction
 
     @enforce_open
+    async def fetch(self, sql: str, params=None):
+        """
+        Fetches a single row.
+        """
+        cur = await self.transaction.cursor(sql, params)
+        next = await cur.fetch_row()
+        await next.close()
+        return next
+
+    @enforce_open
     async def execute(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
                                                            typing.Iterable[typing.Any]] = None):
         """
@@ -310,6 +325,35 @@ class Session(object):
         :param params: The parameters to use inside the query.
         """
         return await self.transaction.cursor(sql, params)
+
+    @enforce_open
+    async def insert_now(self, row: 'TableRow') -> typing.Any:
+        """
+        Inserts a row NOW. 
+        
+        .. warning::
+            This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
+            actually commit the row to storage.
+        
+        :param row: The :class:`.TableRow` to insert.
+        :return: The row, with primary key included.
+        """
+        generated = self._generate_inserts(new=[row])[0]
+        await self.execute(generated[0], generated[1])
+
+        # check if the row already had a primary key
+        if any(row.primary_key):
+            return row.primary_key
+        else:
+            # fetch LASTVAL() or the equivalent
+            lastval_func = self.bind.dialect.lastval_method
+            fmt = "SELECT {};".format(lastval_func)
+            try:
+                pkey = await self.execute(fmt)
+            except OperationalError:
+                raise OperationalError("Unable to determine the primary key of this row.")
+
+            print(pkey)
 
     def add(self, row: TableRow) -> 'Session':
         """

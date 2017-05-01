@@ -17,6 +17,12 @@ class IntegrityError(DatabaseException):
     """
 
 
+class OperationalError(DatabaseException):
+    """
+    Raised when an operational error has occurred.
+    """
+
+
 class NoSuchColumnError(DatabaseException):
     """
     Raised when a non-existing column is requested.

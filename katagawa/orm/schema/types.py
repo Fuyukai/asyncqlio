@@ -121,7 +121,8 @@ class ColumnType(abc.ABC):
                                             .format(value, type(self).__name__))
 
         self.store_value(row, value)
-        row._session.notify_set(row)
+        if row._session is not None:
+            row._session.notify_set(row)
 
     def on_get(self, row: 'md_row.TableRow') -> typing.Any:
         """
@@ -157,13 +158,13 @@ class String(ColumnType):
         if self.size >= 0:
             return "VARCHAR({})".format(self.size)
         else:
-            return "VARCHAR(MAX)"
+            return "VARCHAR"
 
     def validate_set(self, row, value: typing.Any):
         if self.size < 0:
             return True
 
-        if value > self.size:
+        if len(value) > self.size:
             raise ColumnValidationError("Value {} is more than {} chars long".format(value,
                                                                                      self.size))
 

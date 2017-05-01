@@ -19,3 +19,7 @@ class PostgresqlDialect(BaseDialect):
     @property
     def has_serial(self):
         return True
+
+    @property
+    def lastval_method(self):
+        return "LASTVAL()"

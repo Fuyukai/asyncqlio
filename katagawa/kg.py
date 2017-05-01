@@ -90,7 +90,7 @@ class Katagawa(object):
         else:
             mod_path = import_path + ".{}".format(package.DEFAULT_CONNECTOR)
 
-        self.dialect = getattr(package, "{}Dialect".format(db_type.title()))
+        self.dialect = getattr(package, "{}Dialect".format(db_type.title()))()
 
         logger.debug("Loading connector {}".format(mod_path))
 

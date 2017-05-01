@@ -12,7 +12,7 @@ from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
 from katagawa.backends.base import BaseConnector, BaseTransaction, BaseResultSet
-from katagawa.exc import IntegrityError
+from katagawa.exc import IntegrityError, OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,9 @@ class AsyncpgResultSet(BaseResultSet):
 
         return row
 
+    async def close(self):
+        pass
+
 
 class AsyncpgTransaction(BaseTransaction):
     """
@@ -132,6 +135,8 @@ class AsyncpgTransaction(BaseTransaction):
             results = await self.acquired_connection.execute(query, *params)
         except asyncpg.IntegrityConstraintViolationError as e:
             raise IntegrityError(*e.args) from e
+        except asyncpg.ObjectNotInPrerequisiteStateError as e:
+            raise OperationalError(*e.args) from e
 
         return results
 
