@@ -5,10 +5,11 @@ import itertools
 import typing
 from collections import OrderedDict
 
-from katagawa.exc import NoSuchColumnError
+from katagawa.exc import NoSuchColumnError, SchemaError
 from katagawa import kg as md_kg
 from katagawa.orm.schema import column as md_column
 from katagawa.orm.schema import row as md_row
+from katagawa.orm.schema import relationship as md_relationship
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,49 @@ class TableMetadata(object):
 
         return tbl
 
+    def resolve_floating_relationships(self):
+        """
+        Resolves any "floating" relationships - i.e any relationship/foreign keys that don't 
+        directly reference a column object.
+        """
+        for tbl in self.tables.values():
+            for column in tbl._columns.values():
+                if column.foreign_key is None:
+                    continue
+
+                foreignkey = column.foreign_key
+                if foreignkey.foreign_column is None:
+                    table, column = foreignkey._f_name.split(".")
+                    table = self.tables[table]
+                    if table is None:
+                        raise SchemaError("No such table '{}' exists".format(table))
+
+                    try:
+                        col = next(filter(lambda col: col.name == column, table.iter_columns()))
+                    except StopIteration:
+                        raise SchemaError("No such column '{}' exists on table '{}'"
+                                          .format(table, column))
+
+                    foreignkey.foreign_column = col
+
+            for relation in tbl._relationships.values():
+                assert isinstance(relation, md_relationship.Relationship)
+
+                if relation.via_column is None:
+                    table, column = relation._via_name.split(".")
+                    table = self.tables[table]
+
+                    if table is None:
+                        raise SchemaError("No such table '{}' exists".format(table))
+
+                    try:
+                        col = next(filter(lambda col: col.name == column, table.iter_columns()))
+                    except StopIteration:
+                        raise SchemaError("No such column '{}' exists on table '{}'"
+                                          .format(table, column))
+
+                    relation.via_column = col
+
 
 class TableMeta(type):
     def __prepare__(*args, **kwargs):
@@ -51,13 +95,18 @@ class TableMeta(type):
     def __new__(mcs, n, b, c, register: bool = True):
         # hijack columns
         columns = OrderedDict()
+        relationships = OrderedDict()
         for col_name, value in c.copy().items():
             if isinstance(value, md_column.Column):
                 columns[col_name] = value
                 # nuke the column
                 c.pop(col_name)
+            elif isinstance(value, md_relationship.Relationship):
+                relationships[col_name] = value
+                c.pop(col_name)
 
         c["_columns"] = columns
+        c["_relationships"] = relationships
         return type.__new__(mcs, n, b, c)
 
     def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True):
@@ -69,10 +118,9 @@ class TableMeta(type):
 
         # emulate `__set_name__` on Python 3.5
         # also, set names on columns unconditionally
+        it = itertools.chain(self._columns.items(), self._relationships.items())
         if not PY36:
-            it = itertools.chain(class_body.items(), self._columns.items())
-        else:
-            it = self._columns.items()
+            it = itertools.chain(class_body.items(), it)
 
         for name, value in it:
             if hasattr(value, "__set_name__"):
@@ -95,7 +143,10 @@ class TableMeta(type):
         self.__bind = None
 
         #: A dict of columns for this table.
-        self._columns = self._columns
+        self._columns = self._columns  # type: typing.Dict[str, md_column.Column]
+
+        #: A dict of relationships for this table.
+        self._relationships = self._relationships  # type: typing.Dict[str, md_relationship.Relationship]
 
         #: The primary key for this table.
         #: This should be a :class:`.PrimaryKey`.

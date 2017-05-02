@@ -62,8 +62,11 @@ class Relationship(object):
                  load: str = "select", use_iter: bool = True):
         """
         :param via: The column to load this relationship via.
+        
             This can either be a :class:`.Column`, or a str in the format 
             ``<table object name>.<column name>``.
+            
+            This is **NOT** the foreign column.
         
         :param load: The way to load this relationship.
             The default is "select" - this means that a separate select statement will be issued
@@ -89,3 +92,7 @@ class Relationship(object):
 
         #: If this relationship uses the iterable format.
         self.use_iter = use_iter
+
+    def __set_name__(self, owner, name):
+        self.table = owner
+        self.name = name

@@ -8,6 +8,7 @@ from cached_property import cached_property
 
 from katagawa.orm import operators as md_operators
 from katagawa.orm.schema import types as md_types
+from katagawa.orm.schema import relationship as md_relationship
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
@@ -41,7 +42,8 @@ class Column(object):
                  default: typing.Any = NO_DEFAULT,
                  autoincrement: bool = False,
                  index: bool = True,
-                 unique: bool = True):
+                 unique: bool = False,
+                 foreign_key: 'md_relationship.ForeignKey' = None):
         """
         :param type_:
             The :class:`.ColumnType` that represents the type of this column.
@@ -64,6 +66,9 @@ class Column(object):
         
         :param unique: 
             Is this column unique?
+            
+        :param foreign_key: 
+            The :class:`.ForeignKey` associated with this column.
         """
         #: The name of the column.
         #: This can be manually set, or automatically set when set on a table.
@@ -97,6 +102,11 @@ class Column(object):
 
         #: If this Column is unique.
         self.unique = unique
+
+        #: The foreign key associated with this column.
+        self.foreign_key = foreign_key  # type: md_relationship.ForeignKey
+        if self.foreign_key is not None:
+            self.foreign_key.column = self
 
     def __repr__(self):
         return "<Column name={} type={}>".format(self.name, self.type.sql())
@@ -166,6 +176,16 @@ class Column(object):
         This returns the column name in "table"."column" format.
         """
         return r'"{}"."{}"'.format(self.table.__tablename__, self.name)
+
+    @property
+    def foreign_column(self) -> 'Column':
+        """
+        :return: The foreign :class:`.Column` this is associated with, or None otherwise. 
+        """
+        if self.foreign_key is None:
+            return None
+
+        return self.foreign_key.foreign_column
 
     def alias_name(self, table=None, quoted: bool = False) -> str:
         """

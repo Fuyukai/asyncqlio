@@ -11,6 +11,12 @@ class DatabaseException(Exception):
     """
 
 
+class SchemaError(DatabaseException):
+    """
+    Raised when there is an error in the database schema.
+    """
+
+
 class IntegrityError(DatabaseException):
     """
     Raised when a column's integrity is not preserved (e.g. null or unique violations).

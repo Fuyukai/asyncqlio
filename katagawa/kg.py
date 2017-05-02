@@ -56,7 +56,12 @@ class Katagawa(object):
         """
         Binds tables to this DB instance. 
         """
+        if isinstance(md, md_table.TableMeta):
+            md = md._metadata
+        # first set a bind on the metadata
         md.bind = self
+        # then resolve all outstanding relationships
+        md.resolve_floating_relationships()
         return md
 
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
