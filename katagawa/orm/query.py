@@ -10,7 +10,7 @@ from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
 from katagawa.orm import schema as md_schema
 from katagawa.orm.operators import BaseOperator
-from katagawa.orm.schema import TableRow
+from katagawa.orm.schema import row as md_row
 
 
 class _ResultGenerator(collections.AsyncIterator):
@@ -38,7 +38,7 @@ class _ResultGenerator(collections.AsyncIterator):
         mapped = self.query.map_columns(row)
         return row
 
-    async def flatten(self) -> 'typing.List[md_schema.TableRow]':
+    async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
         Flattens this query into a single list.
         """
@@ -131,7 +131,7 @@ class SelectQuery(object):
         results = await self.session.cursor(sql, params)
         return results
 
-    async def first(self) -> 'TableRow':
+    async def first(self) -> 'md_row.TableRow':
         """
         Gets the first result that matches from this query.
         
@@ -155,7 +155,7 @@ class SelectQuery(object):
         return _ResultGenerator(self)
 
     # ORM methods
-    def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_schema.TableRow':
+    def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_row.TableRow':
         """
         Maps columns in a result row to a :class:`.TableRow` object.
         
@@ -175,7 +175,7 @@ class SelectQuery(object):
 
         # create a new TableRow
         try:
-            row = self.table(**row_expando)  # type: md_schema.TableRow
+            row = self.table(**row_expando)  # type: md_row.TableRow
         except TypeError:
             # probably the unexpected argument error
             raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"

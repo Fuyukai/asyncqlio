@@ -4,7 +4,7 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 import typing
 
 from katagawa.orm import session as md_session
-from katagawa.orm.schema import row as md_row, Column
+from katagawa.orm.schema import row as md_row, column as md_column
 
 
 def get_row_session(row: 'md_row.TableRow') -> 'md_session.Session':
@@ -16,7 +16,8 @@ def get_row_session(row: 'md_row.TableRow') -> 'md_session.Session':
     return row._session
 
 
-def get_row_history(row: 'md_row.TableRow') -> typing.Dict[Column, typing.Dict[str, typing.Any]]:
+def get_row_history(row: 'md_row.TableRow') \
+        -> 'typing.Dict[md_column.Column, typing.Dict[str, typing.Any]]':
     """
     Gets the history for the specified row.
     

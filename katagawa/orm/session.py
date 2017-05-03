@@ -12,7 +12,7 @@ from katagawa.exc import OperationalError
 from katagawa.orm import inspection as md_inspection
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
-from katagawa.orm.schema import TableRow
+from katagawa.orm.schema import row as md_row
 from katagawa.orm.schema.column import NO_DEFAULT
 from katagawa.orm.schema.row import NO_VALUE
 
@@ -97,7 +97,7 @@ class Session(object):
 
         return False
 
-    def notify_set(self, row: 'TableRow'):
+    def notify_set(self, row: 'md_row.TableRow'):
         """
         Notifies that a row has been set. Typically called by ``ColumnType.on_set``.  
         This will put the row into the ``dirty`` list of rows, if it isn't in ``new`` or 
@@ -155,7 +155,7 @@ class Session(object):
             value_sets = []
             for row in rows:
                 prms_so_far = []
-                assert isinstance(row, TableRow)
+                assert isinstance(row, md_row.TableRow)
                 # row._validate()
                 for column in tbl.iter_columns():
                     value = row.get_column_value(column, return_default=True)
@@ -193,7 +193,7 @@ class Session(object):
 
         # don't group by - we can't do multi updates in one go (yet)
         for row in self.dirty:
-            assert isinstance(row, TableRow)
+            assert isinstance(row, md_row.TableRow)
             params = {}
             base_query = "UPDATE {} SET ".format(row.table.__quoted_name__)
 
@@ -334,7 +334,7 @@ class Session(object):
         return await self.transaction.cursor(sql, params)
 
     @enforce_open
-    async def insert_now(self, row: 'TableRow') -> typing.Any:
+    async def insert_now(self, row: 'md_row.TableRow') -> typing.Any:
         """
         Inserts a row NOW. 
         
@@ -372,7 +372,7 @@ class Session(object):
 
             return row
 
-    def add(self, row: TableRow) -> 'Session':
+    def add(self, row: 'md_row.TableRow') -> 'Session':
         """
         Adds a row to this session, storing it for a later commit.
         
