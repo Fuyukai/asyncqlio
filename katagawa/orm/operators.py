@@ -7,7 +7,7 @@ import typing
 
 import itertools
 
-from katagawa.orm import schema as md_schema
+from katagawa.orm.schema import column as md_column
 
 
 def requires_bop(func) -> 'typing.Callable[[BaseOperator, BaseOperator], typing.Any]':
@@ -138,7 +138,7 @@ class ColumnValueMixin(object):
         # myop is constructed MyOp(col, value)
     """
 
-    def __init__(self, column: 'md_schema.Column', value: typing.Any):
+    def __init__(self, column: 'md_column.Column', value: typing.Any):
         self.column = column
         self.value = value
 
@@ -152,7 +152,7 @@ class ComparisonOp(ColumnValueMixin, BaseOperator):
     operator = None
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
-        if isinstance(self.value, md_schema.Column):
+        if isinstance(self.value, md_column.Column):
             # special-case columns
             return "{} {} {}".format(self.column.quoted_fullname, self.operator,
                                      self.value.quoted_fullname)
