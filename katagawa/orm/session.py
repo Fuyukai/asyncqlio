@@ -13,8 +13,7 @@ from katagawa.orm import inspection as md_inspection
 from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
 from katagawa.orm.schema import row as md_row
-from katagawa.orm.schema.column import NO_DEFAULT
-from katagawa.orm.schema.row import NO_VALUE
+from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 
 logger = logging.getLogger(__name__)
 

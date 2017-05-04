@@ -1,14 +1,11 @@
 import inspect
+import types
 import typing
 
-import types
-
-from katagawa.exc import NoSuchColumnError
-from katagawa.orm.schema import column as md_column
-from katagawa.orm.schema import table as md_table
+import katagawa.sentinels
 from katagawa.orm import session as md_session
-
-NO_VALUE = object()
+from katagawa.orm.schema import column as md_column, table as md_table
+from katagawa.sentinels import NO_VALUE
 
 
 class TableRow(object):
@@ -126,7 +123,7 @@ class TableRow(object):
         except KeyError:
             if return_default:
                 default = column.default
-                if default is md_column.NO_DEFAULT:
+                if default is katagawa.sentinels.NO_DEFAULT:
                     return None
                 else:
                     return default

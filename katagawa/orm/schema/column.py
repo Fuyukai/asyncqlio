@@ -1,19 +1,17 @@
+import functools
 import inspect
 import logging
 import sys
 import typing
 
-import functools
 from cached_property import cached_property
 
 from katagawa.orm import operators as md_operators
-from katagawa.orm.schema import types as md_types
-from katagawa.orm.schema import relationship as md_relationship
+from katagawa.orm.schema import relationship as md_relationship, types as md_types
+from katagawa.sentinels import NO_DEFAULT
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
-
-NO_DEFAULT = object()
 
 
 class Column(object):
