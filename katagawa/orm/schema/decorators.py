@@ -30,6 +30,7 @@ def row_attr(func: sig) -> sig:
     :param func: The function to decorate.
     :return: A wrapper function. The original function can be found via ``.__wrapped__``.
     """
+
     @functools.wraps(func)
     def wrapper(self):
         if not isinstance(self, TableRow):
@@ -40,3 +41,13 @@ def row_attr(func: sig) -> sig:
     wrapper.__row_attr__ = True
 
     return wrapper
+
+
+def hidden(func):
+    """
+    Marks a function as "hidden" - i.e the function can only be resolved on the :class:`.Table` it 
+    exists on, and **NOT** the :class:`.TableRow` associated with said table. 
+    """
+    func.__hidden__ = True
+
+    return func

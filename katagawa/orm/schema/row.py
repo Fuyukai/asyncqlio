@@ -90,7 +90,7 @@ class TableRow(object):
         else:
             # proxy to the table
             # but don't proxy column accesses
-            if not isinstance(item, md_column.Column):
+            if not isinstance(item, md_column.Column) and not hasattr(item, "__hidden__"):
                 if hasattr(item, "__row_attr__"):
                     return item(self)
 
