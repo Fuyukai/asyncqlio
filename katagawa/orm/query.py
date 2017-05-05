@@ -83,7 +83,11 @@ class SelectQuery(object):
         #: A list of conditions to fulfil.
         self.conditions = []
 
-        # TODO: Order by, limit, etc
+        #: The limit on the number of rows returned from this query.
+        self.row_limit = None
+
+        #: The offset to start fetching rows from.
+        self.row_offset = None
 
     def generate_sql(self) -> typing.Tuple[str, dict]:
         """
@@ -97,7 +101,7 @@ class SelectQuery(object):
                    for column in self.table.columns]
 
         # format the basic select
-        fmt = "SELECT {} FROM {} ".format(','.join(columns), self.table.__quoted_name__)
+        fmt = "SELECT {} FROM {}".format(','.join(columns), self.table.__quoted_name__)
         # format conditions
         params = {}
         c_sql = []
@@ -117,7 +121,13 @@ class SelectQuery(object):
         # append the fmt with the conditions
         # these are assumed to be And if there are multiple!
         if c_sql:
-            fmt += "WHERE {}".format(" AND ".join(c_sql))
+            fmt += " WHERE {}".format(" AND ".join(c_sql))
+
+        if self.row_limit is not None:
+            fmt += " LIMIT {}".format(self.row_limit)
+
+        if self.row_offset is not None:
+            fmt += " OFFSET {}".format(self.row_offset)
 
         return fmt, params
 
@@ -187,8 +197,7 @@ class SelectQuery(object):
         return row
 
     # Helper methods for natural builder-style queries
-    def where(self, *conditions: BaseOperator):
-
+    def where(self, *conditions: BaseOperator) -> 'SelectQuery':
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
         
@@ -201,6 +210,26 @@ class SelectQuery(object):
         for condition in conditions:
             self.add_condition(condition)
 
+        return self
+
+    def limit(self, row_limit: int) -> 'SelectQuery':
+        """
+        Sets a limit of the number of rows that can be returned from this query.
+        
+        :param row_limit: The maximum number of rows to return. 
+        :return: This query.
+        """
+        self.row_limit = row_limit
+        return self
+
+    def offset(self, offset: int) -> 'SelectQuery':
+        """
+        Sets the offset of rows to start returning results from/
+        
+        :param offset: The row offset. 
+        :return: This query.
+        """
+        self.row_offset = offset
         return self
 
     # "manual" methods
