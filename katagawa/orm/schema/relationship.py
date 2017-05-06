@@ -96,3 +96,10 @@ class Relationship(object):
     def __set_name__(self, owner, name):
         self.table = owner
         self.name = name
+
+    @property
+    def join_columns(self) -> typing.Tuple['md_column.Column', 'md_column.Column']:
+        """
+        Gets the "join" columns of this relationship, i.e the columns that link the two columns.
+        """
+        return self.via_column, self.via_column.foreign_column
