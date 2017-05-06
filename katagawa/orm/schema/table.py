@@ -184,6 +184,13 @@ class TableMeta(type):
         except AttributeError:
             return super().__repr__()
 
+    def iter_relationships(self) -> 'typing.Generator[md_relationship.Relationship, None, None]':
+        """
+        :return: A generator that yields :class:`.Relationship` objects for this table. 
+        """
+        for rel in self._relationships.values():
+            yield rel
+
     def iter_columns(self) -> 'typing.Generator[md_column.Column, None, None]':
         """
         :return: A generator that yields :class:`.Column` objects for this table. 

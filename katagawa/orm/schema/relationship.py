@@ -65,8 +65,6 @@ class Relationship(object):
         
             This can either be a :class:`.Column`, or a str in the format 
             ``<table object name>.<column name>``.
-            
-            This is **NOT** the foreign column.
         
         :param load: The way to load this relationship.
             The default is "select" - this means that a separate select statement will be issued
@@ -78,6 +76,9 @@ class Relationship(object):
             This controls if this relationship is created as one to many, or as a many to one/one to
             one relationship.
         """
+        self.table = None
+        self.name = None  # type: str
+
         #: The via column to use.
         self.via_column = None
 
