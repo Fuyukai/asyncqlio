@@ -162,7 +162,10 @@ class TableMeta(type):
         try:
             return next(filter(lambda col: col.name == item, self.columns))
         except StopIteration:
-            raise AttributeError(item) from None
+            try:
+                return next(filter(lambda tup: tup[0] == item, self._relationships.items()))[1]
+            except StopIteration:
+                raise AttributeError(item) from None
 
     @property
     def __quoted_name__(self):
