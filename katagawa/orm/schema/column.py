@@ -107,7 +107,7 @@ class Column(object):
             self.foreign_key.column = self
 
     def __repr__(self):
-        return "<Column name={} type={}>".format(self.name, self.type.sql())
+        return "<Column table={} name={} type={}>".format(self.table, self.name, self.type.sql())
 
     def __hash__(self):
         return super().__hash__()
