@@ -87,6 +87,17 @@ class TableMetadata(object):
 
                     relation.via_column = col
 
+    def get_referring_relationships(self, table: 'TableMeta'):
+        """
+        Gets a list of relationships that "refer" to this table.
+        """
+        rels = []
+        for tbl in self.tables.values():
+            for relationship in tbl.iter_relationships():
+                if relationship.table == table:
+                    rels.append(relationship)
+
+        return rels
 
 class TableMeta(type):
     def __prepare__(*args, **kwargs):
@@ -221,7 +232,7 @@ class TableMeta(type):
     def primary_key(self) -> 'PrimaryKey':
         """
         :getter: The :class:`.PrimaryKey` for this table.
-        :setter: A new :class:.PrimaryKey` for this table.
+        :setter: A new :class:`.PrimaryKey` for this table.
 
         .. note::
             A primary key will automatically be calculated from columns at define time, if any
