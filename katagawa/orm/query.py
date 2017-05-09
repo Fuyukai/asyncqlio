@@ -8,7 +8,6 @@ import warnings
 
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
-from katagawa.orm import schema as md_schema
 from katagawa.orm.operators import BaseOperator
 from katagawa.orm.schema import row as md_row
 
@@ -89,6 +88,26 @@ class SelectQuery(object):
         #: The offset to start fetching rows from.
         self.row_offset = None
 
+    def get_required_join_paths(self):
+        """
+        Gets the required join paths for this query.
+        """
+        foreign_tables = []
+        joins = []
+        for relationship in self.table.iter_relationships():
+            # ignore join relationships
+            if relationship.load_type != "joined":
+                continue
+
+            foreign_table = relationship.foreign_table
+            foreign_tables.append(foreign_table)
+            fmt = "JOIN {} ".format(foreign_table.__quoted_name__)
+            column1, column2 = relationship.join_columns
+            fmt += 'ON {} = {}'.format(column1.quoted_fullname, column2.quoted_fullname)
+            joins.append(fmt)
+
+        return foreign_tables, joins
+
     def generate_sql(self) -> typing.Tuple[str, dict]:
         """
         Generates the SQL for this query. 
@@ -96,12 +115,17 @@ class SelectQuery(object):
         counter = itertools.count()
 
         # calculate the column names
-        columns = [r'"{}"."{}" AS {}'.format(column.table.__tablename__,
-                                             column.name, column.alias_name(quoted=True))
-                   for column in self.table.columns]
+        foreign_tables, joins = self.get_required_join_paths()
+        selected_columns = self.table.iter_columns()
+        column_names = [r'"{}"."{}" AS {}'.format(column.table.__tablename__,
+                                                  column.name, column.alias_name(quoted=True))
+                        for column in itertools.chain(self.table, *foreign_tables)]
 
-        # format the basic select
-        fmt = "SELECT {} FROM {}".format(','.join(columns), self.table.__quoted_name__)
+        # BEGIN THE GENERATION
+        fmt = "SELECT {} FROM {} ".format(", ".join(column_names), self.table.__quoted_name__)
+        # cleanup after ourselves for a bit
+        del selected_columns
+
         # format conditions
         params = {}
         c_sql = []
@@ -117,6 +141,9 @@ class SelectQuery(object):
                     params[name] = val
 
             c_sql.append(condition_sql)
+
+        # append joins
+        fmt += " ".join(joins)
 
         # append the fmt with the conditions
         # these are assumed to be And if there are multiple!
