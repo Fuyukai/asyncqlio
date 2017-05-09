@@ -149,6 +149,9 @@ class SelectLoadedRelationship(object):
         query.add_condition(columns[0] == self.row.get_column_value(columns[1]))
         return await query.all()
 
+    def __iter__(self):
+        raise NotImplementedError("This cannot be iterated over normally")
+
     def __aiter__(self):
         return self._load()
 
