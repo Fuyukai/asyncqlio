@@ -3,6 +3,8 @@ Relationship helpers.
 """
 import typing
 
+from cached_property import cached_property
+
 from katagawa.orm.schema import column as md_column
 from katagawa.orm.schema import row as md_row
 from katagawa.orm import query as md_query
@@ -83,13 +85,13 @@ class Relationship(object):
         self.name = None  # type: str
 
         #: The via column to use.
-        self.via_column = None
+        self.via_column = None  # type: md_column.Column
 
         if isinstance(via, str):
             self._via_name = via
         else:
             self._via_name = None
-            self.via_column = via
+            self.via_column = via  # type: md_column.Column
 
         #: The load type for this relationship.
         self.load_type = load
@@ -103,6 +105,23 @@ class Relationship(object):
     def __set_name__(self, owner, name):
         self.owner_table = owner
         self.name = name
+
+    # right-wing logic
+    @cached_property
+    def foreign_column(self) -> 'md_column.Column':
+        """
+        Gets the foreign column this relationship refers to.
+        """
+        via = self.via_column
+        if via.table == self.owner_table:
+            # uh.
+            return via.foreign_key.foreign_column
+
+        return self.via_column
+
+    @cached_property
+    def foreign_table(self):
+        return self.foreign_column.table
 
     @property
     def join_columns(self) -> typing.Tuple['md_column.Column', 'md_column.Column']:
