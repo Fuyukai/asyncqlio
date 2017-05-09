@@ -4,6 +4,8 @@ Relationship helpers.
 import typing
 
 from katagawa.orm.schema import column as md_column
+from katagawa.orm.schema import row as md_row
+from katagawa.orm import query as md_query
 
 
 class ForeignKey(object):
@@ -55,9 +57,10 @@ class Relationship(object):
             id = Column(Integer, primary_key=True, autoincrement=True)
             name = Column(String)
             
-            owner_id = Column(Integer, foreign_key=ForeignKey("User.id")
+            owner_id = Column(Integer, foreign_key=ForeignKey("User.id"))
             owner = Relationship(via=owner_id, load="join", use_list=False)
     """
+
     def __init__(self, via: 'typing.Union[md_column.Column, str]', *,
                  load: str = "select", use_iter: bool = True):
         """
@@ -76,7 +79,7 @@ class Relationship(object):
             This controls if this relationship is created as one to many, or as a many to one/one to
             one relationship.
         """
-        self.table = None
+        self.owner_table = None
         self.name = None  # type: str
 
         #: The via column to use.
@@ -94,8 +97,11 @@ class Relationship(object):
         #: If this relationship uses the iterable format.
         self.use_iter = use_iter
 
+        if self.use_iter is False:
+            self.load_type = "joined"
+
     def __set_name__(self, owner, name):
-        self.table = owner
+        self.owner_table = owner
         self.name = name
 
     @property
@@ -104,3 +110,47 @@ class Relationship(object):
         Gets the "join" columns of this relationship, i.e the columns that link the two columns.
         """
         return self.via_column, self.via_column.foreign_column
+
+    def get_instance(self, row: 'md_row.TableRow', session):
+        """
+        Gets a new "relationship" instance.
+        """
+        if self.load_type == "select":
+            return SelectLoadedRelationship(self, row, session or row._session)
+        else:
+            raise NotImplementedError("Unknown load type {}".format(self.load_type))
+
+
+# Specific relationship types produced for TableRow objects.
+
+class SelectLoadedRelationship(object):
+    """
+    A relationship object that uses a separate SELECT statement to load follow-on tables.
+    """
+
+    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+        """
+        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param row: The :class:`.TableRow` this is being loaded from.
+        """
+        self.relationship = rel
+        self.row = row
+        self.session = session or row._session
+
+    async def _load(self):
+        """
+        Loads the rows for this session.
+        """
+        columns = self.relationship.join_columns
+        # this table is the table we're joining onto
+        table = self.relationship.via_column.table
+        query = md_query.SelectQuery(self.row._session)
+        query.set_table(table)
+        query.add_condition(columns[0] == self.row.get_column_value(columns[1]))
+        return await query.all()
+
+    def __aiter__(self):
+        return self._load()
+
+    def __anext__(self):
+        raise NotImplementedError("This is not an async iterator")

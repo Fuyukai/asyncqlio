@@ -4,7 +4,8 @@ import typing
 
 import katagawa.sentinels
 from katagawa.orm import session as md_session
-from katagawa.orm.schema import column as md_column, table as md_table
+from katagawa.orm.schema import column as md_column, table as md_table, \
+    relationship as md_relationship
 from katagawa.sentinels import NO_VALUE
 
 
@@ -90,7 +91,8 @@ class TableRow(object):
         else:
             # proxy to the table
             # but don't proxy column accesses
-            if not isinstance(item, md_column.Column) and not hasattr(item, "__hidden__"):
+            if not isinstance(item, (md_column.Column, md_relationship.Relationship)) \
+                    and not hasattr(item, "__hidden__"):
                 if hasattr(item, "__row_attr__"):
                     return item(self)
 
@@ -99,7 +101,13 @@ class TableRow(object):
                     return types.MethodType(item, self)
                 return item
 
-        # failed to load item, so load a column value instead
+        # try and load a relationship
+        try:
+            return self.get_relationship_instance(name)
+        except ValueError:
+            pass
+
+        # failed to load relationship, too, so load a column value instead
         try:
             col = next(filter(lambda col: col.name == name, self.table.columns))
         except StopIteration:
@@ -143,6 +151,22 @@ class TableRow(object):
         self._values[column] = value
 
         return self
+
+    def get_relationship_instance(self, relation_name: str):
+        """
+        Gets a 'relationship instance'.
+        
+        :param relation_name: The name of the relationship to load.
+        """
+        try:
+            relation = next(filter(
+                lambda relationship: relationship.name == relation_name,
+                self.table.iter_relationships()
+            ))
+        except StopIteration:
+            raise ValueError("No such relationship '{}'".format(relation_name))
+
+        return relation.get_instance(self, self._session)
 
     def to_dict(self, *, include_attrs: bool = False) -> dict:
         """

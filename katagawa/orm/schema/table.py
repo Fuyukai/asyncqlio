@@ -74,6 +74,7 @@ class TableMetadata(object):
 
                 if relation.via_column is None:
                     table, column = relation._via_name.split(".")
+                    # TODO: Add get_table method
                     table = self.tables[table]
 
                     if table is None:
@@ -98,6 +99,7 @@ class TableMetadata(object):
                     rels.append(relationship)
 
         return rels
+
 
 class TableMeta(type):
     def __prepare__(*args, **kwargs):
