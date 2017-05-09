@@ -36,7 +36,7 @@ class _ResultGenerator(collections.AsyncIterator):
             raise StopAsyncIteration
 
         mapped = self.query.map_columns(row)
-        return row
+        return mapped
 
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
