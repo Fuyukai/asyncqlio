@@ -6,6 +6,8 @@ import itertools
 import typing
 import warnings
 
+import functools
+
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
 from katagawa.orm.operators import BaseOperator
@@ -24,6 +26,19 @@ class _ResultGenerator(collections.AsyncIterator):
         self.query = q
 
         self._results = None  # type: BaseResultSet
+        self.last_primary_key = None
+
+    def check_new(self, record):
+        """
+        Checks if this record has a new primary key.
+        """
+        vals = tuple(record[column.alias_name(quoted=True)]
+                     for column in self.query.table._primary_key.columns)
+        if vals == self.last_primary_key:
+            return True
+
+        else:
+            return False
 
     async def __anext__(self):
         # ensure we have a BaseResultSet
@@ -34,8 +49,23 @@ class _ResultGenerator(collections.AsyncIterator):
         if row is None:
             raise StopAsyncIteration
 
-        mapped = self.query.map_columns(row)
-        return mapped
+        got_new = False
+        mapped_rows = []
+        while got_new is False:
+            check_pk = self.check_new(row)
+            if check_pk is True:
+                got_new = True
+            else:
+                mapped_rows.append(row)
+
+        if len(mapped_rows) == 1:
+            mapper = functools.partial(self.query.map_columns, row)
+        else:
+            mapper = functools.partial(self.query.map_many, *mapped_rows)
+
+        final_row = mapper()
+        self.last_primary_key = final_row.primary_key
+        return final_row
 
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
@@ -119,7 +149,9 @@ class SelectQuery(object):
         selected_columns = self.table.iter_columns()
         column_names = [r'"{}"."{}" AS {}'.format(column.table.__tablename__,
                                                   column.name, column.alias_name(quoted=True))
-                        for column in itertools.chain(self.table, *foreign_tables)]
+                        for column in
+                        itertools.chain(self.table.iter_columns(),
+                                        *[tbl.iter_columns() for tbl in foreign_tables])]
 
         # BEGIN THE GENERATION
         fmt = "SELECT {} FROM {} ".format(", ".join(column_names), self.table.__quoted_name__)
@@ -162,6 +194,7 @@ class SelectQuery(object):
     async def _execute(self) -> BaseResultSet:
         """
         Executes this query in the session bound.
+        
         :return: A :class:`.BaseResultSet` representing the results of this query.
         """
         sql, params = self.generate_sql()
@@ -203,12 +236,14 @@ class SelectQuery(object):
         mapping = {column.alias_name(self.table, quoted=False): column
                    for column in self.table.iter_columns()}
         row_expando = {}
+        relation_data = {}
 
         for colname in results.keys():
-            # TODO: Joins
             if colname in mapping:
                 column = mapping[colname]
                 row_expando[column.name] = results[colname]
+            else:
+                relation_data[colname] = results[colname]
 
         # create a new TableRow
         try:
@@ -217,11 +252,35 @@ class SelectQuery(object):
             # probably the unexpected argument error
             raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"
                             "all columns to be passed as values?")
+
         # update the existed
         row._TableRow__existed = True
         row._session = self.session
 
+        # ensure relationships are cascaded
+        row._update_relationships(relation_data)
+
         return row
+
+    def map_many(self, *rows: typing.Mapping[str, typing.Any]):
+        """
+        Maps many records to one row.
+        
+        This will group the records by the primary key of the main query table, then add additional
+        columns as appropriate.
+        """
+        # this assumes that the rows come in grouped by PK on the left
+        # also fuck right joins
+        # get the first row and construct the first table row using map_one
+        first_row = rows[0]
+        tbl_row = self.map_columns(first_row)
+
+        # loop over every "extra" rows
+        # and update the relationship data in the table
+        for runon_row in rows[1:]:
+            tbl_row._update_relationships(runon_row)
+
+        return tbl_row
 
     # Helper methods for natural builder-style queries
     def where(self, *conditions: BaseOperator) -> 'SelectQuery':
