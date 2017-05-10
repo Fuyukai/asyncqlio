@@ -378,7 +378,7 @@ class Session(object):
         :param row: The :class:`.TableRow` to add to this session.
         :return: This session.
         """
-        if row._TableRow__existed is True:
+        if row._TableRow__existed is True or any(row.primary_key):
             self.dirty.append(row)
         else:
             self.new.append(row)
