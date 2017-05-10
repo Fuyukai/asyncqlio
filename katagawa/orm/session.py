@@ -378,11 +378,22 @@ class Session(object):
         :param row: The :class:`.TableRow` to add to this session.
         :return: This session.
         """
-        if row._TableRow__existed is True or any(row.primary_key):
+        if row._TableRow__existed is True:
             self.dirty.append(row)
         else:
             self.new.append(row)
 
         return self
+
+    def merge(self, row: 'md_row.TableRow') -> 'Session':
+        """
+        Merges a row with this session.
+        
+        This should be used for rows with a primary key THAT ALREADY EXIST IN THE DATABASE.
+        This will **NOT** insert new rows.
+        """
+        pk = row.primary_key if isinstance(row.primary_key, tuple) else (row.primary_key,)
+        self.dirty.append(pk)
+
 
     insert = add
