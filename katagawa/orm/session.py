@@ -210,6 +210,16 @@ class Session(object):
                 params[p] = d["new"]
                 sets.append("{} = {}".format(col.quoted_name, emit(p)))
 
+            if not sets:
+                columns = [col for col in row.table.columns if col
+                           not in row.table.primary_key.columns]
+                for column in columns:
+                    p = next_param()
+                    val = row.get_column_value(column, return_default=False)
+                    if val != NO_VALUE:
+                        params[p] = val
+                        sets.append("{} = {}".format(column.quoted_name, emit(p)))
+
             # join the set actions, and add it to the base query
             base_query += ", ".join(sets)
 
