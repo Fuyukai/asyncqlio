@@ -55,30 +55,7 @@ class _ResultGenerator(collections.AsyncIterator):
         if row is None:
             raise StopAsyncIteration
 
-        got_new = False
-        mapped_rows = []
-        while got_new is False:
-            check_pk = self.check_new(row)
-            row = await self._results.fetch_row()
-            if row is None:
-                raise StopAsyncIteration
-
-            if check_pk is True:
-                mapped_rows.append(row)
-                got_new = True
-            else:
-                mapped_rows.append(row)
-
-        if len(mapped_rows) == 1:
-            mapper = functools.partial(self.query.map_columns, mapped_rows[0])
-        else:
-            mapper = functools.partial(self.query.map_many, *mapped_rows)
-
-        final_row = mapper()
-        self.last_primary_key = final_row.primary_key   \
-            if isinstance(final_row.primary_key, tuple) \
-            else (final_row.primary_key,)
-        return final_row
+        return self.query.map_columns(row)
 
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
