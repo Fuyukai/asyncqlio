@@ -392,8 +392,7 @@ class Session(object):
         This should be used for rows with a primary key THAT ALREADY EXIST IN THE DATABASE.
         This will **NOT** insert new rows.
         """
-        pk = row.primary_key if isinstance(row.primary_key, tuple) else (row.primary_key,)
-        self.dirty.append(pk)
+        self.dirty.append(row)
 
 
     insert = add
