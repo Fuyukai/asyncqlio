@@ -60,6 +60,9 @@ class _ResultGenerator(collections.AsyncIterator):
         while got_new is False:
             check_pk = self.check_new(row)
             row = await self._results.fetch_row()
+            if row is None:
+                raise StopAsyncIteration
+
             if check_pk is True:
                 mapped_rows.append(row)
                 got_new = True
