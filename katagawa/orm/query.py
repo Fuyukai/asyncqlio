@@ -75,7 +75,7 @@ class _ResultGenerator(collections.AsyncIterator):
         """
         l = []
         async for result in self:
-            l.append(self.query.map_columns(result))
+            l.append(result)
 
         return l
 
