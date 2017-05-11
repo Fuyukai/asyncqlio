@@ -257,8 +257,8 @@ class SelectQuery(object):
         row._TableRow__existed = True
         row._session = self.session
 
-        # ensure relationships are cascaded
-        row._update_relationships(relation_data)
+        ## ensure relationships are cascaded
+        #row._update_relationships(relation_data)
 
         return row
 
@@ -278,7 +278,9 @@ class SelectQuery(object):
         # loop over every "extra" rows
         # and update the relationship data in the table
         for runon_row in rows[1:]:
-            tbl_row._update_relationships(runon_row)
+            # TODO: Write this
+            #tbl_row._update_relationships(runon_row)
+            pass
 
         return tbl_row
 
