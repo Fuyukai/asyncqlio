@@ -8,6 +8,8 @@ import warnings
 
 import functools
 
+import time
+
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
 from katagawa.orm.operators import BaseOperator
@@ -35,12 +37,14 @@ class _ResultGenerator(collections.AsyncIterator):
         vals = tuple(record[column.alias_name(quoted=False)]
                      for column in self.query.table.primary_key.columns)
         if vals == self.last_primary_key:
-            return True
+            return False
 
         else:
             if self.last_primary_key is None:
                 self.last_primary_key = vals
-            return False
+                return True
+
+            return True
 
     async def __anext__(self):
         # ensure we have a BaseResultSet
@@ -55,18 +59,22 @@ class _ResultGenerator(collections.AsyncIterator):
         mapped_rows = []
         while got_new is False:
             check_pk = self.check_new(row)
+            row = await self._results.fetch_row()
             if check_pk is True:
+                mapped_rows.append(row)
                 got_new = True
             else:
                 mapped_rows.append(row)
 
         if len(mapped_rows) == 1:
-            mapper = functools.partial(self.query.map_columns, row)
+            mapper = functools.partial(self.query.map_columns, mapped_rows[0])
         else:
             mapper = functools.partial(self.query.map_many, *mapped_rows)
 
         final_row = mapper()
-        self.last_primary_key = final_row.primary_key
+        self.last_primary_key = final_row.primary_key   \
+            if isinstance(final_row.primary_key, tuple) \
+            else (final_row.primary_key,)
         return final_row
 
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
