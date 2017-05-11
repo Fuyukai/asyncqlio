@@ -32,8 +32,8 @@ class _ResultGenerator(collections.AsyncIterator):
         """
         Checks if this record has a new primary key.
         """
-        vals = tuple(record[column.alias_name(quoted=True)]
-                     for column in self.query.table._primary_key.columns)
+        vals = tuple(record[column.alias_name(quoted=False)]
+                     for column in self.query.table.primary_key.columns)
         if vals == self.last_primary_key:
             return True
 
