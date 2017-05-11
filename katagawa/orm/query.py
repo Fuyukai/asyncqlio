@@ -38,6 +38,8 @@ class _ResultGenerator(collections.AsyncIterator):
             return True
 
         else:
+            if self.last_primary_key is None:
+                self.last_primary_key = vals
             return False
 
     async def __anext__(self):
