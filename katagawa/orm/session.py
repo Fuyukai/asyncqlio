@@ -315,10 +315,15 @@ class Session(object):
         :return: The row, with primary key included.
         """
         # this just creates a new query
-        # and inserts it
+        # and calls _do_insert_query
+        # to actually run the query
         q = md_query.InsertQuery(self)
         q.add_row(row)
-        return await self._do_insert_query(q)
+        result = await self._do_insert_query(q)
+        try:
+            return result[0]
+        except IndexError:
+            return None
 
     async def _run_insert(self, row: 'md_row.TableRow', query: str, params):
         # this needs to be a cursor
@@ -355,7 +360,7 @@ class Session(object):
         queries = query.generate_sql()
         results = []
 
-        for row, (sql, params) in zip(query.rows, queries):
+        for row, (sql, params) in zip(query.rows_to_insert, queries):
             results.append(await self._run_insert(row, sql, params))
 
         return results

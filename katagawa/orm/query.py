@@ -361,10 +361,10 @@ class InsertQuery(object):
         self.session = sess
 
         #: A list of rows to generate the insert statements for.
-        self.rows = []
+        self.rows_to_insert = []
 
     def __await__(self):
-        return self.run()
+        return self.run().__await__()
 
     async def run(self) -> 'typing.List[md_row.TableRow]':
         """
@@ -393,7 +393,7 @@ class InsertQuery(object):
         :param row: The :class:`.TableRow` to use for this query.
         :return: This query.
         """
-        self.rows.append(row)
+        self.rows_to_insert.append(row)
         return self
 
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
@@ -409,7 +409,7 @@ class InsertQuery(object):
         def emit():
             return "param_{}".format(next(counter))
 
-        for row in self.rows:
+        for row in self.rows_to_insert:
             query, params = row._get_insert_sql(emit, self.session)
             queries.append((query, params))
 
