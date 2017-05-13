@@ -363,6 +363,9 @@ class InsertQuery(object):
         #: A list of rows to generate the insert statements for.
         self.rows = []
 
+    def __await__(self):
+        return self.run()
+
     async def run(self) -> 'typing.List[md_row.TableRow]':
         """
         Runs this query.
@@ -393,7 +396,7 @@ class InsertQuery(object):
         self.rows.append(row)
         return self
 
-    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple], str]:
+    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
         Generates the SQL statements for this insert query.
         
