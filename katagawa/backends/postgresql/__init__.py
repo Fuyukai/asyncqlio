@@ -23,3 +23,7 @@ class PostgresqlDialect(BaseDialect):
     @property
     def lastval_method(self):
         return "LASTVAL()"
+
+    @property
+    def has_returns(self):
+        return True

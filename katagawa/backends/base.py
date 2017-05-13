@@ -21,6 +21,7 @@ class BaseDialect:
     By default, all ``has_`` properties will default to False, so that none of them need be 
     implemented. Regular methods will raise NotImplementedError, however.
     """
+
     @property
     def has_checkpoints(self) -> bool:
         """
@@ -32,6 +33,14 @@ class BaseDialect:
     def has_serial(self) -> bool:
         """
         Returns True if this dialect can use the SERIAL datatype.
+        """
+        return False
+
+    @property
+    def has_returns(self) -> bool:
+        """
+        Returns True if this dialect has RETURNS.
+        :return: 
         """
         return False
 
