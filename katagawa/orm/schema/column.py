@@ -140,9 +140,23 @@ class Column(object):
         return i
 
     def __eq__(self, other: typing.Any) -> 'md_operators.Eq':
+        # why is this here?
+        # sometimes, we need to check if two columns are equal
+        # so this does `col1 == col2` etc
+        # however, we override col.__eq__ to return an Eq operator.
+        # python does a best guess and calls bool(col.__eq__(other)), which is True
+        # because default __bool__ is truthy, this returns True
+        # so it assumes they ARE equal
+        # an example of this is checking if a column is in a primary key
+        if isinstance(other, Column):
+            return self.table == other.table and self.name == other.name
+
         return md_operators.Eq(self, other)
 
     def __ne__(self, other) -> 'md_operators.NEq':
+        if isinstance(other, Column):
+            return self.table != other.table or self.name != other.name
+
         return md_operators.NEq(self, other)
 
     def __lt__(self, other) -> 'md_operators.Lt':
