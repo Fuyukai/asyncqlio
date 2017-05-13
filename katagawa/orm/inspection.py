@@ -34,3 +34,17 @@ def get_row_history(row: 'md_row.TableRow') \
             d[column] = {"old": old_value, "new": new_value}
 
     return d
+
+
+def get_pk(row: 'md_row.TableRow', as_tuple: bool = True):
+    """
+    Gets the primary key for a TableRow.
+    
+    :param row: The :class:`.TableRow` to extract the PK from. 
+    :param as_tuple: Should this PK always be returned as a tuple?
+    """
+    pk = row.primary_key
+    if as_tuple and not isinstance(pk, tuple):
+        return pk,
+
+    return pk

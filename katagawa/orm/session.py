@@ -49,14 +49,11 @@ class Session(object):
         sess = db.get_session()
     """
 
-    def __init__(self, bind: 'md_kg.Katagawa', allow_notifications: bool = False):
+    def __init__(self, bind: 'md_kg.Katagawa'):
         """
         :param bind: The :class:`.Katagawa` instance we are bound to. 
         """
         self.bind = bind
-
-        #: If this session allows row notifications.
-        self.allow_notifications = allow_notifications
 
         #: The current state for the session.
         self._state = SessionState.NOT_READY
@@ -64,18 +61,6 @@ class Session(object):
         #: The current :class:`.BaseTransaction` this Session is associated with.
         #: The transaction is used for making queries and inserts, etc.
         self.transaction = None  # type: BaseTransaction
-
-        #: The current list of "new" objects.
-        #: These are table rows that are ready to be inserted.
-        self.new = []
-
-        #: The current list of "dirty" objects.
-        #: These are table rows that are ready to be updated.
-        self.dirty = []
-
-        #: The current list of "deleted" objects.
-        #: These are table rows that are ready to be deleted.
-        self.deleted = []
 
     async def __aenter__(self) -> 'Session':
         await self.start()
@@ -96,21 +81,6 @@ class Session(object):
 
         return False
 
-    def notify_set(self, row: 'md_row.TableRow'):
-        """
-        Notifies that a row has been set. Typically called by ``ColumnType.on_set``.  
-        This will put the row into the ``dirty`` list of rows, if it isn't in ``new`` or 
-        ``deleted``.
-        
-        :param row: The :class:`.TableRow` to be notified of.
-        """
-        if not self.allow_notifications:
-            return
-
-        if row._TableRow__existed is True:
-            if not [row in x for x in [self.new, self.dirty, self.deleted]]:
-                self.dirty.append(row)
-
     # Query builders
     def select(self, table) -> 'md_query.SelectQuery':
         """
@@ -130,9 +100,6 @@ class Session(object):
         """
         queries = []
         counter = itertools.count()
-
-        if new is None:
-            new = self.new
 
         # group the rows
         for tbl, rows in itertools.groupby(new, lambda r: r.table):
@@ -254,6 +221,7 @@ class Session(object):
         if self._state is not SessionState.NOT_READY:
             raise RuntimeError("Session must not be ready or closed")
 
+        logger.debug("Acquiring new transaction, and beginning")
         self.transaction = self.bind.get_transaction()
         await self.transaction.begin()
 
@@ -267,21 +235,7 @@ class Session(object):
          
         This will **not** close the session; it can be re-used after a commit.
         """
-        # TODO: Checkpoints
-        # TODO: More complex logic relating to dependants and relationships
-        inserts = self._generate_inserts()
-        for query, params, rows in inserts:
-            await self.execute(query, params=params)
-            for row in rows:
-                self.new.remove(row)
-
-        # TODO: Investigate update performance increase possibilities
-        updates = self._generate_updates()
-        for query, params, rows in updates:
-            await self.execute(query, params=params)
-            for row in rows:
-                self.dirty.remove(row)
-
+        logger.debug("Committing transaction")
         await self.transaction.commit()
         return self
 
@@ -351,14 +305,23 @@ class Session(object):
             This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
             
-            Also, tables with auto-incrementing compound primary keys will not have all fields 
-            filled properly.
+            Also, tables with auto-incrementing fields will only have their first field filled in
+            outside of Postgres databases.
         
         :param row: The :class:`.TableRow` to insert.
         :return: The row, with primary key included.
         """
-        generated = self._generate_inserts(new=[row])[0]
-        await self.execute(generated[0], generated[1])
+        q = md_query.InsertQuery(self)
+        q.add_row(row)
+        queries = q.generate_sql()
+        (query, params), lastval = queries[0]
+        # this needs to be a cursor
+        # since postgres uses RETURNING
+        cur = await self.cursor(query, params)
+        # some drivers don't execute until this is done
+        # (asyncpg, apparently)
+        # so always fetch a row now
+        pkey_rows = await cur.fetch_row()
 
         # check if the row already had a primary key
         pk = row.primary_key
@@ -368,41 +331,38 @@ class Session(object):
         if any(pk):
             return row
         else:
-            # fetch LASTVAL() or the equivalent
-            lastval_func = self.bind.dialect.lastval_method
-            fmt = "SELECT {}".format(lastval_func, lastval_func)
-            try:
-                pkey = await self.fetch(fmt)
-            except OperationalError:
-                raise OperationalError("Unable to determine the primary key of this row.")
-
-            for col, val in itertools.zip_longest(row.table.primary_key.columns, pkey):
-                row.store_column_value(col, val)
+            # if we have RETURNING, we can just fetch the first result
+            if self.bind.dialect.has_returns:
+                for colname, value in pkey_rows.items():
+                    try:
+                        column = next(filter(lambda column: column.name == colname,
+                                             row.table.iter_columns()))
+                    except StopIteration:
+                        # wat
+                        continue
+                    row.store_column_value(column, value, track_history=False)
+                    await cur.close()
+            else:
+                # TODO: Figure out how to implement this properly.
+                await cur.close()
 
             return row
 
-    def add(self, row: 'md_row.TableRow') -> 'Session':
+    async def add(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
         """
-        Adds a row to this session, storing it for a later commit.
+        Adds a row to the current transaction. This will emit SQL that will generate an INSERT or 
+        UPDATE statement, and then update the primary key of this row.
         
-        :param row: The :class:`.TableRow` to add to this session.
-        :return: This session.
+        .. warning::
+            This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
+            actually commit the row to storage.
+    
+        :param row: The :class:`.TableRow` object to add to the transaction.
+        :return: The :class:`.TableRow` with primary key filled in, if applicable.
         """
-        if row._TableRow__existed is True:
-            self.dirty.append(row)
+        # it already existed in our session, so emit a UPDATE
+        if row._TableRow__existed:
+            return await self.update_now(row)
+        # otherwise, emit an INSERT
         else:
-            self.new.append(row)
-
-        return self
-
-    def merge(self, row: 'md_row.TableRow') -> 'Session':
-        """
-        Merges a row with this session.
-        
-        This should be used for rows with a primary key THAT ALREADY EXIST IN THE DATABASE.
-        This will **NOT** insert new rows.
-        """
-        self.dirty.append(row)
-
-
-    insert = add
+            return await self.insert_now(row)

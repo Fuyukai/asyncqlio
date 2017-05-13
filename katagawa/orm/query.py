@@ -12,6 +12,7 @@ import time
 
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
+from katagawa.orm import inspection
 from katagawa.orm.operators import BaseOperator
 from katagawa.orm.schema import row as md_row
 
@@ -248,7 +249,7 @@ class SelectQuery(object):
         row._session = self.session
 
         ## ensure relationships are cascaded
-        #row._update_relationships(relation_data)
+        # row._update_relationships(relation_data)
 
         return row
 
@@ -269,7 +270,7 @@ class SelectQuery(object):
         # and update the relationship data in the table
         for runon_row in rows[1:]:
             # TODO: Write this
-            #tbl_row._update_relationships(runon_row)
+            # tbl_row._update_relationships(runon_row)
             pass
 
         return tbl_row
@@ -330,3 +331,64 @@ class SelectQuery(object):
         """
         self.conditions.append(condition)
         return self
+
+
+class InsertQuery(object):
+    """
+    Represents an INSERT query.
+    """
+
+    def __init__(self, sess: 'md_session.Session'):
+        """
+        :param sess: The :class:`.Session` this object is bound to. 
+        """
+        #: The :class:`.Session` associated with this query.
+        self.session = sess
+
+        #: A list of rows to generate the insert statements for.
+        self.rows = []
+
+    def add_row(self, row: 'md_row.TableRow') -> 'InsertQuery':
+        """
+        Adds a row to this query, allowing it to be executed later.
+        
+        :param row: The :class:`.TableRow` to use for this query.
+        :return: This query.
+        """
+        self.rows.append(row)
+        return self
+
+    def generate_sql(self) -> typing.List[typing.Tuple[typing.Tuple[str, tuple], str]]:
+        """
+        Generates the SQL statements for this insert query.
+        
+        This will return a list of two-item tuples to execute:
+        
+            - The SQL query+params to emit to actually insert the row
+            - The SQL query to emit to get the primary key, if applicable.
+        
+        If the 2nd item is None, then either:
+        
+            - This dialect does not have a separate query (it uses RETURNING, e.g. postgres)
+            - The primary key was already specified.
+        """
+        queries = []
+        counter = itertools.count()
+
+        def emit():
+            return "param_{}".format(next(counter))
+
+        for row in self.rows:
+            query, params = row._get_insert_sql(emit, self.session)
+
+            if self.session.bind.dialect.has_returns:
+                tup = ((query, params), None)
+            elif any(inspection.get_pk(row, as_tuple=True)):
+                tup = ((query, params), None)
+            else:
+                tup = ((query, params),
+                       "SELECT {};".format(self.session.bind.dialect.lastval_method))
+
+            queries.append(tup)
+
+        return queries

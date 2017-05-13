@@ -6,7 +6,7 @@ import katagawa.sentinels
 from katagawa.orm import session as md_session
 from katagawa.orm.schema import column as md_column, table as md_table, \
     relationship as md_relationship
-from katagawa.sentinels import NO_VALUE
+from katagawa.sentinels import NO_VALUE, NO_DEFAULT
 
 
 class TableRow(object):
@@ -69,6 +69,51 @@ class TableRow(object):
 
         # call on_set for the column
         return col.type.on_set(self, value)
+
+    def _get_insert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session'):
+        """
+        Gets the INSERT into statement SQL for this row.
+        """
+        if self._session is None:
+            self._session = session
+
+        q = "INSERT INTO {} ".format(self.table.__quoted_name__)
+        params = {}
+        column_names = []
+        sql_params = []
+
+        for column in self.table.iter_columns():
+            column_names.append(column.quoted_name)
+            value = self.get_column_value(column)
+            if value is NO_VALUE or (value is None and column.default is NO_DEFAULT):
+                sql_params.append("DEFAULT")
+            else:
+                # emit a new param
+                name = emitter()
+                param_name = session.bind.emit_param(name)
+                # set the params to value
+                # then add the {param_name} to the VALUES
+                params[name] = value
+                sql_params.append(param_name)
+
+        q += "({}) ".format(", ".join(column_names))
+        q += "VALUES "
+        q += "({}) ".format(", ".join(sql_params))
+        # check if we support RETURNS
+        if session.bind.dialect.has_returns:
+            columns_to_get = []
+            # always add all columns that are autoincremented
+            # or primary key
+            # why? this means that we can fill in the row fields properly!
+            for column in self.table.iter_columns():
+                if column.autoincrement is True or column in self.table.primary_key.columns:
+                    columns_to_get.append(column)
+
+            pk = "({})".format(", ".join(column.quoted_name for column in columns_to_get))
+            q += " RETURNING {}".format(pk)
+
+        q += ";"
+        return q, params
 
     def _resolve_item(self, name: str):
         """
@@ -138,13 +183,14 @@ class TableRow(object):
             else:
                 return NO_VALUE
 
-    def store_column_value(self, column: 'md_column.Column', value: typing.Any):
+    def store_column_value(self, column: 'md_column.Column', value: typing.Any,
+                           track_history: bool = True):
         """
         Updates the value of a column in this row.
         
         This will also update the history of the value, if applicable.
         """
-        if column not in self._previous_values:
+        if column not in self._previous_values and track_history:
             if column in self._values:
                 self._previous_values[column] = self._values[column]
 
