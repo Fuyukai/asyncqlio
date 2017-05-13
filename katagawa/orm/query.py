@@ -358,19 +358,12 @@ class InsertQuery(object):
         self.rows.append(row)
         return self
 
-    def generate_sql(self) -> typing.List[typing.Tuple[typing.Tuple[str, tuple], str]]:
+    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple], str]:
         """
         Generates the SQL statements for this insert query.
         
-        This will return a list of two-item tuples to execute:
-        
+        This will return a list of two-item tuples to execute: 
             - The SQL query+params to emit to actually insert the row
-            - The SQL query to emit to get the primary key, if applicable.
-        
-        If the 2nd item is None, then either:
-        
-            - This dialect does not have a separate query (it uses RETURNING, e.g. postgres)
-            - The primary key was already specified.
         """
         queries = []
         counter = itertools.count()
@@ -380,15 +373,6 @@ class InsertQuery(object):
 
         for row in self.rows:
             query, params = row._get_insert_sql(emit, self.session)
-
-            if self.session.bind.dialect.has_returns:
-                tup = ((query, params), None)
-            elif any(inspection.get_pk(row, as_tuple=True)):
-                tup = ((query, params), None)
-            else:
-                tup = ((query, params),
-                       "SELECT {};".format(self.session.bind.dialect.lastval_method))
-
-            queries.append(tup)
+            queries.append((query, params))
 
         return queries

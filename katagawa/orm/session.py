@@ -314,7 +314,7 @@ class Session(object):
         q = md_query.InsertQuery(self)
         q.add_row(row)
         queries = q.generate_sql()
-        (query, params), lastval = queries[0]
+        query, params = queries[0]
         # this needs to be a cursor
         # since postgres uses RETURNING
         cur = await self.cursor(query, params)
