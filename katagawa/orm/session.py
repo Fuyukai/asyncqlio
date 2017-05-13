@@ -323,28 +323,19 @@ class Session(object):
         # so always fetch a row now
         pkey_rows = await cur.fetch_row()
 
-        # check if the row already had a primary key
-        pk = row.primary_key
-        if not isinstance(pk, tuple):
-            pk = (pk,)
-
-        if any(pk):
-            return row
-        else:
-            # if we have RETURNING, we can just fetch the first result
-            if self.bind.dialect.has_returns:
-                for colname, value in pkey_rows.items():
-                    try:
-                        column = next(filter(lambda column: column.name == colname,
-                                             row.table.iter_columns()))
-                    except StopIteration:
-                        # wat
-                        continue
-                    row.store_column_value(column, value, track_history=False)
-                    await cur.close()
-            else:
-                # TODO: Figure out how to implement this properly.
+        if self.bind.dialect.has_returns:
+            for colname, value in pkey_rows.items():
+                try:
+                    column = next(filter(lambda column: column.name == colname,
+                                         row.table.iter_columns()))
+                except StopIteration:
+                    # wat
+                    continue
+                row.store_column_value(column, value, track_history=False)
                 await cur.close()
+        else:
+            # TODO: Figure out how to implement this properly.
+            await cur.close()
 
             return row
 
