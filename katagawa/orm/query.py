@@ -79,7 +79,9 @@ class SelectQuery(object):
     .. code-block:: python
         sess = db.get_session()
         async with sess:
-            query = sess.select(User)  # query is instance of SelectQuery
+            query = sess.select.from_(User)  # query is instance of SelectQuery
+            # alternatively, but not recommended
+            query = sess.select(User)
             
     However, it is possible to create this class manually:
     
@@ -108,6 +110,9 @@ class SelectQuery(object):
 
         #: The offset to start fetching rows from.
         self.row_offset = None
+
+    def __call__(self, table):
+        return self.from_(table)
 
     def get_required_join_paths(self):
         """
@@ -276,12 +281,22 @@ class SelectQuery(object):
         return tbl_row
 
     # Helper methods for natural builder-style queries
+    def from_(self, tbl) -> 'SelectQuery':
+        """
+        Sets the table this query is selecting from.
+        
+        :param tbl: The :class:`.Table` object to select. 
+        :return: This query.
+        """
+        self.set_table(tbl)
+        return self
+
     def where(self, *conditions: BaseOperator) -> 'SelectQuery':
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
         
         .. code-block:: python
-            sess.select(User).where(User.id == 1)
+            sess.select.from_(User).where(User.id == 1)
         
         :param conditions: The conditions to use for this WHERE clause.
         :return: This query.
@@ -347,6 +362,26 @@ class InsertQuery(object):
 
         #: A list of rows to generate the insert statements for.
         self.rows = []
+
+    async def run(self) -> 'typing.List[md_row.TableRow]':
+        """
+        Runs this query.
+        
+        :return: A list of inserted :class:`.md_row.TableRow`.
+        """
+        return await self.session._do_insert_query(self)
+
+    def rows(self, *rows: 'md_row.TableRow') -> 'InsertQuery':
+        """
+        Adds a set of rows to the query.
+        
+        :param rows: The rows to insert. 
+        :return: This query.
+        """
+        for row in rows:
+            self.add_row(row)
+
+        return self
 
     def add_row(self, row: 'md_row.TableRow') -> 'InsertQuery':
         """

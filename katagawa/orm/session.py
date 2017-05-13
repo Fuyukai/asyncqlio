@@ -82,16 +82,19 @@ class Session(object):
         return False
 
     # Query builders
-    def select(self, table) -> 'md_query.SelectQuery':
+    @property
+    def select(self) -> 'md_query.SelectQuery':
         """
         Creates a new SELECT query that can be built upon.
         
-        :param table: The :class:`.Table` to select. 
         :return: A new :class:`.SelectQuery`.
         """
         q = md_query.SelectQuery(self)
-        q.set_table(table)
         return q
+
+    @property
+    def insert(self):
+        return md_query.InsertQuery(self)
 
     def _generate_inserts(self, new: list = None) \
             -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
@@ -311,10 +314,13 @@ class Session(object):
         :param row: The :class:`.TableRow` to insert.
         :return: The row, with primary key included.
         """
+        # this just creates a new query
+        # and inserts it
         q = md_query.InsertQuery(self)
         q.add_row(row)
-        queries = q.generate_sql()
-        query, params = queries[0]
+        return await self._do_insert_query(q)
+
+    async def _run_insert(self, row: 'md_row.TableRow', query: str, params):
         # this needs to be a cursor
         # since postgres uses RETURNING
         cur = await self.cursor(query, params)
@@ -337,7 +343,22 @@ class Session(object):
             # TODO: Figure out how to implement this properly.
             await cur.close()
 
-            return row
+        return row
+
+    async def _do_insert_query(self, query: 'md_query.InsertQuery'):
+        """
+        Does an insert, based on a query.
+        
+        :param query: The :class:`.InsertQuery` to use.
+        :return: The list of rows that were inserted.
+        """
+        queries = query.generate_sql()
+        results = []
+
+        for row, (sql, params) in zip(query.rows, queries):
+            results.append(await self._run_insert(row, sql, params))
+
+        return results
 
     async def add(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
         """
