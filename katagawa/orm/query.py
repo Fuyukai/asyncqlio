@@ -436,6 +436,12 @@ class RowUpdateQuery(object):
         #: The list of rows to update.
         self.rows_to_update = []
 
+    def __await__(self):
+        return self.run().__await__()
+
+    async def run(self):
+        return await self.session._do_update_query(self)
+
     def rows(self, *rows: 'md_row.TableRow') -> 'RowUpdateQuery':
         """
         Adds a set of rows to the query.
