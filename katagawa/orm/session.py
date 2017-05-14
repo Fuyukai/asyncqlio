@@ -257,6 +257,36 @@ class Session(object):
 
         return results
 
+    @enforce_open
+    async def update_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+        """
+        Updates a row NOW. 
+        
+        .. warning::
+            This will only generate the UPDATE statement for the row now. Only :meth:`.commit` will
+            actually commit the row to storage.
+        
+        :param row: The :class:`.TableRow` to update.
+        :return: The :class:`.TableRow` that was updated.
+        """
+        q = md_query.RowUpdateQuery(self)
+        q.add_row(row)
+
+        await self._do_update_query(q)
+        return row
+
+    async def _do_update_query(self, query: 'md_query.RowUpdateQuery'):
+        """
+        Executes an update query.
+        
+        :param query: The :class:`.RowUpdateQuery` or :class:`.BulkUpdateQuery` to execute. 
+        """
+        if isinstance(query, md_query.RowUpdateQuery):
+            for sql, params in query.generate_sql():
+                await self.execute(sql, params)
+
+        return query
+
     async def add(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
         """
         Adds a row to the current transaction. This will emit SQL that will generate an INSERT or 
