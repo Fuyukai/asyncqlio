@@ -305,3 +305,15 @@ class Session(object):
         # otherwise, emit an INSERT
         else:
             return await self.insert_now(row)
+
+    async def merge(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+        """
+        Merges a row with a row that already exists in the database.
+        
+        This should be used for rows that have a primary key, but were not returned from 
+        :meth:`.select`.
+        
+        :param row: The :class:`.TableRow` to merge. 
+        :return: The :class:`.TableRow` once updated.
+        """
+        return await self.update_now(row)
