@@ -3,7 +3,7 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 """
 import typing
 
-import katagawa.sentinels
+from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 from katagawa.orm import session as md_session
 from katagawa.orm.schema import row as md_row, column as md_column
 
@@ -27,11 +27,10 @@ def get_row_history(row: 'md_row.TableRow') \
     """
     d = {}
     for column in row.table.iter_columns():
-        old_value = row._previous_values.get(column)
+        old_value = row.get_old_value(column)
         new_value = row.get_column_value(column, return_default=False)
 
-        if new_value is not katagawa.sentinels.NO_VALUE:
-            d[column] = {"old": old_value, "new": new_value}
+        d[column] = {"old": old_value, "new": new_value}
 
     return d
 

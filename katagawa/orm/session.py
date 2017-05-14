@@ -93,121 +93,13 @@ class Session(object):
         return q
 
     @property
-    def insert(self):
+    def insert(self) -> 'md_query.InsertQuery':
+        """
+        Creates a new INSERT INTO query that can be built upon.
+        
+        :return: A new :class:`.InsertQuery`. 
+        """
         return md_query.InsertQuery(self)
-
-    def _generate_inserts(self, new: list = None) \
-            -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
-        """
-        Generates INSERT INTO queries for the current session.
-        """
-        queries = []
-        counter = itertools.count()
-
-        # group the rows
-        for tbl, rows in itertools.groupby(new, lambda r: r.table):
-            rows = list(rows)
-            # insert into the quoted table
-            base_query = "INSERT INTO {} ".format(tbl.__quoted_name__)
-            # add the columns (quoted names)
-            base_query += "({})".format(", ".join(column.quoted_name
-                                                  for column in tbl.iter_columns()))
-            # get the values
-            base_query += " VALUES "
-
-            # build the params dict and VALUES section
-            # this is done by looping over the rows
-            # looping over the columns of the row's table
-            # checking for the new value, then emitting it
-            # if no value is available, it will emit DEFAULT
-            params = {}
-            value_sets = []
-            for row in rows:
-                prms_so_far = []
-                assert isinstance(row, md_row.TableRow)
-                # row._validate()
-                for column in tbl.iter_columns():
-                    value = row.get_column_value(column, return_default=True)
-                    if value is NO_VALUE or (value is None and column.default is NO_DEFAULT):
-                        prms_so_far.append("DEFAULT")
-                    else:
-                        # emit a new param
-                        number = next(counter)
-                        name = "param_{}".format(number)
-                        param_name = self.bind.emit_param(name)
-                        # set the params to value
-                        # then add the {param_name} to the VALUES
-                        params[name] = value
-                        prms_so_far.append(param_name)
-
-                # join the params together
-                value_sets.append("({})".format(", ".join(prms_so_far)))
-
-            # join all of the value sets together
-            base_query += ", ".join(value_sets)
-            base_query += ";"
-            queries.append((base_query, params, rows))
-
-        return queries
-
-    def _generate_updates(self) -> typing.List[typing.Tuple[str, typing.Dict[str, typing.Any]]]:
-        """
-        Generates UPDATE queries for all dirty rows in the current session.
-        """
-        queries = []
-        counter = itertools.count()
-        # helper functions
-        next_param = lambda: "param_{}".format(next(counter))
-        emit = self.bind.emit_param
-
-        # don't group by - we can't do multi updates in one go (yet)
-        for row in self.dirty:
-            assert isinstance(row, md_row.TableRow)
-            params = {}
-            base_query = "UPDATE {} SET ".format(row.table.__quoted_name__)
-
-            # extract the row history
-            history = md_inspection.get_row_history(row)
-            sets = []
-            for col, d in history.items():
-                # don't bother setting it
-                if d["old"] is None:
-                    continue
-
-                # get the next param from the counter
-                # then store the name and the value in the row
-                p = next_param()
-                params[p] = d["new"]
-                sets.append("{} = {}".format(col.quoted_name, emit(p)))
-
-            if not sets:
-                columns = [col for col in row.table.columns if col
-                           not in row.table.primary_key.columns]
-                for column in columns:
-                    p = next_param()
-                    val = row.get_column_value(column, return_default=False)
-                    if val != NO_VALUE:
-                        params[p] = val
-                        sets.append("{} = {}".format(column.quoted_name, emit(p)))
-
-            # join the set actions, and add it to the base query
-            base_query += ", ".join(sets)
-
-            wheres = []
-            for col in row.table.primary_key.columns:
-                # get the param name
-                # then store it in the params counter
-                # and build a new condition for the WHERE clause
-                p = next_param()
-                params[p] = history[col]["old"]
-                wheres.append("{} = {}".format(col.quoted_name, emit(p)))
-            base_query += " WHERE "
-            base_query += " AND ".join(wheres)
-            base_query += ";"
-
-            queries.append((base_query, params, [row]))
-
-        return queries
 
     async def start(self) -> 'Session':
         """

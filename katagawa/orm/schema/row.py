@@ -3,7 +3,7 @@ import types
 import typing
 
 import katagawa.sentinels
-from katagawa.orm import session as md_session
+from katagawa.orm import session as md_session, inspection as md_inspection
 from katagawa.orm.schema import column as md_column, table as md_table, \
     relationship as md_relationship
 from katagawa.sentinels import NO_VALUE, NO_DEFAULT
@@ -115,6 +115,55 @@ class TableRow(object):
         q += ";"
         return q, params
 
+    def _get_update_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session'):
+        """
+        Gets the UPDATE statement SQL for this row.
+        """
+        if self._session is None:
+            self._session = session
+
+        params = {}
+        base_query = "UPDATE {} SET ".format(self.table.__quoted_name__)
+        # the params to "set"
+        sets = []
+
+        # first, get our row history
+        history = md_inspection.get_row_history(self)
+        # ensure the row actually has some history
+        # otherwise, ignore it
+        if not history:
+            return None, None
+
+        for col, d in history.items():
+            # minor optimization
+            if d["old"] == d["new"]:
+                continue
+
+            # get the next param from the counter
+            # then store the name and the value in the row
+            p = emitter()
+            params[p] = d["new"]
+            sets.append("{} = {}".format(col.quoted_name, session.bind.emit_param(p)))
+
+        # ensure there are actually fields to set
+        if not sets:
+            return None, None
+
+        base_query += ", ".join(sets)
+
+        wheres = []
+        for col in self.table.primary_key.columns:
+            # get the param name
+            # then store it in the params counter
+            # and build a new condition for the WHERE clause
+            p = emitter()
+            params[p] = history[col]["old"]
+            wheres.append("{} = {}".format(col.quoted_name, session.bind.emit_param(p)))
+
+        base_query += " WHERE ({});".format(" AND ".join(wheres))
+
+        return base_query, params
+
     def _resolve_item(self, name: str):
         """
         Resolves an item on this TableRow.
@@ -160,6 +209,18 @@ class TableRow(object):
                                  "and was not a column".format(name)) from None
 
         return col.type.on_get(self)
+
+    def get_old_value(self, column: 'md_column.Column'):
+        """
+        Gets the old value from the specified column in this row. 
+        """
+        if column.table != self.table:
+            raise ValueError("Column table must match row table")
+
+        try:
+            return self._previous_values[column]
+        except KeyError:
+            return NO_VALUE
 
     def get_column_value(self, column: 'md_column.Column', return_default: bool = True):
         """

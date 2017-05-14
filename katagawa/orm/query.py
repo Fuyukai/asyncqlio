@@ -5,11 +5,10 @@ import collections
 import itertools
 import typing
 import warnings
-
 import functools
-
 import time
 
+from katagawa.sentinels import NO_VALUE
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
 from katagawa.orm import inspection
@@ -249,8 +248,14 @@ class SelectQuery(object):
             raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"
                             "all columns to be passed as values?")
 
+        # update previous values
+        for column in self.table.iter_columns():
+            val = row.get_column_value(column, return_default=False)
+            if val is not NO_VALUE:
+                row._previous_values[column] = val
         # update the existed
         row._TableRow__existed = True
+        # give the row a session
         row._session = self.session
 
         ## ensure relationships are cascaded
@@ -412,5 +417,61 @@ class InsertQuery(object):
         for row in self.rows_to_insert:
             query, params = row._get_insert_sql(emit, self.session)
             queries.append((query, params))
+
+        return queries
+
+
+class RowUpdateQuery(object):
+    """
+    Represents a **row update query**. This is **NOT** a bulk update query - it is used for updating
+    specific rows.
+    """
+    def __init__(self, sess: 'md_session.Session'):
+        """
+        :param sess: The :class:`.Session` this object is bound to. 
+        """
+        #: The :class:`.Session` for this query.
+        self.session = sess
+
+        #: The list of rows to update.
+        self.rows_to_update = []
+
+    def rows(self, *rows: 'md_row.TableRow') -> 'RowUpdateQuery':
+        """
+        Adds a set of rows to the query.
+
+        :param rows: The rows to insert. 
+        :return: This query.
+        """
+        for row in rows:
+            self.add_row(row)
+
+        return self
+
+    def add_row(self, row: 'md_row.TableRow') -> 'RowUpdateQuery':
+        """
+        Adds a row to this query, allowing it to be executed later.
+
+        :param row: The :class:`.TableRow` to use for this query.
+        :return: This query.
+        """
+        self.rows_to_update.append(row)
+        return self
+
+    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
+        """
+        Generates the SQL statements for this row update query.
+        
+        This will return a list of two-item tuples to execute: 
+            - The SQL query+params to emit to actually insert the row
+        """
+        queries = []
+        counter = itertools.count()
+
+        def emit():
+            return "param_{}".format(next(counter))
+
+        for row in self.rows_to_update:
+            queries.append(row._get_update_sql(emit, self.session))
 
         return queries
