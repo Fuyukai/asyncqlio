@@ -145,8 +145,9 @@ class AsyncpgTransaction(BaseTransaction):
         """
         Executes a SQL statement and returns a cursor to iterate over the rows of the result.
         """
-        logger.debug("Executing query {} with params {}".format(sql, params))
+        logger.debug("Transforming query {} with params {}".format(sql, params))
         query, params = get_param_query(sql, params)
+        logger.debug("Executing query {} with params {}".format(query, params))
         cur = await self.acquired_connection.cursor(query, *params)
         result = AsyncpgResultSet(cur)
 
