@@ -283,6 +283,8 @@ class Session(object):
         """
         if isinstance(query, md_query.RowUpdateQuery):
             for sql, params in query.generate_sql():
+                if sql is None and params is None:
+                    continue
                 await self.execute(sql, params)
 
         return query
