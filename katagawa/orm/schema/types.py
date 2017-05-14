@@ -139,6 +139,18 @@ class ColumnType(abc.ABC):
         """
         return cls()
 
+    # Some methods for base types
+    def in_(self, *args) -> 'md_operators.In':
+        """
+        Returns an IN operator, checking if a value in this column is in a tuple of items.
+        
+        :param args: The items to check. 
+        """
+        if len(args) <= 0:
+            raise ValueError("Must provide at least one argument to in_")
+
+        return md_operators.In(self.column, args)
+
 
 class String(ColumnType):
     """

@@ -143,6 +143,20 @@ class ColumnValueMixin(object):
         self.value = value
 
 
+class In(BaseOperator, ColumnValueMixin):
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        # generate a dict of params
+        params = {}
+        l = []
+        for item in self.value:
+            emitted, name = self.get_param(emitter, counter)
+            params[name] = item
+            l.append(emitted)
+
+        return "{} IN ({})".format(self.column.quoted_fullname, ", ".join(l)), \
+               None, params
+
+
 class ComparisonOp(ColumnValueMixin, BaseOperator):
     """
     A helper class that implements easy generation of comparison-based operators.
@@ -155,7 +169,7 @@ class ComparisonOp(ColumnValueMixin, BaseOperator):
         if isinstance(self.value, md_column.Column):
             # special-case columns
             return "{} {} {}".format(self.column.quoted_fullname, self.operator,
-                                     self.value.quoted_fullname)
+                                     self.value.quoted_fullname), None, None
 
         param_name, name = self.get_param(emitter, counter)
         return "{} {} {}".format(self.column.quoted_fullname, self.operator,
