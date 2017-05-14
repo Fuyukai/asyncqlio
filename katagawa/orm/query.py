@@ -440,6 +440,9 @@ class RowUpdateQuery(object):
         return self.run().__await__()
 
     async def run(self):
+        """
+        Executes this query.
+        """
         return await self.session._do_update_query(self)
 
     def rows(self, *rows: 'md_row.TableRow') -> 'RowUpdateQuery':
