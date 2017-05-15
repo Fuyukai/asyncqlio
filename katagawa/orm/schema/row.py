@@ -164,6 +164,28 @@ class TableRow(object):
 
         return base_query, params
 
+    def _get_delete_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session') \
+            -> typing.Tuple[str, typing.Any]:
+        """
+        Gets the DELETE sql for this row.
+        """
+        if self._session is None:
+            self._session = session
+
+        query = "DELETE FROM {} ".format(self.table.__quoted_name__)
+        # generate the where clauses
+        wheres = []
+        params = {}
+
+        for col, value in zip(self.table.primary_key.columns,
+                              md_inspection.get_pk(self, as_tuple=True)):
+            name = emitter()
+            params[name] = value
+            wheres.append("{} = {}".format(col.quoted_fullname, session.bind.emit_param(name)))
+
+        query += "WHERE ({}) ".format(" AND ".join(wheres))
+        return query, params
+
     def _resolve_item(self, name: str):
         """
         Resolves an item on this TableRow.
