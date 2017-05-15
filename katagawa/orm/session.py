@@ -211,11 +211,29 @@ class Session(object):
         # to actually run the query
         q = md_query.InsertQuery(self)
         q.add_row(row)
-        result = await self._do_insert_query(q)
+        result = await self.run_insert_query(q)
         try:
             return result[0]
         except IndexError:
             return None
+
+    @enforce_open
+    async def update_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+        """
+        Updates a row NOW. 
+
+        .. warning::
+            This will only generate the UPDATE statement for the row now. Only :meth:`.commit` will
+            actually commit the row to storage.
+
+        :param row: The :class:`.TableRow` to update.
+        :return: The :class:`.TableRow` that was updated.
+        """
+        q = md_query.RowUpdateQuery(self)
+        q.add_row(row)
+
+        await self.run_update_query(q)
+        return row
 
     async def _run_insert(self, row: 'md_row.TableRow', query: str, params):
         # this needs to be a cursor
@@ -242,7 +260,7 @@ class Session(object):
 
         return row
 
-    async def _do_insert_query(self, query: 'md_query.InsertQuery'):
+    async def run_insert_query(self, query: 'md_query.InsertQuery'):
         """
         Does an insert, based on a query.
         
@@ -257,25 +275,7 @@ class Session(object):
 
         return results
 
-    @enforce_open
-    async def update_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
-        """
-        Updates a row NOW. 
-        
-        .. warning::
-            This will only generate the UPDATE statement for the row now. Only :meth:`.commit` will
-            actually commit the row to storage.
-        
-        :param row: The :class:`.TableRow` to update.
-        :return: The :class:`.TableRow` that was updated.
-        """
-        q = md_query.RowUpdateQuery(self)
-        q.add_row(row)
-
-        await self._do_update_query(q)
-        return row
-
-    async def _do_update_query(self, query: 'md_query.RowUpdateQuery'):
+    async def run_update_query(self, query: 'md_query.RowUpdateQuery'):
         """
         Executes an update query.
         
