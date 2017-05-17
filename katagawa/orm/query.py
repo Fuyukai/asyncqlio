@@ -253,6 +253,7 @@ class SelectQuery(object):
             val = row.get_column_value(column, return_default=False)
             if val is not NO_VALUE:
                 row._previous_values[column] = val
+
         # update the existed
         row._TableRow__existed = True
         # give the row a session
@@ -377,7 +378,7 @@ class InsertQuery(object):
         
         :return: A list of inserted :class:`.md_row.TableRow`.
         """
-        return await self.session._do_insert_query(self)
+        return await self.session.run_insert_query(self)
 
     def rows(self, *rows: 'md_row.TableRow') -> 'InsertQuery':
         """
@@ -443,7 +444,7 @@ class RowUpdateQuery(object):
         """
         Executes this query.
         """
-        return await self.session._do_update_query(self)
+        return await self.session.run_update_query(self)
 
     def rows(self, *rows: 'md_row.TableRow') -> 'RowUpdateQuery':
         """
@@ -472,6 +473,7 @@ class RowUpdateQuery(object):
         Generates the SQL statements for this row update query.
         
         This will return a list of two-item tuples to execute: 
+        
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
@@ -482,5 +484,61 @@ class RowUpdateQuery(object):
 
         for row in self.rows_to_update:
             queries.append(row._get_update_sql(emit, self.session))
+
+        return queries
+
+
+class RowDeleteQuery(object):
+    """
+    Represents a row deletion query. This is **NOT** a bulk delete query - it is used for deleting
+    specific rows.
+    """
+    def __init__(self, sess: 'md_session.Session'):
+        """
+        :param sess: The :class:`.Session` this object is bound to. 
+        """
+        #: The :class:`.Session` for this query.
+        self.session = sess
+
+        #: The list of rows to delete.
+        self.rows_to_delete = []
+
+    def rows(self, *rows: 'md_row.TableRow') -> 'RowDeleteQuery':
+        """
+        Adds a set of rows to the query.
+
+        :param rows: The rows to insert. 
+        :return: This query.
+        """
+        for row in rows:
+            self.add_row(row)
+
+        return self
+
+    def add_row(self, row: 'md_row.TableRow'):
+        """
+        Adds a row to this query.
+        
+        :param row: The :class:`.TableRow`  
+        :return: 
+        """
+        self.rows_to_delete.append(row)
+
+    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
+        """
+        Generates the SQL statements for this row delete query.
+
+        This will return a list of two-item tuples to execute: 
+        
+            - The SQL query+params to emit to actually insert the row
+        """
+        queries = []
+        counter = itertools.count()
+
+        def emit():
+            return "param_{}".format(next(counter))
+
+        for row in self.rows_to_delete:
+            queries.append(row._get_delete_sql(emit, self.session))
 
         return queries

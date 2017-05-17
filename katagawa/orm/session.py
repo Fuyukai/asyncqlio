@@ -289,6 +289,21 @@ class Session(object):
 
         return query
 
+    async def run_delete_query(self, query: 'md_query.RowDeleteQuery'):
+        """
+        Executes a delete query.
+        
+        :param query: The :class:`.RowDeleteQuery` or :class:`.BulkDeleteQuery` to execute.  
+        """
+        if isinstance(query, md_query.RowDeleteQuery):
+            for sql, params in query.generate_sql():
+                if sql is None and params is None:
+                    continue
+
+                await self.execute(sql, params)
+
+        return query
+
     async def add(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
         """
         Adds a row to the current transaction. This will emit SQL that will generate an INSERT or 
