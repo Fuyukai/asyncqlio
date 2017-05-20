@@ -68,7 +68,7 @@ class ColumnType(abc.ABC):
         q = await sess.select(User).where(User.id.contains("heck")).first()
 
     """
-    __slots__ = ("column", )
+    __slots__ = ("column",)
 
     def __init__(self):
         #: The column this type object is associated with.
@@ -219,6 +219,17 @@ class Text(String):
 
     def sql(self):
         return "TEXT"
+
+
+class Boolean(ColumnType):
+    """
+    Represents a BOOL type.
+    """
+    def sql(self):
+        return "BOOLEAN"
+
+    def validate_set(self, row: 'md_row.TableRow', value: typing.Any):
+        return value in [True, False]
 
 
 class Integer(ColumnType):
