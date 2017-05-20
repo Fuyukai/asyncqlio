@@ -75,7 +75,7 @@ class _ResultGenerator(collections.AsyncIterator):
     async def __anext__(self):
         # ensure we have a BaseResultSet
         if self._results is None:
-            self._results = await self.query._execute()  # type: BaseResultSet
+            self._results = await self.query.session.run_select_query(self.query)
 
         # get the number of rows filled off of the end
         filled = await self._fill()
