@@ -1,17 +1,17 @@
 """
 The :ref:`asyncpg` connector for PostgreSQL databases.
 """
-import typing
+import asyncio
 import logging
+import typing
 import warnings
 
-import asyncio
 import asyncpg
 from asyncpg import Record
 from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
-from katagawa.backends.base import BaseConnector, BaseTransaction, BaseResultSet
+from katagawa.backends.base import BaseConnector, BaseResultSet, BaseTransaction
 from katagawa.exc import IntegrityError, OperationalError
 
 logger = logging.getLogger(__name__)

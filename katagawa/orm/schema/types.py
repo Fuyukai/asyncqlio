@@ -1,10 +1,9 @@
 import abc
 import typing
 
-from katagawa.exc import DatabaseException, NoSuchColumnError
+from katagawa.exc import DatabaseException
 from katagawa.orm import operators as md_operators
-from katagawa.orm.schema import row as md_row
-from katagawa.orm.schema import column as md_column
+from katagawa.orm.schema import column as md_column, row as md_row
 
 
 class ColumnValidationError(DatabaseException):
@@ -225,6 +224,7 @@ class Boolean(ColumnType):
     """
     Represents a BOOL type.
     """
+
     def sql(self):
         return "BOOLEAN"
 

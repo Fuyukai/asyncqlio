@@ -12,6 +12,7 @@ class PostgresqlDialect(BaseDialect):
     """
     The dialect for Postgres.
     """
+
     @property
     def has_checkpoints(self):
         return True

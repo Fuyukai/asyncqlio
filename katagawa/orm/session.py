@@ -1,19 +1,12 @@
+import enum
+import functools
 import logging
 import typing
 
-import enum
-
-import functools
-
-import itertools
-
 from katagawa import kg as md_kg
-from katagawa.exc import OperationalError
-from katagawa.orm import inspection as md_inspection
-from katagawa.orm import query as md_query
 from katagawa.backends.base import BaseTransaction
+from katagawa.orm import query as md_query
 from katagawa.orm.schema import row as md_row
-from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 
 logger = logging.getLogger(__name__)
 

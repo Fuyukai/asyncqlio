@@ -5,9 +5,8 @@ import typing
 
 from cached_property import cached_property
 
-from katagawa.orm.schema import column as md_column
-from katagawa.orm.schema import row as md_row
 from katagawa.orm import query as md_query
+from katagawa.orm.schema import column as md_column, row as md_row
 
 
 class ForeignKey(object):

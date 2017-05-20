@@ -218,5 +218,3 @@ class Column(object):
             return '"{}"'.format(fmt)
 
         return fmt
-
-

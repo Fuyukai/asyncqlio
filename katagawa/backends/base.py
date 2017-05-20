@@ -1,11 +1,9 @@
 """
 The base implementation of a backend. This provides some ABC classes.
 """
-import abc
+import collections
 import typing
 from abc import abstractmethod
-
-import collections
 from urllib.parse import ParseResult
 
 from katagawa.meta import AsyncABC

@@ -3,9 +3,8 @@ Classes for operators returned from queries.
 """
 import abc
 import functools
-import typing
-
 import itertools
+import typing
 
 from katagawa.orm.schema import column as md_column
 

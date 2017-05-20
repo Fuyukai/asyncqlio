@@ -3,9 +3,9 @@ The main Katagawa object. This is the "database interface" to the actual DB serv
 """
 import importlib
 import logging
-from urllib.parse import urlparse, ParseResult
+from urllib.parse import ParseResult, urlparse
 
-from katagawa.backends.base import BaseConnector, BaseTransaction, BaseDialect
+from katagawa.backends.base import BaseConnector, BaseDialect, BaseTransaction
 from katagawa.orm import session as md_session
 from katagawa.orm.schema import table as md_table
 

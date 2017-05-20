@@ -5,12 +5,11 @@ import collections
 import itertools
 import typing
 
-from katagawa.sentinels import NO_VALUE
 from katagawa.backends.base import BaseResultSet
 from katagawa.orm import session as md_session
-from katagawa.orm import inspection
 from katagawa.orm.operators import BaseOperator
 from katagawa.orm.schema import row as md_row
+from katagawa.sentinels import NO_VALUE
 
 
 class _ResultGenerator(collections.AsyncIterator):

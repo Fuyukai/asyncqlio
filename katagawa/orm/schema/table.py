@@ -1,15 +1,12 @@
+import itertools
 import logging
 import sys
-import inspect
-import itertools
 import typing
 from collections import OrderedDict
 
-from katagawa.exc import NoSuchColumnError, SchemaError
 from katagawa import kg as md_kg
-from katagawa.orm.schema import column as md_column
-from katagawa.orm.schema import row as md_row
-from katagawa.orm.schema import relationship as md_relationship
+from katagawa.exc import NoSuchColumnError, SchemaError
+from katagawa.orm.schema import column as md_column, relationship as md_relationship, row as md_row
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)

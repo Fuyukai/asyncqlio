@@ -3,9 +3,8 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 """
 import typing
 
-from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 from katagawa.orm import session as md_session
-from katagawa.orm.schema import row as md_row, column as md_column
+from katagawa.orm.schema import column as md_column, row as md_row
 
 
 def get_row_session(row: 'md_row.TableRow') -> 'md_session.Session':

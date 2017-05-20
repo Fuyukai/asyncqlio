@@ -3,10 +3,10 @@ import types
 import typing
 
 import katagawa.sentinels
-from katagawa.orm import session as md_session, inspection as md_inspection
-from katagawa.orm.schema import column as md_column, table as md_table, \
-    relationship as md_relationship
-from katagawa.sentinels import NO_VALUE, NO_DEFAULT
+from katagawa.orm import inspection as md_inspection, session as md_session
+from katagawa.orm.schema import column as md_column, relationship as md_relationship, \
+    table as md_table
+from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 
 
 class TableRow(object):

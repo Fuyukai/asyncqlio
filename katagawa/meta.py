@@ -13,6 +13,7 @@ class AsyncABCMeta(ABCMeta):
     is defined as a coroutine in a parent, it must also be defined as a
     coroutine in any child.
     '''
+
     def __init__(cls, name, bases, methods):
         coros = {}
         for base in reversed(cls.__mro__):
@@ -41,6 +42,7 @@ class AsyncInstanceType(AsyncABCMeta):
          s = await Spam(2, 3)
          ...
     '''
+
     @staticmethod
     def __new__(meta, clsname, bases, attributes):
         if '__init__' in attributes and not inspect.iscoroutinefunction(attributes['__init__']):
