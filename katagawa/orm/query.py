@@ -4,9 +4,6 @@ Classes for query objects.
 import collections
 import itertools
 import typing
-import warnings
-import functools
-import time
 
 from katagawa.sentinels import NO_VALUE
 from katagawa.backends.base import BaseResultSet
@@ -26,36 +23,71 @@ class _ResultGenerator(collections.AsyncIterator):
         :param q: The :class:`.SelectQuery` to use. 
         """
         self.query = q
-
         self._results = None  # type: BaseResultSet
-        self.last_primary_key = None
 
-    def check_new(self, record):
-        """
-        Checks if this record has a new primary key.
-        """
-        vals = tuple(record[column.alias_name(quoted=False)]
-                     for column in self.query.table.primary_key.columns)
-        if vals == self.last_primary_key:
-            return False
+        self._result_deque = collections.deque()
 
+    async def _fill(self):
+        # peek from the first item
+        try:
+            first = self._result_deque[0]
+        except IndexError:
+            # no row was stored from last time
+            last_pkey = None
+            rows_filled = 0
         else:
-            if self.last_primary_key is None:
-                self.last_primary_key = vals
-                return True
+            # there was a row from last time, so we need to check for any run-off rows for that
+            last_pkey = tuple(first[col.alias_name(quoted=False)]
+                              for col in self.query.table.primary_key.columns)
+            # also, since there was technically one row before, we start at 1 here
+            rows_filled = 1
 
-            return True
+        while True:
+            # fetch a new row, make sure its not none
+            row = await self._results.fetch_row()
+            if row is None:
+                break
+
+            # add it to the results
+            self._result_deque.append(row)
+            # load the primary key via getting every column through alias name
+            pkey = tuple(row[col.alias_name(quoted=False)] for col in
+                         self.query.table.primary_key.columns)
+
+            # if there was no results before, we just set the primary key and continue
+            if last_pkey is None:
+                last_pkey = pkey
+                rows_filled += 1
+                continue
+            else:
+                # otherwise, check if the primary key matches
+                if pkey == last_pkey:
+                    # it does, so it's a run-on row that has been joined
+                    rows_filled += 1
+                    continue
+                else:
+                    # it does not, so it's a new row
+                    break
+
+        # return the rows filled to ensure
+        return rows_filled
 
     async def __anext__(self):
         # ensure we have a BaseResultSet
         if self._results is None:
             self._results = await self.query._execute()  # type: BaseResultSet
 
-        row = await self._results.fetch_row()
-        if row is None:
+        # get the number of rows filled off of the end
+        filled = await self._fill()
+
+        if filled == 0:
             raise StopAsyncIteration
 
-        return self.query.map_columns(row)
+        rows = [self._result_deque.popleft() for x in range(0, filled)]
+        if len(rows) == 1:
+            return self.query.map_columns(rows[0])
+
+        return self.query.map_many(*rows)
 
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
@@ -215,9 +247,10 @@ class SelectQuery(object):
         
         :return: A :class:`._ResultGenerator` that can be iterated over.
         """
-        # note: why is all a coroutine?
-        # it looks more consistent, especially with .first().
-        return _ResultGenerator(self)
+        res = _ResultGenerator(self)
+        # ensure the result generator actually has results
+        res._results = await self._execute()
+        return res
 
     # ORM methods
     def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_row.TableRow':
@@ -427,6 +460,7 @@ class RowUpdateQuery(object):
     Represents a **row update query**. This is **NOT** a bulk update query - it is used for updating
     specific rows.
     """
+
     def __init__(self, sess: 'md_session.Session'):
         """
         :param sess: The :class:`.Session` this object is bound to. 
@@ -493,6 +527,7 @@ class RowDeleteQuery(object):
     Represents a row deletion query. This is **NOT** a bulk delete query - it is used for deleting
     specific rows.
     """
+
     def __init__(self, sess: 'md_session.Session'):
         """
         :param sess: The :class:`.Session` this object is bound to. 
