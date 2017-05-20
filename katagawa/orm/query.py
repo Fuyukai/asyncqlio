@@ -89,6 +89,12 @@ class _ResultGenerator(collections.AsyncIterator):
 
         return self.query.map_many(*rows)
 
+    async def next(self):
+        try:
+            return await self.__anext__()
+        except StopAsyncIteration:
+            return None
+
     async def flatten(self) -> 'typing.List[md_row.TableRow]':
         """
         Flattens this query into a single list.
@@ -218,28 +224,17 @@ class SelectQuery(object):
         return fmt, params
 
     # "fetch" methods
-    async def _execute(self) -> BaseResultSet:
-        """
-        Executes this query in the session bound.
-        
-        :return: A :class:`.BaseResultSet` representing the results of this query.
-        """
-        sql, params = self.generate_sql()
-        results = await self.session.cursor(sql, params)
-        return results
-
     async def first(self) -> 'md_row.TableRow':
         """
         Gets the first result that matches from this query.
         
         :return: A :class:`.TableRow` representing the first item, or None if no item matched.
         """
-        result_set = await self._execute()
-        row = await result_set.fetch_row()
+        gen = await self.session.run_select_query(self)
+        row = await gen.next()
 
-        # only map if the row isn't none
         if row is not None:
-            return self.map_columns(row)
+            return row
 
     async def all(self) -> '_ResultGenerator':
         """
@@ -247,10 +242,7 @@ class SelectQuery(object):
         
         :return: A :class:`._ResultGenerator` that can be iterated over.
         """
-        res = _ResultGenerator(self)
-        # ensure the result generator actually has results
-        res._results = await self._execute()
-        return res
+        return await self.session.run_select_query(self)
 
     # ORM methods
     def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_row.TableRow':

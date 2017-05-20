@@ -235,34 +235,29 @@ class Session(object):
         await self.run_update_query(q)
         return row
 
-    async def _run_insert(self, row: 'md_row.TableRow', query: str, params):
-        # this needs to be a cursor
-        # since postgres uses RETURNING
-        cur = await self.cursor(query, params)
-        # some drivers don't execute until this is done
-        # (asyncpg, apparently)
-        # so always fetch a row now
-        pkey_rows = await cur.fetch_row()
-
-        if self.bind.dialect.has_returns:
-            for colname, value in pkey_rows.items():
-                try:
-                    column = next(filter(lambda column: column.name == colname,
-                                         row.table.iter_columns()))
-                except StopIteration:
-                    # wat
-                    continue
-                row.store_column_value(column, value, track_history=False)
-                await cur.close()
-        else:
-            # TODO: Figure out how to implement this properly.
-            await cur.close()
-
-        return row
+    async def run_select_query(self, query: 'md_query.SelectQuery'):
+        """
+        Executes a select query.
+        
+        .. warning::
+            Unlike the other `run_*_query` methods, this method should not be used without a good
+            reason; it creates a special class that is used for the query.
+            
+            Use :class:`.SelectQuery.first` or :class:`.SelectQuery.all`.
+        
+        :param query: The :class:`.SelectQuery` to use.
+        :return: A :class:`._ResultGenerator` for this query.
+        """
+        gen = md_query._ResultGenerator(query)
+        sql, params = query.generate_sql()
+        cursor = await self.cursor(sql, params)
+        # set the cursor on the result generator
+        gen._results = cursor
+        return gen
 
     async def run_insert_query(self, query: 'md_query.InsertQuery'):
         """
-        Does an insert, based on a query.
+        Executes an insert query.
         
         :param query: The :class:`.InsertQuery` to use.
         :return: The list of rows that were inserted.
@@ -271,7 +266,29 @@ class Session(object):
         results = []
 
         for row, (sql, params) in zip(query.rows_to_insert, queries):
-            results.append(await self._run_insert(row, sql, params))
+            # this needs to be a cursor
+            # since postgres uses RETURNING
+            cur = await self.cursor(sql, params)
+            # some drivers don't execute until this is done
+            # (asyncpg, apparently)
+            # so always fetch a row now
+            pkey_rows = await cur.fetch_row()
+
+            if self.bind.dialect.has_returns:
+                for colname, value in pkey_rows.items():
+                    try:
+                        column = next(filter(lambda column: column.name == colname,
+                                             row.table.iter_columns()))
+                    except StopIteration:
+                        # wat
+                        continue
+                    row.store_column_value(column, value, track_history=False)
+                    await cur.close()
+            else:
+                # TODO: Figure out how to implement this properly.
+                await cur.close()
+
+            results.append(row)
 
         return results
 
