@@ -105,7 +105,7 @@ class TableMeta(type):
     def __prepare__(*args, **kwargs):
         return OrderedDict()
 
-    def __new__(mcs, n, b, c, register: bool = True):
+    def __new__(mcs, n, b, c, register: bool = True, *args, **kwargs):
         # hijack columns
         columns = OrderedDict()
         relationships = OrderedDict()
@@ -122,9 +122,13 @@ class TableMeta(type):
         c["_relationships"] = relationships
         return type.__new__(mcs, n, b, c)
 
-    def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True):
+    def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True,
+                 *, table_name: str = None):
         """
-        Creates a new Table instance. 
+        Creates a new Table instance.
+         
+        :param register: Should this table be registered in the TableMetadata?
+        :param table_name: The name for this table.
         """
         # create the new type object
         super().__init__(tblname, tblbases, class_body)
@@ -150,7 +154,7 @@ class TableMeta(type):
             self.__tablename__
         except AttributeError:
             #: The name of this table.
-            self.__tablename__ = tblname.lower()
+            self.__tablename__ = table_name or tblname.lower()
 
         #: The :class:`.Katagawa` this table is bound to.
         self.__bind = None
