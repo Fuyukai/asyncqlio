@@ -148,7 +148,8 @@ class Katagawa(object):
         """
         Closes the current database interface.
         """
-        await self.connector.close()
+        if self.connector is not None:
+            await self.connector.close()
 
     async def get_db_server_info(self):
         """
