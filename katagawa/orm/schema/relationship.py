@@ -188,6 +188,32 @@ class SelectLoadedRelationship(object):
         self.row = row
         self.session = session or row._session
 
+    async def append(self, row: 'md_row.TableRow'):
+        """
+        Appends a row to this relationship.
+        
+        .. warning::
+            This will run an immediate insert of this row; if the parent row for this relationship 
+            is not inserted it will run an immediate insert on the parent.
+        
+        :param row: The :class:`.TableRow` object to append to this relationship.
+        """
+        if not self.row._TableRow__existed:
+            # we need to insert the row for it to be ready
+            # so we do that now
+            row = await self.session.insert_now(row)
+
+        # get the data that we're updating the foreign column on
+        our_column = self.relationship.our_column
+        data = self.row.get_column_value(our_column)
+        # set said data on our row in the FK field
+        f_column = self.relationship.foreign_column
+        row.store_column_value(f_column, data)
+        # insert/update row
+        row = await self.session.add(row)
+
+        return row
+
     def __await__(self):
         return self._load().__await__()
 
