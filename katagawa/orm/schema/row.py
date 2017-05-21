@@ -111,12 +111,10 @@ class TableRow(object):
         # check if we support RETURNS
         if session.bind.dialect.has_returns:
             columns_to_get = []
-            # always add all columns that are autoincremented
-            # or primary key
-            # why? this means that we can fill in the row fields properly!
+            # always return every column
+            # this allows filling in of autoincrement + defaults
             for column in self.table.iter_columns():
-                if column.autoincrement is True or column in self.table.primary_key.columns:
-                    columns_to_get.append(column)
+                columns_to_get.append(column)
 
             pk = "({})".format(", ".join(column.quoted_name for column in columns_to_get))
             q += " RETURNING {}".format(pk)

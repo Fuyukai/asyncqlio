@@ -7,6 +7,7 @@ from katagawa import kg as md_kg
 from katagawa.backends.base import BaseTransaction
 from katagawa.orm import query as md_query
 from katagawa.orm.schema import row as md_row
+from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 
 logger = logging.getLogger(__name__)
 
@@ -265,11 +266,12 @@ class Session(object):
             # some drivers don't execute until this is done
             # (asyncpg, apparently)
             # so always fetch a row now
-            pkey_rows = await cur.fetch_row()
+            # this is None if it doesnt support returning, so
+            returned_row = await cur.fetch_row()
 
             # if we have returns, we can store the column values directly
             if self.bind.dialect.has_returns:
-                for colname, value in pkey_rows.items():
+                for colname, value in returned_row.items():
                     column = row.table.get_column(colname)
                     if column is None:
                         # what
@@ -277,7 +279,24 @@ class Session(object):
                     row.store_column_value(column, value, track_history=False)
                     await cur.close()
             else:
-                # TODO: Figure out how to implement this properly.
+                if sum(1 for x in row.table.iter_columns() if x.auto_increment) == 1:
+                    # we can load the last value easily
+                    lquery = "SELECT {};".format(self.bind.dialect.lastval_method)
+                    cursor = await self.cursor(lquery)
+                    async with cursor:
+                        row = await cursor.fetch_row()
+                        # there should only be one value here
+                        value = list(row.values())[0]
+                    column = next(
+                        filter(lambda x: x.auto_increment, row.table.iter_columns()), None
+                    )
+                    row.store_column_value(column, value)
+
+                for column in row.table.iter_columns():
+                    if column.default is not NO_DEFAULT \
+                            and row.get_column_value(column, return_default=False) is NO_VALUE:
+                        row.store_column_value(column, column.default)
+
                 await cur.close()
 
             results.append(row)
