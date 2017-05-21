@@ -283,8 +283,8 @@ class SelectQuery(object):
         # give the row a session
         row._session = self.session
 
-        ## ensure relationships are cascaded
-        # row._update_relationships(relation_data)
+        # ensure relationships are cascaded
+        row._update_relationships(relation_data)
 
         return row
 
