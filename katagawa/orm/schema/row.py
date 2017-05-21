@@ -45,11 +45,11 @@ class TableRow(object):
         #: Used in update generation.
         self._previous_values = {}
 
-        #: A mapping of Column -> Current value for this row.
-        self._values = {}
-
         #: A mapping of relationship -> rows for this row.
         self._relationship_mapping = collections.defaultdict(lambda: [])
+
+        #: A mapping of Column -> Current value for this row.
+        self._values = {}
 
     def __repr__(self):
         gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self.table.columns)
@@ -64,6 +64,12 @@ class TableRow(object):
         try:
             object.__getattribute__(self, "_values")
         except AttributeError:
+            return super().__setattr__(key, value)
+
+        # micro optimization
+        # if it's in our __dict__, it's probably not a column
+        # so bypass the column check and set it directly
+        if key in self.__dict__:
             return super().__setattr__(key, value)
 
         col = self.table.get_column(column_name=key)
@@ -206,7 +212,9 @@ class TableRow(object):
             # checking to see if the column adds up
             for cname, value in record.copy().items():
                 # this will load using cname too, thankfully
-                column = self.table.get_column(cname)
+                # use the foreign column to load the columns
+                # since this is the one we're joining on
+                column = relationship.foreign_table.get_column(cname)
                 if column is not None:
                     # use the actual name
                     # if we use the cname, it won't expand into the row correctly
@@ -242,7 +250,8 @@ class TableRow(object):
             pass
         else:
             # proxy to the table
-            # but don't proxy column accesses
+            # but don't proxy column accesses or relationships
+            # also, if they're __hidden__, don't proxy
             if not isinstance(item, (md_column.Column, md_relationship.Relationship)) \
                     and not hasattr(item, "__hidden__"):
                 if hasattr(item, "__row_attr__"):
@@ -253,11 +262,35 @@ class TableRow(object):
                     return types.MethodType(item, self)
                 return item
 
-        # try and load a relationship
+        # try and load a relationship loader object
         try:
             return self.get_relationship_instance(name)
         except ValueError:
             pass
+        except NotImplementedError:
+            # no loader, it might be mapped straight onto us
+            # try and load relationship data from our mapper
+            try:
+                # todo: replace this with non-private access
+                relationship = self.table._relationships[name]
+                foreign_table = relationship.foreign_table
+                # get the rel from the mapping
+                # this is a list of data that was loaded onto us earlier
+                items = self._relationship_mapping[foreign_table]
+                # if it's a one to one, just load the first item
+                if relationship.use_iter is False:
+                    # len(items) < 1 means no item
+                    # so don't return an empty list, return None
+                    if len(items) < 1:
+                        return None
+                    else:
+                        return items[0]
+                else:
+                    return items
+            except KeyError:
+                # failed to load a relationship with that name
+                # we can ignore that
+                pass
 
         # failed to load relationship, too, so load a column value instead
         col = self.table.get_column(name)
