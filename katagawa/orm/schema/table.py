@@ -190,13 +190,14 @@ class TableMeta(type):
         return self._get_table_row(**kwargs)
 
     def __getattr__(self, item):
-        try:
-            return self.get_column(item, raise_si=True)
-        except StopIteration:
+        col = self.get_column(item)
+        if col is None:
             try:
                 return next(filter(lambda tup: tup[0] == item, self._relationships.items()))[1]
             except StopIteration:
                 raise AttributeError(item) from None
+        else:
+            return col
 
     @property
     def __quoted_name__(self):
@@ -245,16 +246,12 @@ class TableMeta(type):
         try:
             return self._columns[column_name]
         except KeyError:
-            try:
-                col = next(filter(lambda col: col.alias_name(self) == column_name,
-                                  self._columns.values()))
-            except StopIteration:
-                if raise_si:
-                    raise
+            for column in self._columns.values():
+                alias = column.alias_name(table=self)
+                if alias == column_name:
+                    return column
 
-                return None
-            else:
-                return col
+        return None
 
     def _calculate_primary_key(self) -> typing.Union['PrimaryKey', None]:
         """
