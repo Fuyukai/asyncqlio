@@ -116,8 +116,8 @@ class TableRow(object):
             for column in self.table.iter_columns():
                 columns_to_get.append(column)
 
-            pk = "({})".format(", ".join(column.quoted_name for column in columns_to_get))
-            q += " RETURNING {}".format(pk)
+            to_return = ", ".join(column.quoted_name for column in columns_to_get)
+            q += " RETURNING {}".format(to_return)
 
         q += ";"
         return q, params
