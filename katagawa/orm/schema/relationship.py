@@ -46,29 +46,60 @@ class ForeignKey(object):
 class Relationship(object):
     """
     Represents a relationship to another table object.
+
+    This object provides an easy, object-oriented interface to a foreign key relationship between 
+    two tables, the left table and the right table.   
+    The left table is the "parent" table, and the right table is the "child" table; effectively
+    creating a one to many/many to one relationship between the two tables.
+    
+    To create a relationship, there must be a column in the child table that represents the primary
+    key of a parent table; this is the foreign key column, and will be used to load the other table.
     
     .. code-block:: python
     
         class User(Table):
-            id = Column(Integer, primary_key=True, autoincrement=True)
-            
-            servers = Relationship(via="Server.owner_id", load="select")
-        
-        class Server(Table):
-            id = Column(Integer, primary_key=True, autoincrement=True)
+            # id is the primary key of the parent table
+            id = Column(Integer, auto_increment=True)
             name = Column(String)
             
-            owner_id = Column(Integer, foreign_key=ForeignKey("User.id"))
-            owner = Relationship(via=owner_id, load="join", use_list=False)
+            # this is the relationship joiner; it uses id as the left key, and user_id as the right
+            # this will create a join between the two tables
+            inventory = Relationship(left=id, right="InventoryItem.user_id")
+            
+        class InventoryItem(Table):
+            id = Column(BigInteger, auto_increment=True)
+            
+            # user_id is the "foreign key" - it references the column User.id
+            user_id = Column(Integer, foreign_key=ForeignKey(User.id)
+            
+    Once created, the new relationship object can be used to iterate over the child objects, using
+    ``async for``:
+    
+    .. code-block:: python
+    
+        user = await sess.select.from_(User).where(User.id == 1).first()
+        async for item in user.inventory:
+            ...
+    
+    By default, the relationship will use a SELECT query to load the items; this can be changed to
+    a joined query when loading any table rows, by changing the ``load`` param.  
+    The possible values of this param are:
+    
+        - ``select`` - Emits a SELECT query to load child items.
+        - ``joined`` - Emits a join query to load child items.
+        
+    For all possible options, see :ref:`Relationship Loading`.
+    
     """
 
-    def __init__(self, via: 'typing.Union[md_column.Column, str]', *,
+    def __init__(self,
+                 left: 'typing.Union[md_column.Column, str]',
+                 right: 'typing.Union[md_column.Column, str]', *,
                  load: str = "select", use_iter: bool = True):
         """
-        :param via: The column to load this relationship via.
+        :param left: The left-hand column (the Column on this table) in this relationship.
         
-            This can either be a :class:`.Column`, or a str in the format 
-            ``<table object name>.<column name>``.
+        :param right: The right-hand column (the Column on the foreign table) in this relationship.
         
         :param load: The way to load this relationship.
             The default is "select" - this means that a separate select statement will be issued
@@ -80,17 +111,11 @@ class Relationship(object):
             This controls if this relationship is created as one to many, or as a many to one/one to
             one relationship.
         """
-        self.owner_table = None
-        self.name = None  # type: str
+        #: The left column for this relationship.
+        self.left_column = left
 
-        #: The via column to use.
-        self.via_column = None  # type: md_column.Column
-
-        if isinstance(via, str):
-            self._via_name = via
-        else:
-            self._via_name = None
-            self.via_column = via  # type: md_column.Column
+        #: The right column for this relationship.
+        self.right_column = right
 
         #: The load type for this relationship.
         self.load_type = load
@@ -107,16 +132,24 @@ class Relationship(object):
 
     # right-wing logic
     @cached_property
+    def our_column(self) -> 'md_column.Column':
+        """
+        Gets the local column this relationship refers to.
+        """
+        if self.left_column == self.owner_table:
+            return self.left_column
+
+        return self.right_column
+
+    @cached_property
     def foreign_column(self) -> 'md_column.Column':
         """
         Gets the foreign column this relationship refers to.
         """
-        via = self.via_column
-        if via.table == self.owner_table:
-            # uh.
-            return via.foreign_key.foreign_column
+        if self.left_column.table == self.owner_table:
+            return self.right_column
 
-        return self.via_column
+        return self.left_column
 
     @cached_property
     def foreign_table(self):
@@ -127,7 +160,7 @@ class Relationship(object):
         """
         Gets the "join" columns of this relationship, i.e the columns that link the two columns.
         """
-        return self.via_column, self.via_column.foreign_column
+        return self.our_column, self.foreign_column
 
     def get_instance(self, row: 'md_row.TableRow', session):
         """
@@ -155,16 +188,18 @@ class SelectLoadedRelationship(object):
         self.row = row
         self.session = session or row._session
 
+    def __await__(self):
+        return self._load().__await__()
+
     async def _load(self):
         """
         Loads the rows for this session.
         """
         columns = self.relationship.join_columns
-        # this table is the table we're joining onto
-        table = self.relationship.via_column.table
         query = md_query.SelectQuery(self.row._session)
-        query.set_table(table)
-        query.add_condition(columns[0] == self.row.get_column_value(columns[1]))
+        query.set_table(self.relationship.foreign_table)
+        # owner column == non owner column
+        query.add_condition(columns[1] == self.row.get_column_value(columns[0]))
         return await query.all()
 
     def __iter__(self):
