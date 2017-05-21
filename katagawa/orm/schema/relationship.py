@@ -214,6 +214,24 @@ class SelectLoadedRelationship(object):
 
         return row
 
+    @property
+    def query(self) -> 'md_query.SelectQuery':
+        """
+        Gets the query for this relationship, allowing further customization.  
+        For example, to change the order of the rows returned:
+        
+        .. code-block:: python
+        
+            async for child in parent.children.query.order_by(Child.age):
+                ...
+        """
+        columns = self.relationship.join_columns
+        query = md_query.SelectQuery(self.row._session)
+        query.set_table(self.relationship.foreign_table)
+        # owner column == non owner column
+        query.add_condition(columns[1] == self.row.get_column_value(columns[0]))
+        return query
+
     def __await__(self):
         return self._load().__await__()
 
@@ -221,12 +239,7 @@ class SelectLoadedRelationship(object):
         """
         Loads the rows for this session.
         """
-        columns = self.relationship.join_columns
-        query = md_query.SelectQuery(self.row._session)
-        query.set_table(self.relationship.foreign_table)
-        # owner column == non owner column
-        query.add_condition(columns[1] == self.row.get_column_value(columns[0]))
-        return await query.all()
+        return await self.query.all()
 
     def __iter__(self):
         raise NotImplementedError("This cannot be iterated over normally")
