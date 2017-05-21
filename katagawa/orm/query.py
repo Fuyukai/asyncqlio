@@ -6,9 +6,8 @@ import itertools
 import typing
 
 from katagawa.backends.base import BaseResultSet
-from katagawa.orm import session as md_session
-from katagawa.orm.operators import BaseOperator
-from katagawa.orm.schema import row as md_row
+from katagawa.orm import operators as md_operators, session as md_session
+from katagawa.orm.schema import column as md_column, row as md_row
 from katagawa.sentinels import NO_VALUE
 
 
@@ -147,6 +146,9 @@ class SelectQuery(object):
         #: The offset to start fetching rows from.
         self.row_offset = None
 
+        #: The column to order by.
+        self.orderer = None
+
     def __call__(self, table):
         return self.from_(table)
 
@@ -219,6 +221,10 @@ class SelectQuery(object):
 
         if self.row_offset is not None:
             fmt += " OFFSET {}".format(self.row_offset)
+
+        if self.orderer is not None:
+            fmt += " ORDER BY {}".format(self.orderer.generate_sql(self.session.bind.emit_param,
+                                                                   counter))
 
         return fmt, params
 
@@ -321,7 +327,7 @@ class SelectQuery(object):
         self.set_table(tbl)
         return self
 
-    def where(self, *conditions: BaseOperator) -> 'SelectQuery':
+    def where(self, *conditions: 'md_operators.BaseOperator') -> 'SelectQuery':
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
         
@@ -356,6 +362,30 @@ class SelectQuery(object):
         self.row_offset = offset
         return self
 
+    def order_by(self, *col: 'typing.Union[md_column.Column, md_operators.Sorter]',
+                 sort_order: str = "asc"):
+        """
+        Sets the order by clause for this query.
+        
+        The argument provided can either be a :class:`.Column`, or a :class:`.Sorter` which is 
+        provided by :meth:`.Column.asc` / :meth:`.Column.desc`. By default, ``asc`` is used when
+        passing a column. 
+        """
+        if not col:
+            raise TypeError("Must provide at least one item to order with")
+
+        if len(col) == 1 and isinstance(col[0], md_operators.Sorter):
+            self.orderer = col[0]
+        else:
+            if sort_order == "asc":
+                self.orderer = md_operators.AscSorter(*col)
+            elif sort_order == "desc":
+                self.orderer = md_operators.DescSorter(*col)
+            else:
+                raise TypeError("Unknown sort order {}".format(sort_order))
+
+        return self
+
     # "manual" methods
     def set_table(self, tbl) -> 'SelectQuery':
         """
@@ -367,7 +397,7 @@ class SelectQuery(object):
         self.table = tbl
         return self
 
-    def add_condition(self, condition: BaseOperator) -> 'SelectQuery':
+    def add_condition(self, condition: 'md_operators.BaseOperator') -> 'SelectQuery':
         """
         Adds a condition to the query/
         

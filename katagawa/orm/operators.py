@@ -126,6 +126,35 @@ class Or(BaseOperator):
         return fmt, None, vals
 
 
+class Sorter(BaseOperator):
+    """
+    A generic sorter operator, for use in ORDER BY.
+    """
+
+    def __init__(self, *columns: 'md_column.Column'):
+        self.cols = columns
+
+    @property
+    @abc.abstractmethod
+    def sort_order(self):
+        """
+        The sort order for this row; ASC or DESC.
+        """
+        pass
+
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        return "{} {}".format(', '.join(col.alias_name(quoted=True) for col in self.cols),
+                              self.sort_order)
+
+
+class AscSorter(Sorter):
+    sort_order = "ASC"
+
+
+class DescSorter(Sorter):
+    sort_order = "DESC"
+
+
 class ColumnValueMixin(object):
     """
     A mixin that specifies that an operator takes both a Column and a Value as arguments.

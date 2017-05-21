@@ -1,7 +1,6 @@
 import functools
 import inspect
 import logging
-import sys
 import typing
 
 from cached_property import cached_property
@@ -10,7 +9,6 @@ from katagawa.orm import operators as md_operators
 from katagawa.orm.schema import relationship as md_relationship, types as md_types
 from katagawa.sentinels import NO_DEFAULT
 
-PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
 
 
@@ -170,6 +168,18 @@ class Column(object):
 
     def __ge__(self, other) -> 'md_operators.Gte':
         return md_operators.Gte(self, other)
+
+    def asc(self) -> 'md_operators.AscSorter':
+        """
+        Returns the ascending sorter operator for this column.
+        """
+        return md_operators.AscSorter(self)
+
+    def desc(self) -> 'md_operators.DescSorter':
+        """
+        Returns the descending sorter operator for this column.
+        """
+        return md_operators.DescSorter(self)
 
     @cached_property
     def quoted_name(self) -> str:
