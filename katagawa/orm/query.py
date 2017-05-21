@@ -73,7 +73,7 @@ class _ResultGenerator(collections.AsyncIterator):
     async def __anext__(self):
         # ensure we have a BaseResultSet
         if self._results is None:
-            self._results = await self.query.session.run_select_query(self.query)
+            self._results = await self.query.session.cursor(*self.query.generate_sql())
 
         # get the number of rows filled off of the end
         filled = await self._fill()
@@ -151,6 +151,10 @@ class SelectQuery(object):
 
     def __call__(self, table):
         return self.from_(table)
+
+    # used so you can async iterate over a query directly
+    def __aiter__(self):
+        return _ResultGenerator(q=self)
 
     def get_required_join_paths(self):
         """
