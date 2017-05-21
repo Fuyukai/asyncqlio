@@ -1,3 +1,4 @@
+import collections
 import inspect
 import types
 import typing
@@ -46,6 +47,9 @@ class TableRow(object):
 
         #: A mapping of Column -> Current value for this row.
         self._values = {}
+
+        #: A mapping of relationship -> rows for this row.
+        self._relationship_mapping = collections.defaultdict(lambda: [])
 
     def __repr__(self):
         gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self.table.columns)
@@ -185,6 +189,39 @@ class TableRow(object):
 
         query += "WHERE ({}) ".format(" AND ".join(wheres))
         return query, params
+
+    def _update_relationships(self, record: dict):
+        """
+        Updates relationship data for this row, storing any extra rows that are needed.
+        
+        :param record: The dict record of extra data to store. 
+        """
+        buckets = {}
+        for relationship in self.table.iter_relationships():
+            # type: md_relationship.Relationship
+            table = relationship.foreign_table
+            if table not in buckets:
+                buckets[table] = {}
+
+            # iterate over every column in the record
+            # checking to see if the column adds up
+            for cname, value in record.copy().items():
+                column = next(filter(lambda col: col.alias_name(table=table) == cname,
+                                     table.columns), None)
+                if column is not None:
+                    # use the actual name
+                    # if we use the cname, it won't expand into the row correctly
+                    actual_name = column.name
+                    buckets[table][actual_name] = value
+                    # get rid of the record
+                    # so it doesn't come around in the next relationship check
+                    record.pop(cname)
+
+        # store the new relationship data
+        for table, subdict in buckets.items():
+            row = table(**subdict)
+            # append the row to the existing mapping, if applicable
+            self._relationship_mapping[table].append(row)
 
     def _resolve_item(self, name: str):
         """

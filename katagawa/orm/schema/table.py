@@ -91,7 +91,6 @@ class TableMetadata(object):
 
                 for to_resolve in resolving_columns:
                     table, column = to_resolve.split(".")
-                    # TODO: Add get_table method
                     table = self.get_table(table)
 
                     if table is None:
