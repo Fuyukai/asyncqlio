@@ -41,6 +41,23 @@ class TableMetadata(object):
 
         return tbl
 
+    def get_table(self, table_name: str) -> 'TableMeta':
+        """
+        Gets a table from the current metadata.
+        
+        :param table_name: The name of the table to get. 
+        :return: A :class:`.Table` object.
+        """
+        try:
+            return self.tables[table_name]
+        except KeyError:
+            # we can load this from the name instead
+            for table in self.tables.values():
+                if table.__name__ == table_name:
+                    return table
+            else:
+                return None
+
     def resolve_floating_relationships(self):
         """
         Resolves any "floating" relationships - i.e any relationship/foreign keys that don't 
@@ -69,10 +86,13 @@ class TableMetadata(object):
             for relation in tbl._relationships.values():
                 assert isinstance(relation, md_relationship.Relationship)
 
-                if relation.via_column is None:
-                    table, column = relation._via_name.split(".")
+                resolving_columns = [col for col in [relation.left_column, relation.right_column]
+                                     if isinstance(col, str)]
+
+                for to_resolve in resolving_columns:
+                    table, column = to_resolve.split(".")
                     # TODO: Add get_table method
-                    table = self.tables[table]
+                    table = self.get_table(table)
 
                     if table is None:
                         raise SchemaError("No such table '{}' exists".format(table))
@@ -83,7 +103,10 @@ class TableMetadata(object):
                         raise SchemaError("No such column '{}' exists on table '{}'"
                                           .format(table, column))
 
-                    relation.via_column = col
+                    if (to_resolve == relation.left_column) is True:
+                        relation.left_column = col
+                    elif (to_resolve == relation.right_column) is True:
+                        relation.right_column = col
 
     def get_referring_relationships(self, table: 'TableMeta'):
         """
