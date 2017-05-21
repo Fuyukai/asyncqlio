@@ -303,15 +303,15 @@ class SelectQuery(object):
         """
         # this assumes that the rows come in grouped by PK on the left
         # also fuck right joins
-        # get the first row and construct the first table row using map_one
+        # get the first row and construct the first table row using map_columns
+        # this will also map any extra relationship data there
         first_row = rows[0]
         tbl_row = self.map_columns(first_row)
 
         # loop over every "extra" rows
         # and update the relationship data in the table
         for runon_row in rows[1:]:
-            # TODO: Write this
-            # tbl_row._update_relationships(runon_row)
+            tbl_row._update_relationships(runon_row)
             pass
 
         return tbl_row
