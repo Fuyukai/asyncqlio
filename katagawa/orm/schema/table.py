@@ -156,22 +156,19 @@ class TableMeta(type):
         if not PY36:
             it = itertools.chain(class_body.items(), it)
 
+        if register is False:
+            return
+
+        # set tablename to avoid a giant iteration loop
+        self.__tablename__ = table_name or tblname.lower()
+
         for name, value in it:
             if hasattr(value, "__set_name__"):
                 value.__set_name__(self, name)
 
-        if register is False:
-            return
-
         # ================ #
         # TABLE ATTRIBUTES #
         # ================ #
-
-        try:
-            self.__tablename__
-        except AttributeError:
-            #: The name of this table.
-            self.__tablename__ = table_name or tblname.lower()
 
         #: The :class:`.Katagawa` this table is bound to.
         self.__bind = None
