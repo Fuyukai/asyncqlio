@@ -66,9 +66,8 @@ class TableRow(object):
         except AttributeError:
             return super().__setattr__(key, value)
 
-        try:
-            col = next(filter(lambda col: col.name == key, self.table.columns))
-        except StopIteration:
+        col = self.table.get_column(column_name=key)
+        if col is None:
             return super().__setattr__(key, value)
 
         # call on_set for the column
@@ -206,8 +205,8 @@ class TableRow(object):
             # iterate over every column in the record
             # checking to see if the column adds up
             for cname, value in record.copy().items():
-                column = next(filter(lambda col: col.alias_name(table=table) == cname,
-                                     table.columns), None)
+                # this will load using cname too, thankfully
+                column = self.table.get_column(cname)
                 if column is not None:
                     # use the actual name
                     # if we use the cname, it won't expand into the row correctly
@@ -261,9 +260,8 @@ class TableRow(object):
             pass
 
         # failed to load relationship, too, so load a column value instead
-        try:
-            col = next(filter(lambda col: col.name == name, self.table.columns))
-        except StopIteration:
+        col = self.table.get_column(name)
+        if col is None:
             raise AttributeError("{} was not a function or attribute on the associated table, "
                                  "and was not a column".format(name)) from None
 

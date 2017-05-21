@@ -267,13 +267,12 @@ class Session(object):
             # so always fetch a row now
             pkey_rows = await cur.fetch_row()
 
+            # if we have returns, we can store the column values directly
             if self.bind.dialect.has_returns:
                 for colname, value in pkey_rows.items():
-                    try:
-                        column = next(filter(lambda column: column.name == colname,
-                                             row.table.iter_columns()))
-                    except StopIteration:
-                        # wat
+                    column = row.table.get_column(colname)
+                    if column is None:
+                        # what
                         continue
                     row.store_column_value(column, value, track_history=False)
                     await cur.close()

@@ -71,15 +71,14 @@ class TableMetadata(object):
                 foreignkey = column.foreign_key
                 if foreignkey.foreign_column is None:
                     table, column = foreignkey._f_name.split(".")
-                    table = self.tables[table]
+                    table = self.get_table(table)
                     if table is None:
                         raise SchemaError("No such table '{}' exists".format(table))
 
-                    try:
-                        col = next(filter(lambda col: col.name == column, table.iter_columns()))
-                    except StopIteration:
+                    col = table.get_column(column)
+                    if col is None:
                         raise SchemaError("No such column '{}' exists on table '{}'"
-                                          .format(table, column))
+                                          .format(column, table))
 
                     foreignkey.foreign_column = col
 
@@ -96,9 +95,8 @@ class TableMetadata(object):
                     if table is None:
                         raise SchemaError("No such table '{}' exists".format(table))
 
-                    try:
-                        col = next(filter(lambda col: col.name == column, table.iter_columns()))
-                    except StopIteration:
+                    col = table.get_column(column)
+                    if col is None:
                         raise SchemaError("No such column '{}' exists on table '{}'"
                                           .format(table, column))
 
@@ -196,7 +194,7 @@ class TableMeta(type):
 
     def __getattr__(self, item):
         try:
-            return next(filter(lambda col: col.name == item, self.columns))
+            return self.get_column(item, raise_si=True)
         except StopIteration:
             try:
                 return next(filter(lambda tup: tup[0] == item, self._relationships.items()))[1]
@@ -233,6 +231,33 @@ class TableMeta(type):
         """
         for col in self._columns.values():
             yield col
+
+    def get_column(self, column_name: str, *,
+                   raise_si: bool = False) -> 'md_column.Column':
+        """
+        Gets a column by name.
+        
+        :param column_name: The column name to lookup.
+        
+            This can be one of the following:
+                - The column's ``name``
+                - The column's ``alias_name()`` for this table
+            
+        :return: The :class:`.Column` associated with that name, or None if no column was found.
+        """
+        try:
+            return self._columns[column_name]
+        except KeyError:
+            try:
+                col = next(filter(lambda col: col.alias_name(self) == column_name,
+                                  self._columns.values()))
+            except StopIteration:
+                if raise_si:
+                    raise
+
+                return None
+            else:
+                return col
 
     def _calculate_primary_key(self) -> typing.Union['PrimaryKey', None]:
         """
