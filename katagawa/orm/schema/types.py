@@ -187,7 +187,7 @@ class String(ColumnType):
         """
         return md_operators.Like(self.column, other)
 
-    def ilike(self, other: str) -> 'md_operators.ILike':
+    def ilike(self, other: str) -> 'typing.Union[md_operators.ILike, md_operators.HackyILike]':
         """
         Returns an ILIKE operator, checking if this column is case-insensitive LIKE another string.
 
