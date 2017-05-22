@@ -196,8 +196,10 @@ class String(ColumnType):
 
         :param other: The other string to check. 
         """
-        # TODO: Check for ILIKE support.
-        return md_operators.ILike(self.column, other)
+        if self.column.table._bind.dialect.has_ilike:
+            return md_operators.ILike(self.column, other)
+        else:
+            return md_operators.HackyILike(self.column, other)
 
 
 class Text(String):
