@@ -171,7 +171,7 @@ class TableMeta(type):
         # ================ #
 
         #: The :class:`.Katagawa` this table is bound to.
-        self.__bind = None
+        self._bind = None
 
         #: A dict of columns for this table.
         self._columns = self._columns  # type: typing.Dict[str, md_column.Column]

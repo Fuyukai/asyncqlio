@@ -67,7 +67,7 @@ class Katagawa(object):
         if isinstance(md, md_table.TableMeta):
             md = md._metadata
         # first set a bind on the metadata
-        md.bind = self
+        md._bind = self
         # then resolve all outstanding relationships
         md.resolve_floating_relationships()
         return md
