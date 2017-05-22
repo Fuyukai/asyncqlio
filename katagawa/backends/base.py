@@ -38,7 +38,13 @@ class BaseDialect:
     def has_returns(self) -> bool:
         """
         Returns True if this dialect has RETURNS.
-        :return: 
+        """
+        return False
+
+    @property
+    def has_ilike(self) -> bool:
+        """
+        Returns True if this dialect has ILIKE.
         """
         return False
 
