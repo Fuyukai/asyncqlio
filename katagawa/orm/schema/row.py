@@ -225,8 +225,16 @@ class TableRow(object):
         # store the new relationship data
         for table, subdict in buckets.items():
             row = table(**subdict)
-            # append the row to the existing mapping, if applicable
-            self._relationship_mapping[table].append(row)
+            # ensure the row doesn't already exist with the PK
+            try:
+                next(filter(lambda r: r.primary_key == row.primary_key,
+                            self._relationship_mapping[table]))
+            except StopIteration:
+                # only append if the row didn't exist earlier
+                # i.e that the filter raised StopIteration
+                self._relationship_mapping[table].append(row)
+            else:
+                continue
 
     def _resolve_item(self, name: str):
         """
