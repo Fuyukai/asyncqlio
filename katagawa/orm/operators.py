@@ -262,3 +262,15 @@ class ILike(ComparisonOp):
         This operator is not available on all dialects.
     """
     operator = "ILIKE"
+
+
+class HackyILike(BaseOperator, ColumnValueMixin):
+    """
+    A "hacky" ILIKE operator for databases that do not support it.
+    """
+
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        # lower(column) like pattern
+        # this does not lower the pattern, however!
+        param_name, name = self.get_param(emitter, counter)
+        return "LOWER({}) LIKE {}".format(self.column.quoted_fullname, param_name), name, self.value
