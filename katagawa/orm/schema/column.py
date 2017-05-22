@@ -5,6 +5,7 @@ import typing
 
 from cached_property import cached_property
 
+from katagawa.meta import proxy_to_getattr
 from katagawa.orm import operators as md_operators
 from katagawa.orm.schema import relationship as md_relationship, types as md_types
 from katagawa.sentinels import NO_DEFAULT
@@ -12,6 +13,7 @@ from katagawa.sentinels import NO_DEFAULT
 logger = logging.getLogger(__name__)
 
 
+@proxy_to_getattr("__contains__")
 class Column(object):
     """
     Represents a column in a table in a database.
