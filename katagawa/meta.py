@@ -2,6 +2,30 @@ import inspect
 from abc import ABCMeta
 
 
+def proxy_to_getattr(*magic_methods: str):
+    """
+    Proxies a method to to ``__getattr__`` when it would not be normally proxied.
+    
+    This is used for magic methods that are slot loaded (``__setattr__`` etc.)
+    
+    :param magic_methods: The magic methods to proxy to getattr.
+    """
+
+    def _modify_type(obb):
+        def make_proxy(name: str):
+            def proxy(self, *args, **kwargs):
+                item = self.__getattr__(name)
+                return item(*args, **kwargs)
+
+            return proxy
+
+        for item in magic_methods:
+            setattr(obb, item, make_proxy(item))
+
+        return obb
+
+    return _modify_type
+
 # Copied from https://github.com/dabeaz/curio/blob/master/curio/meta.py
 # Copyright (C) David Beazley (Dabeaz LLC)
 # This code is licenced under the MIT licence.
@@ -57,3 +81,5 @@ class AsyncInstanceType(AsyncABCMeta):
 
 class AsyncObject(metaclass=AsyncInstanceType):
     pass
+
+    # END COPIED CODE
