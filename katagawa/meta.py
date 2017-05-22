@@ -2,6 +2,18 @@ import inspect
 from abc import ABCMeta
 
 
+def make_proxy(name: str):
+    """
+    Makes a proxy object for magic methods.
+    """
+
+    def proxy(self, *args, **kwargs):
+        item = self.__getattr__(name)
+        return item(*args, **kwargs)
+
+    return proxy
+
+
 def proxy_to_getattr(*magic_methods: str):
     """
     Proxies a method to to ``__getattr__`` when it would not be normally proxied.
@@ -12,13 +24,6 @@ def proxy_to_getattr(*magic_methods: str):
     """
 
     def _modify_type(obb):
-        def make_proxy(name: str):
-            def proxy(self, *args, **kwargs):
-                item = self.__getattr__(name)
-                return item(*args, **kwargs)
-
-            return proxy
-
         for item in magic_methods:
             setattr(obb, item, make_proxy(item))
 
