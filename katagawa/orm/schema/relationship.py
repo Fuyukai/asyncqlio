@@ -7,6 +7,8 @@ from cached_property import cached_property
 
 from katagawa.orm import query as md_query
 from katagawa.orm.schema import column as md_column, row as md_row
+from katagawa.sentinels import NO_VALUE
+from katagawa.utils import iter_to_aiter
 
 
 class ForeignKey(object):
@@ -168,35 +170,37 @@ class Relationship(object):
         """
         if self.load_type == "select":
             return SelectLoadedRelationship(self, row, session or row._session)
+        elif self.load_type == "joined" and self.use_iter is False:
+            return JoinLoadedOTMRelationship(self, row, session)
         else:
             raise NotImplementedError("Unknown load type {}".format(self.load_type))
 
 
 # Specific relationship types produced for TableRow objects.
-
-class SelectLoadedRelationship(object):
+class BaseLoadedRelationship(object):
     """
-    A relationship object that uses a separate SELECT statement to load follow-on tables.
+    Provides some common methods for specific relationship type subclasses.
     """
 
     def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
         """
         :param rel: The :class:`.Relationship` that lies underneath this object. 
         :param row: The :class:`.TableRow` this is being loaded from.
+        :param session: The :class:`.Session` this object is attached to.
         """
         self.relationship = rel
         self.row = row
         self.session = session or row._session
 
-    async def append(self, row: 'md_row.TableRow'):
+    async def add(self, row: 'md_row.TableRow'):
         """
-        Appends a row to this relationship.
-        
+        Adds a row to this relationship.
+
         .. warning::
-            This will run an immediate insert of this row; if the parent row for this relationship 
-            is not inserted it will run an immediate insert on the parent.
-        
-        :param row: The :class:`.TableRow` object to append to this relationship.
+            This will run an immediate insert/update of this row; if the parent row for this 
+            relationship is not inserted it will run an immediate insert on the parent.
+
+        :param row: The :class:`.TableRow` object to add to this relationship.
         """
         if not self.row._TableRow__existed:
             # we need to insert the row for it to be ready
@@ -213,6 +217,46 @@ class SelectLoadedRelationship(object):
         row = await self.session.add(row)
 
         return row
+
+    async def remove(self, row: 'md_row.TableRow'):
+        """
+        Removes a row from this query.
+         
+        .. warning::
+            This will run an immediate UPDATE of this row to remove the foreign key.
+        
+        :param row: The :class:`.TableRow` object to remove from this relationship. 
+        """
+        f_column = self.relationship.foreign_column
+
+        if row.get_column_value(f_column, return_default=False) is NO_VALUE:
+            raise ValueError("The row '{}' is not in this relationship".format(row))
+
+        row.store_column_value(f_column, None)
+        # generates an update
+        row = await self.session.add(row)
+
+        return row
+
+    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+        """
+        Sets the rows for this relationship, if applicable.
+        
+        By default, this does nothing.
+        """
+        pass
+
+    def __iter__(self):
+        raise TypeError("This cannot be iterated over normally")
+
+    def __anext__(self):
+        raise TypeError("This is not an async iterator")
+
+
+class SelectLoadedRelationship(BaseLoadedRelationship):
+    """
+    A relationship object that uses a separate SELECT statement to load follow-on tables.
+    """
 
     @property
     def query(self) -> 'md_query.SelectQuery':
@@ -235,17 +279,49 @@ class SelectLoadedRelationship(object):
     def __await__(self):
         return self._load().__await__()
 
+    def __aiter__(self):
+        return self._load()
+
     async def _load(self):
         """
         Loads the rows for this session.
         """
         return await self.query.all()
 
-    def __iter__(self):
-        raise NotImplementedError("This cannot be iterated over normally")
 
-    def __aiter__(self):
-        return self._load()
+@iter_to_aiter
+class JoinLoadedOTMRelationship(BaseLoadedRelationship):
+    """
+    Represents a join-loaded one to many relationship.
+    """
 
-    def __anext__(self):
-        raise NotImplementedError("This is not an async iterator")
+    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+        """
+        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param row: The :class:`.TableRow` this is being loaded from.
+        :param session: The :class:`.Session` this object is attached to.
+        """
+        super().__init__(rel, row, session)
+
+        self._row_storage = []
+
+    async def add(self, row: 'md_row.TableRow'):
+        row = await super().add(row)
+        self._row_storage.append(row)
+
+        return row
+
+    add.__doc__ = BaseLoadedRelationship.add.__doc__
+
+    async def remove(self, row: 'md_row.TableRow'):
+        if row not in self._row_storage:
+            raise ValueError("The row '{}' is not in this relationship".format(row))
+
+        row = await super().remove(row)
+        self._row_storage.remove(row)
+        return row
+
+    remove.__doc__ = BaseLoadedRelationship.remove.__doc__
+
+    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+        self._row_storage = rows

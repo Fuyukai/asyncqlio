@@ -392,7 +392,9 @@ class TableRow(object):
         except StopIteration:
             raise ValueError("No such relationship '{}'".format(relation_name))
 
-        return relation.get_instance(self, self._session)
+        rel = relation.get_instance(self, self._session)
+        rel.set_rows(self._relationship_mapping[rel])
+        return rel
 
     def to_dict(self, *, include_attrs: bool = False) -> dict:
         """
