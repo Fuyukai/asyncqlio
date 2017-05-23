@@ -40,6 +40,10 @@ class TableRow(object):
         #: Otherwise, it is a fresh row.
         self.__existed = False
 
+        #: If this row is marked as "deleted".
+        #: This means that the row cannot be updated.
+        self.__deleted = False
+
         #: The session this row is attached to.
         self._session = None  # type: md_session.Session
 
@@ -222,6 +226,9 @@ class TableRow(object):
         
         :param record: The dict record of extra data to store. 
         """
+        if self.__deleted:
+            raise RuntimeError("This row is marked as deleted")
+
         buckets = {}
         for relationship in self.table.iter_relationships():
             # type: md_relationship.Relationship
@@ -370,6 +377,9 @@ class TableRow(object):
         
         This will also update the history of the value, if applicable.
         """
+        if self.__deleted:
+            raise RuntimeError("This row is marked as deleted")
+
         if column not in self._previous_values and track_history:
             if column in self._values:
                 self._previous_values[column] = self._values[column]
