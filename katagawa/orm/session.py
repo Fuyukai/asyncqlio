@@ -260,6 +260,9 @@ class Session(object):
         results = []
 
         for row, (sql, params) in zip(query.rows_to_insert, queries):
+            if row._TableRow__deleted:
+                raise RuntimeError("Row '{}' is marked as deleted".format(row._TableRow__deleted))
+
             # this needs to be a cursor
             # since postgres uses RETURNING
             cur = await self.cursor(sql, params)
@@ -284,9 +287,9 @@ class Session(object):
                     lquery = "SELECT {};".format(self.bind.dialect.lastval_method)
                     cursor = await self.cursor(lquery)
                     async with cursor:
-                        row = await cursor.fetch_row()
+                        lval_row = await cursor.fetch_row()
                         # there should only be one value here
-                        value = list(row.values())[0]
+                        value = list(lval_row.values())[0]
                     column = next(
                         filter(lambda x: x.auto_increment, row.table.iter_columns()), None
                     )
@@ -299,6 +302,8 @@ class Session(object):
 
                 await cur.close()
 
+            row._TableRow__deleted = False
+            row._TableRow__existed = True
             results.append(row)
 
         return results
@@ -310,10 +315,16 @@ class Session(object):
         :param query: The :class:`.RowUpdateQuery` or :class:`.BulkUpdateQuery` to execute. 
         """
         if isinstance(query, md_query.RowUpdateQuery):
-            for sql, params in query.generate_sql():
+            for row, (sql, params) in zip(query.rows_to_update, query.generate_sql()):
+                if row._TableRow__deleted:
+                    raise RuntimeError("Row '{}' is marked as deleted".format(row))
+
                 if sql is None and params is None:
                     continue
+
                 await self.execute(sql, params)
+                # copy the history of the row
+                row._previous_values = row._values
 
         return query
 
@@ -324,11 +335,15 @@ class Session(object):
         :param query: The :class:`.RowDeleteQuery` or :class:`.BulkDeleteQuery` to execute.  
         """
         if isinstance(query, md_query.RowDeleteQuery):
-            for sql, params in query.generate_sql():
+            for row, (sql, params) in zip(query.rows_to_delete, query.generate_sql()):
+                if row._TableRow__deleted:
+                    raise RuntimeError("Row '{}' is already marked as deleted".format(row))
+
                 if sql is None and params is None:
                     continue
 
                 await self.execute(sql, params)
+                row._TableRow__deleted = True
 
         return query
 
