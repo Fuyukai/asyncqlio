@@ -31,6 +31,7 @@ def proxy_to_getattr(*magic_methods: str):
 
     return _modify_type
 
+
 # Copied from https://github.com/dabeaz/curio/blob/master/curio/meta.py
 # Copyright (C) David Beazley (Dabeaz LLC)
 # This code is licenced under the MIT licence.
@@ -87,4 +88,6 @@ class AsyncInstanceType(AsyncABCMeta):
 class AsyncObject(metaclass=AsyncInstanceType):
     pass
 
-    # END COPIED CODE
+
+...
+# END COPIED CODE

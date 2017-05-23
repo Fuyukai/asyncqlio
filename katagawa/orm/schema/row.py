@@ -1,4 +1,5 @@
 import collections
+import functools
 import inspect
 import types
 import typing
@@ -10,6 +11,7 @@ from katagawa.orm.schema import column as md_column, relationship as md_relation
 from katagawa.sentinels import NO_DEFAULT, NO_VALUE
 
 
+@functools.total_ordering
 class TableRow(object):
     """
     Represents a single row in a table.  
@@ -58,6 +60,27 @@ class TableRow(object):
     def __getattr__(self, item: str):
         obb = self._resolve_item(item)
         return obb
+
+    __hash__ = object.__hash__
+
+    # TODO: Allow tables to override these methods.
+    def __eq__(self, other):
+        if not isinstance(other, TableRow):
+            return NotImplemented
+
+        if other.table != self.table:
+            raise ValueError("Rows to compare must be on the same table")
+
+        return self.primary_key == other.primary_key
+
+    def __le__(self, other):
+        if not isinstance(other, TableRow):
+            return NotImplemented
+
+        if other.table != self.table:
+            raise ValueError("Rows to compare must be on the same table")
+
+        return self.primary_key <= other.primary_key
 
     def __setattr__(self, key, value):
         # ensure we're not doing stupid shit until we get _values
