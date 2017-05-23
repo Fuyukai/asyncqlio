@@ -58,7 +58,7 @@ class AsyncpgResultSet(BaseResultSet):
         if res and self._keys is None:
             self._keys = res[0].keys()
 
-        return res
+        return [dict(r) for r in res]
 
     @property
     def keys(self) -> typing.Iterable[str]:
@@ -71,7 +71,8 @@ class AsyncpgResultSet(BaseResultSet):
         if self._keys is None and row is not None:
             self._keys = row.keys()
 
-        return row
+        if row is not None:
+            return dict(row)
 
     async def close(self):
         pass
