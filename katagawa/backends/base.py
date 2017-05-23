@@ -76,7 +76,7 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         """
 
     @abstractmethod
-    async def fetch_row(self):
+    async def fetch_row(self) -> typing.Mapping[str, typing.Any]:
         """
         Fetches the **next row** in this query. 
         
@@ -84,7 +84,7 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         """
 
     @abstractmethod
-    async def fetch_many(self, n: int):
+    async def fetch_many(self, n: int) -> typing.List[typing.Mapping[str, typing.Any]]:
         """
         Fetches the **next N rows** in this query.
         
