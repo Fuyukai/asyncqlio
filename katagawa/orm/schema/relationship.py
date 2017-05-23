@@ -305,6 +305,9 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
 
         self._row_storage = []
 
+    def __repr__(self):
+        return "<JoinLoadedOTMRelationship {}>".format(repr(self._row_storage))
+
     async def add(self, row: 'md_row.TableRow'):
         row = await super().add(row)
         self._row_storage.append(row)
