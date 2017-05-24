@@ -1,7 +1,6 @@
-import sys
 import re
+import sys
 from distutils.core import setup
-from setuptools import find_packages
 
 if sys.version_info[0:2] < (3, 5):
     raise RuntimeError("This package requires Python 3.5+.")
@@ -12,7 +11,13 @@ with open("katagawa/__init__.py") as f:
 setup(
     name='katagawa',
     version=version,
-    packages=find_packages(),
+    packages=[
+        'katagawa',
+        'katagawa.orm',
+        'katagawa.orm.schema',
+        'katagawa.backends',
+        'katagawa.backends.postgresql',
+    ],
     url='https://github.com/SunDwarf/Katagawa',
     license='MIT',
     author='Laura Dickinson',
