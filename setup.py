@@ -15,8 +15,11 @@ setup(
         'katagawa',
         'katagawa.orm',
         'katagawa.orm.schema',
+        # namespace packages yay
         'katagawa.backends',
+        # postgres backend
         'katagawa.backends.postgresql',
+        'katagawa.backends.postgresql.asyncpg'
     ],
     url='https://github.com/SunDwarf/Katagawa',
     license='MIT',
