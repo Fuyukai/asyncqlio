@@ -220,15 +220,14 @@ class SelectQuery(object):
         if c_sql:
             fmt += " WHERE {}".format(" AND ".join(c_sql))
 
+        if self.orderer is not None:
+            fmt += " ORDER BY {}".format(self.orderer.generate_sql(self.session.bind.emit_param,
+                                                                   counter))
         if self.row_limit is not None:
             fmt += " LIMIT {}".format(self.row_limit)
 
         if self.row_offset is not None:
             fmt += " OFFSET {}".format(self.row_offset)
-
-        if self.orderer is not None:
-            fmt += " ORDER BY {}".format(self.orderer.generate_sql(self.session.bind.emit_param,
-                                                                   counter))
 
         return fmt, params
 
