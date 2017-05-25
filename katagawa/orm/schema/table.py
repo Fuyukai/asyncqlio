@@ -170,9 +170,6 @@ class TableMeta(type):
         # TABLE ATTRIBUTES #
         # ================ #
 
-        #: The :class:`.Katagawa` this table is bound to.
-        self._bind = None
-
         #: A dict of columns for this table.
         self._columns = self._columns  # type: typing.Dict[str, md_column.Column]
 
@@ -198,6 +195,10 @@ class TableMeta(type):
                 raise AttributeError(item) from None
         else:
             return col
+
+    @property
+    def _bind(self):
+        return self._metadata._bind
 
     @property
     def __quoted_name__(self):
