@@ -4,11 +4,11 @@ import inspect
 import types
 import typing
 
-import katagawa.sentinels
-from katagawa.orm import inspection as md_inspection, session as md_session
-from katagawa.orm.schema import column as md_column, relationship as md_relationship, \
+import asyncqlio.sentinels
+from asyncqlio.orm import inspection as md_inspection, session as md_session
+from asyncqlio.orm.schema import column as md_column, relationship as md_relationship, \
     table as md_table
-from katagawa.sentinels import NO_DEFAULT, NO_VALUE
+from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
 
 
 @functools.total_ordering
@@ -363,7 +363,7 @@ class TableRow(object):
         except KeyError:
             if return_default:
                 default = column.default
-                if default is katagawa.sentinels.NO_DEFAULT:
+                if default is asyncqlio.sentinels.NO_DEFAULT:
                     return None
                 else:
                     return default

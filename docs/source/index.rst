@@ -29,7 +29,6 @@ drivers to connect to these servers:
    - PostgreSQL (asyncpg, aiopg): :ref:`driver-psql`
    - MySQL (aiomysql): :ref:`driver-mysql`
    - SQLite3 (sqlite3): :ref:`driver-sqlite3`
-   - MSSQL (pymssql): :ref:`driver-mssql`
 
 Other databases may be supported in the future. 
 
@@ -40,6 +39,7 @@ Contents
    :maxdepth: 2
    :caption: Getting Started
 
+       gs/connecting
 
 .. toctree::
    :maxdepth: 2

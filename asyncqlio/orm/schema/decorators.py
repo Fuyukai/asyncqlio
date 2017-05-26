@@ -4,7 +4,7 @@ Decorator helpers for tables.
 import functools
 import typing
 
-from katagawa.orm.schema.row import TableRow
+from asyncqlio.orm.schema.row import TableRow
 
 # the generic signature for most decorators
 sig = typing.Callable[[TableRow], typing.Any]

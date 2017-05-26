@@ -1,9 +1,9 @@
 import abc
 import typing
 
-from katagawa.exc import DatabaseException
-from katagawa.orm import operators as md_operators
-from katagawa.orm.schema import column as md_column, row as md_row
+from asyncqlio.exc import DatabaseException
+from asyncqlio.orm import operators as md_operators
+from asyncqlio.orm.schema import column as md_column, row as md_row
 
 
 class ColumnValidationError(DatabaseException):

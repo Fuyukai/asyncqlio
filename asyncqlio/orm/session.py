@@ -3,11 +3,11 @@ import functools
 import logging
 import typing
 
-from katagawa import kg as md_kg
-from katagawa.backends.base import BaseTransaction
-from katagawa.orm import query as md_query
-from katagawa.orm.schema import row as md_row
-from katagawa.sentinels import NO_DEFAULT, NO_VALUE
+from asyncqlio import db as md_db
+from asyncqlio.backends.base import BaseTransaction
+from asyncqlio.orm import query as md_query
+from asyncqlio.orm.schema import row as md_row
+from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +35,17 @@ class Session(object):
     Sessions act as a temporary window into the database. They are responsible for creating queries,
     inserting and updating rows, etc.
     
-    Sessions are bound to a :class:`.Katagawa` instance which they use to get a transaction and 
-    execute queries in.
+    Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction 
+    and execute queries in.
     
     .. code-block:: python
         # get a session from our db interface
         sess = db.get_session()
     """
 
-    def __init__(self, bind: 'md_kg.Katagawa'):
+    def __init__(self, bind: 'md_db.DatabaseInterface'):
         """
-        :param bind: The :class:`.Katagawa` instance we are bound to. 
+        :param bind: The :class:`.DatabaseInterface` instance we are bound to. 
         """
         self.bind = bind
 

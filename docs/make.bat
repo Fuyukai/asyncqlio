@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
-set SPHINXPROJ=Katagawa
+set SPHINXPROJ=asyncqlio
 
 if "%1" == "" goto help
 

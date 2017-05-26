@@ -3,8 +3,8 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 """
 import typing
 
-from katagawa.orm import session as md_session
-from katagawa.orm.schema import column as md_column, row as md_row
+from asyncqlio.orm import session as md_session
+from asyncqlio.orm.schema import column as md_column, row as md_row
 
 
 def get_row_session(row: 'md_row.TableRow') -> 'md_session.Session':

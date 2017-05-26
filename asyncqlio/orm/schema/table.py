@@ -4,9 +4,9 @@ import sys
 import typing
 from collections import OrderedDict
 
-from katagawa import kg as md_kg
-from katagawa.exc import NoSuchColumnError, SchemaError
-from katagawa.orm.schema import column as md_column, relationship as md_relationship, row as md_row
+from asyncqlio import db as md_kg
+from asyncqlio.exc import NoSuchColumnError, SchemaError
+from asyncqlio.orm.schema import column as md_column, relationship as md_relationship, row as md_row
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class TableMetadata(object):
         self.tables = {}
 
         #: The DB object bound to this metadata.
-        self.bind = None  # type: md_kg.Katagawa
+        self.bind = None  # type: md_kg.asyncqlio
 
     def register_table(self, tbl: 'TableMeta') -> 'TableMeta':
         """
@@ -314,7 +314,7 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     """
     Gets a new base object to use for OO-style tables.  
     This object is the parent of all tables created in the object-oriented style; it provides some 
-    key configuration to the relationship calculator and the Katagawa object itself.
+    key configuration to the relationship calculator and the DB object itself.
     
     To use this object, you call this function to create the new object, and subclass it in your 
     table classes:

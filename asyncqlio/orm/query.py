@@ -5,10 +5,10 @@ import collections
 import itertools
 import typing
 
-from katagawa.backends.base import BaseResultSet
-from katagawa.orm import operators as md_operators, session as md_session
-from katagawa.orm.schema import column as md_column, row as md_row
-from katagawa.sentinels import NO_VALUE
+from asyncqlio.backends.base import BaseResultSet
+from asyncqlio.orm import operators as md_operators, session as md_session
+from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.sentinels import NO_VALUE
 
 
 class _ResultGenerator(collections.AsyncIterator):

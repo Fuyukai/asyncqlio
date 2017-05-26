@@ -11,8 +11,8 @@ from asyncpg import Record
 from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
-from katagawa.backends.base import BaseConnector, BaseResultSet, BaseTransaction
-from katagawa.exc import IntegrityError, OperationalError
+from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction
+from asyncqlio.exc import IntegrityError, OperationalError
 
 logger = logging.getLogger(__name__)
 

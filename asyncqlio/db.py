@@ -1,21 +1,21 @@
 """
-The main Katagawa object. This is the "database interface" to the actual DB server.
+The main Database object. This is the "database interface" to the actual DB server.
 """
 import importlib
 import logging
 from urllib.parse import ParseResult, urlparse
 
-from katagawa.backends.base import BaseConnector, BaseDialect, BaseTransaction
-from katagawa.orm import session as md_session
-from katagawa.orm.schema import table as md_table
+from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseTransaction
+from asyncqlio.orm import session as md_session
+from asyncqlio.orm.schema import table as md_table
 
 # sentinels
 NO_CONNECTOR = object()
 
-logger = logging.getLogger("katagawa")
+logger = logging.getLogger("asyncqlio")
 
 
-class Katagawa(object):
+class DatabaseInterface(object):
     """
     The "database interface" to your database. This provides the actual connection to the DB server,
     including things such as querying, inserting, updating, et cetera.
@@ -25,8 +25,8 @@ class Katagawa(object):
     .. code-block:: python
     
         # pass the DSN in the constructor
-        dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/joku"
-        my_database = Katagawa(dsn)
+        dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/mydb"
+        my_database = DatabaseInterface(dsn)
         # or provide it in the `.connect()` call
         await my_database.connect(dsn)
     """
@@ -96,7 +96,7 @@ class Katagawa(object):
         except IndexError:
             db_connector = NO_CONNECTOR
 
-        import_path = "katagawa.backends.{}".format(db_type)
+        import_path = "asyncqlio.backends.{}".format(db_type)
         package = importlib.import_module(import_path)
         if db_connector is not NO_CONNECTOR:
             mod_path = import_path + ".{}".format(db_connector)
@@ -140,7 +140,7 @@ class Katagawa(object):
 
     def get_session(self, **kwargs) -> 'md_session.Session':
         """
-        Gets a new :class:`.Session` bound to this Katagawa instance.
+        Gets a new :class:`.Session` bound to this instance.
         """
         return md_session.Session(self, **kwargs)
 

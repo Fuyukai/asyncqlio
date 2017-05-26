@@ -6,7 +6,7 @@ import functools
 import itertools
 import typing
 
-from katagawa.orm.schema import column as md_column
+from asyncqlio.orm.schema import column as md_column
 
 
 def requires_bop(func) -> 'typing.Callable[[BaseOperator, BaseOperator], typing.Any]':

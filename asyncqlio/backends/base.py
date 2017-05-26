@@ -6,7 +6,7 @@ import typing
 from abc import abstractmethod
 from urllib.parse import ParseResult
 
-from katagawa.meta import AsyncABC
+from asyncqlio.meta import AsyncABC
 
 
 class BaseDialect:
@@ -253,7 +253,7 @@ class BaseConnector(AsyncABC):
     async def connect(self) -> 'BaseConnector':
         """
         Connects the current connector to the database server. This is called automatically by the 
-        :class:`.Katagawa` interface.
+        :class:`.DatabaseInterface
         
         :return: The original BaseConnector instance.
         """

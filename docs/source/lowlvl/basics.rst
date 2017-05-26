@@ -3,16 +3,16 @@
 Low Level Basics
 ================
 
-Katagawa's low-level API is a database-agnostic SQL API that provides
+asyncqlio's low-level API is a database-agnostic SQL API that provides
 developers the ability to execute SQL code without worrying about the
 underlying driver.
 
 .. code-block:: python
 
-    from katagawa import Katagawa
+    from asyncqlio.db import DatabaseInterface
 
-    # create the katagawa database object to connect to the server.
-    db = Katagawa("postgresql+asyncpg://joku@127.0.0.1/joku")
+    # create the database object to connect to the server.
+    db = DatabaseInterface("postgresql+asyncpg://joku@127.0.0.1/joku")
 
     async def main():
         # connect to the database with db.connect
@@ -33,8 +33,8 @@ connection using the driver-specific API, but this is not supported).
 
 The :class:`.BaseTransaction` object is used to abstract away Database API
 transaction objects into a common format that can be used in every dialect.
- To get a new transaction that is bound to the current connection, use
-:meth:`.Katagawa.get_transaction`:
+To get a new transaction that is bound to the current connection, use
+:meth:`.DatabaseInterface.get_transaction`:
 
 .. code-block:: python
 
@@ -86,9 +86,9 @@ you can rollback to revert any changes.
 Transactions support the ``async for`` protocol, which will automatically
 begin and commit/rollback as appropriate.
 
-.. autoclass:: katagawa.backends.base.BaseTransaction
+.. autoclass:: asyncqlio.backends.base.BaseTransaction
     :members:
     :private-members:
 
-.. autoclass:: katagawa.backends.base.BaseResultSet
+.. autoclass:: asyncqlio.backends.base.BaseResultSet
     :members:

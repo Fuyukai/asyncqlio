@@ -1,17 +1,17 @@
 Katagawa
 ========
 
-**Katagawa** is a Python 3.5+ ORM for SQL Relational Databases,
+**asyncqlio** is a Python 3.5+ ORM for SQL Relational Databases,
 that uses asyncio for an async interface.
 
-You can install the latest version of Katagawa from PyPI with pip:
+You can install the latest version of asyncqlio from PyPI with pip:
 
 .. code-block:: bash
 
-   $ pip install katagawa
+   $ pip install asyncqlio
 
-You can also install the development version of Katagawa from Git:
+You can also install the development version of asyncqlio from Git:
 
 .. code-block:: bash
 
-   $ pip install git+https://github.com/SunDwarf/Katagawa.git
+   $ pip install git+https://github.com/SunDwarf/asyncqlio.git

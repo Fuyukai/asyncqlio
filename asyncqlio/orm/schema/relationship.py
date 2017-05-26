@@ -5,10 +5,10 @@ import typing
 
 from cached_property import cached_property
 
-from katagawa.orm import query as md_query
-from katagawa.orm.schema import column as md_column, row as md_row
-from katagawa.sentinels import NO_VALUE
-from katagawa.utils import iter_to_aiter
+from asyncqlio.orm import query as md_query
+from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.sentinels import NO_VALUE
+from asyncqlio.utils import iter_to_aiter
 
 
 class ForeignKey(object):
@@ -192,6 +192,11 @@ class BaseLoadedRelationship(object):
         self.row = row
         self.session = session or row._session
 
+    async def _add_row(self, row: 'md_row.TableRow'):
+        """
+        An overridable method called when a row is added.
+        """
+
     async def add(self, row: 'md_row.TableRow'):
         """
         Adds a row to this relationship.
@@ -215,8 +220,14 @@ class BaseLoadedRelationship(object):
         row.store_column_value(f_column, data)
         # insert/update row
         row = await self.session.add(row)
+        await self._add_row(row)
 
         return row
+
+    async def _remove_row(self, row: 'md_row.TableRow'):
+        """
+        An overridable method called when a row is removed. 
+        """
 
     async def remove(self, row: 'md_row.TableRow'):
         """
@@ -235,6 +246,7 @@ class BaseLoadedRelationship(object):
         row.store_column_value(f_column, None)
         # generates an update
         row = await self.session.add(row)
+        await self._remove_row(row)
 
         return row
 
@@ -308,23 +320,37 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
     def __repr__(self):
         return "<JoinLoadedOTMRelationship {}>".format(repr(self._row_storage))
 
-    async def add(self, row: 'md_row.TableRow'):
-        row = await super().add(row)
+    def _add_row(self, row: 'md_row.TableRow'):
         self._row_storage.append(row)
 
-        return row
-
-    add.__doc__ = BaseLoadedRelationship.add.__doc__
-
-    async def remove(self, row: 'md_row.TableRow'):
-        if row not in self._row_storage:
-            raise ValueError("The row '{}' is not in this relationship".format(row))
-
-        row = await super().remove(row)
+    def _remove_row(self, row: 'md_row.TableRow'):
         self._row_storage.remove(row)
-        return row
-
-    remove.__doc__ = BaseLoadedRelationship.remove.__doc__
 
     def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
         self._row_storage = rows
+
+
+# TODO: Impl this
+class JoinLoadedOTORelationship(BaseLoadedRelationship):
+    """
+    Represents a joined one<-to->one relationship.
+    """
+
+    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+        """
+        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param row: The :class:`.TableRow` this is being loaded from.
+        :param session: The :class:`.Session` this object is attached to.
+        """
+        super().__init__(rel, row, session)
+
+        self._rel_row = None
+
+    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+        self._rel_row = next(rows)
+
+    def add(self, row: 'md_row.TableRow'):
+        raise NotImplementedError("This method does not work on one to one relationships")
+
+    def remove(self, row: 'md_row.TableRow'):
+        raise NotImplementedError("This method not work on one to one relationships")

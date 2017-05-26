@@ -3,7 +3,7 @@ from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
 
-from katagawa.backends.base import BaseDialect
+from asyncqlio.backends.base import BaseDialect
 
 DEFAULT_CONNECTOR = "asyncpg"
 

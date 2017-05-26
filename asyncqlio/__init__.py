@@ -1,5 +1,5 @@
 """
-Main package for Katagawa - a Python 3.5+ async ORM built on top of asyncio.
+Main package for asyncqlio - a Python 3.5+ async ORM built on top of asyncio.
 """
 
 __author__ = "Laura Dickinson"
