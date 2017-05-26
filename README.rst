@@ -1,5 +1,5 @@
-Katagawa
-========
+asyncqlio
+=========
 
 **asyncqlio** is a Python 3.5+ ORM for SQL Relational Databases,
 that uses asyncio for an async interface.

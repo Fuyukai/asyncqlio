@@ -70,7 +70,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Katagawa'
+project = 'asyncqlio'
 copyright = '2017, Laura Dickinson'
 author = 'Laura Dickinson'
 

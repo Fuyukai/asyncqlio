@@ -5,23 +5,23 @@ from distutils.core import setup
 if sys.version_info[0:2] < (3, 5):
     raise RuntimeError("This package requires Python 3.5+.")
 
-with open("katagawa/__init__.py") as f:
+with open("asyncqlio/__init__.py") as f:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
 
 setup(
-    name='katagawa',
+    name='asyncqlio',
     version=version,
     packages=[
-        'katagawa',
-        'katagawa.orm',
-        'katagawa.orm.schema',
+        'asyncqlio',
+        'asyncqlio.orm',
+        'asyncqlio.orm.schema',
         # namespace packages yay
-        'katagawa.backends',
+        'asyncqlio.backends',
         # postgres backend
-        'katagawa.backends.postgresql',
-        'katagawa.backends.postgresql.asyncpg'
+        'asyncqlio.backends.postgresql',
+        'asyncqlio.backends.postgresql.asyncpg'
     ],
-    url='https://github.com/SunDwarf/Katagawa',
+    url='https://github.com/SunDwarf/asyncqlio',
     license='MIT',
     author='Laura Dickinson',
     author_email='l@veriny.tf',
