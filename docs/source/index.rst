@@ -37,20 +37,15 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
+         :caption: High-level API
 
-       gs/connecting
+      hilvl/connecting
 
 .. toctree::
    :maxdepth: 2
    :caption: Low-level API
 
    lowlvl/basics
-
-.. toctree::
-   :maxdepth: 2
-   :caption: High-level API
-
 
 Indices and tables
 ==================
