@@ -99,9 +99,9 @@ class DatabaseInterface(object):
         import_path = "asyncqlio.backends.{}".format(db_type)
         package = importlib.import_module(import_path)
         if db_connector is not NO_CONNECTOR:
-            mod_path = import_path + ".{}".format(db_connector)
+            mod_path = ".".join([import_path, db_connector])
         else:
-            mod_path = import_path + ".{}".format(package.DEFAULT_CONNECTOR)
+            mod_path = ".".join([import_path, package.DEFAULT_CONNECTOR])
 
         self.dialect = getattr(package, "{}Dialect".format(db_type.title()))()
 
