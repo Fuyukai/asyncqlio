@@ -60,7 +60,7 @@ class Session(object):
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> 'Session':
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             if exc_type is None:
                 await self.commit()
