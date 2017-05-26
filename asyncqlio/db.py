@@ -138,11 +138,11 @@ class DatabaseInterface(object):
         """
         return self.connector.get_transaction(**kwargs)
 
-    def get_session(self) -> 'md_session.Session':
+    def get_session(self, **kwargs) -> 'md_session.Session':
         """
         Gets a new :class:`.Session` bound to this instance.
         """
-        return md_session.Session(self)
+        return md_session.Session(self, **kwargs)
 
     async def close(self):
         """
