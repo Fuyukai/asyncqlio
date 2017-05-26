@@ -37,12 +37,12 @@ def proxy_to_getattr(*magic_methods: str):
 # This code is licenced under the MIT licence.
 
 class AsyncABCMeta(ABCMeta):
-    '''
+    """
     Metaclass that gives all of the features of an abstract base class, but
     additionally enforces coroutine correctness on subclasses. If any method
     is defined as a coroutine in a parent, it must also be defined as a
     coroutine in any child.
-    '''
+    """
 
     def __init__(cls, name, bases, methods):
         coros = {}
@@ -61,7 +61,7 @@ class AsyncABC(metaclass=AsyncABCMeta):
 
 
 class AsyncInstanceType(AsyncABCMeta):
-    '''
+    """
     Metaclass that allows for asynchronous instance initialization and the
     __init__() method to be defined as a coroutine.   Usage:
     class Spam(metaclass=AsyncInstanceType):
@@ -71,7 +71,7 @@ class AsyncInstanceType(AsyncABCMeta):
     async def main():
          s = await Spam(2, 3)
          ...
-    '''
+    """
 
     @staticmethod
     def __new__(meta, clsname, bases, attributes):
