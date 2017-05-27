@@ -29,6 +29,7 @@ class DatabaseInterface(object):
         my_database = DatabaseInterface(dsn)
         # or provide it in the `.connect()` call
         await my_database.connect(dsn)
+            
     """
 
     def __init__(self, dsn: str = None):

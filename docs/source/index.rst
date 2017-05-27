@@ -37,9 +37,9 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-         :caption: High-level API
+   :caption: High-level API
 
-      hilvl/connecting
+   hilvl/connecting
 
 .. toctree::
    :maxdepth: 2
