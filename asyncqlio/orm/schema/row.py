@@ -229,6 +229,9 @@ class TableRow(object):
         if self.__deleted:
             raise RuntimeError("This row is marked as deleted")
 
+        if not self.table in self._relationship_mapping:
+            self._relationship_mapping[self.table] = [self]
+
         buckets = {}
         for relationship in self.table.iter_relationships():
             # type: md_relationship.Relationship
@@ -264,7 +267,7 @@ class TableRow(object):
                 # i.e that the filter raised StopIteration
                 self._relationship_mapping[table].append(row)
             else:
-                continue
+                row._session = self._session
 
     def _resolve_item(self, name: str):
         """
@@ -303,30 +306,6 @@ class TableRow(object):
             return self.get_relationship_instance(name)
         except ValueError:
             pass
-        except NotImplementedError:
-            # no loader, it might be mapped straight onto us
-            # try and load relationship data from our mapper
-            try:
-                # todo: replace this with non-private access
-                relationship = self.table._relationships[name]
-                foreign_table = relationship.foreign_table
-                # get the rel from the mapping
-                # this is a list of data that was loaded onto us earlier
-                items = self._relationship_mapping[foreign_table]
-                # if it's a one to one, just load the first item
-                if relationship.use_iter is False:
-                    # len(items) < 1 means no item
-                    # so don't return an empty list, return None
-                    if len(items) < 1:
-                        return None
-                    else:
-                        return items[0]
-                else:
-                    return items
-            except KeyError:
-                # failed to load a relationship with that name
-                # we can ignore that
-                pass
 
         # failed to load relationship, too, so load a column value instead
         col = self.table.get_column(name)
@@ -403,7 +382,8 @@ class TableRow(object):
             raise ValueError("No such relationship '{}'".format(relation_name))
 
         rel = relation.get_instance(self, self._session)
-        rel.set_rows(self._relationship_mapping[rel])
+        rel.set_rows(self._relationship_mapping[relation.foreign_table])
+        rel._update_sub_relationships(self._relationship_mapping)
         return rel
 
     def to_dict(self, *, include_attrs: bool = False) -> dict:

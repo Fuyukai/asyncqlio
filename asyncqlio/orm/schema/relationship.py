@@ -132,6 +132,13 @@ class Relationship(object):
         self.owner_table = owner
         self.name = name
 
+    def __repr__(self):
+        o_name = "{}.{}".format(self.our_column.table.__tablename__,
+                                self.our_column.name)
+        f_name = "{}.{}".format(self.foreign_column.table.__tablename__,
+                                self.foreign_column.name)
+        return "<Relationship '{}' <-> '{}'>".format(o_name, f_name)
+
     # right-wing logic
     @cached_property
     def our_column(self) -> 'md_column.Column':
@@ -170,8 +177,11 @@ class Relationship(object):
         """
         if self.load_type == "select":
             return SelectLoadedRelationship(self, row, session or row._session)
-        elif self.load_type == "joined" and self.use_iter is False:
-            return JoinLoadedOTMRelationship(self, row, session)
+        elif self.load_type == "joined":
+            if self.use_iter is False:
+                return JoinLoadedOTORelationship(self, row, session or row._session)
+            else:
+                return JoinLoadedOTMRelationship(self, row, session or row._session)
         else:
             raise NotImplementedError("Unknown load type {}".format(self.load_type))
 
@@ -192,6 +202,9 @@ class BaseLoadedRelationship(object):
         self.row = row
         self.session = session or row._session
 
+    def _it_stored_rows(self):
+        raise NotImplementedError
+
     async def _add_row(self, row: 'md_row.TableRow'):
         """
         An overridable method called when a row is added.
@@ -210,7 +223,7 @@ class BaseLoadedRelationship(object):
         if not self.row._TableRow__existed:
             # we need to insert the row for it to be ready
             # so we do that now
-            row = await self.session.insert_now(row)
+            self.row = await self.session.insert_now(row)
 
         # get the data that we're updating the foreign column on
         our_column = self.relationship.our_column
@@ -258,6 +271,28 @@ class BaseLoadedRelationship(object):
         """
         pass
 
+    def _update_sub_relationships(self, mapping):
+        """
+        Updates relationship mappings for this relationship automatically, if applicable.
+        """
+        # don't bother doing it on select loaded relationships
+        if isinstance(self, SelectLoadedRelationship):
+            return
+
+        for row in self._it_stored_rows():
+            # check for each relationship
+            for relationship in row.table.iter_relationships():
+                if relationship.foreign_table not in mapping:
+                    continue
+
+                # check if the columns match
+                rows = mapping[relationship.foreign_table]
+                for nrow in rows:
+                    if row.get_column_value(relationship.our_column) \
+                            == nrow.get_column_value(relationship.foreign_column):
+
+                        row._relationship_mapping[relationship.foreign_table].append(nrow)
+
     def __iter__(self):
         raise TypeError("This cannot be iterated over normally")
 
@@ -270,13 +305,16 @@ class SelectLoadedRelationship(BaseLoadedRelationship):
     A relationship object that uses a separate SELECT statement to load follow-on tables.
     """
 
+    def _it_stored_rows(self):
+        raise NotImplementedError
+
     @property
     def query(self) -> 'md_query.SelectQuery':
         """
         Gets the query for this relationship, allowing further customization.  
         For example, to change the order of the rows returned:
         
-        .. code-block:: python
+        .. code-block:: python3
         
             async for child in parent.children.query.order_by(Child.age):
                 ...
@@ -287,6 +325,10 @@ class SelectLoadedRelationship(BaseLoadedRelationship):
         # owner column == non owner column
         query.add_condition(columns[1] == self.row.get_column_value(columns[0]))
         return query
+
+    async def first(self):
+        rows = await self._load()
+        return await rows.next()
 
     def __await__(self):
         return self._load().__await__()
@@ -317,8 +359,14 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
 
         self._row_storage = []
 
+    def _it_stored_rows(self):
+        return self._row_storage
+
     def __repr__(self):
         return "<JoinLoadedOTMRelationship {}>".format(repr(self._row_storage))
+
+    def __iter__(self):
+        return iter(self._row_storage)
 
     def _add_row(self, row: 'md_row.TableRow'):
         self._row_storage.append(row)
@@ -330,7 +378,6 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
         self._row_storage = rows
 
 
-# TODO: Impl this
 class JoinLoadedOTORelationship(BaseLoadedRelationship):
     """
     Represents a joined one<-to->one relationship.
@@ -346,11 +393,54 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
 
         self._rel_row = None
 
+    def _it_stored_rows(self):
+        return [self._rel_row]
+
+    def __repr__(self):
+        return "<JoinLoadedOTORelationship row='{}'>".format(self._rel_row)
+
     def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
-        self._rel_row = next(rows)
+        try:
+            self._rel_row = next(iter(rows))
+        except StopIteration:
+            return
 
     def add(self, row: 'md_row.TableRow'):
         raise NotImplementedError("This method does not work on one to one relationships")
 
     def remove(self, row: 'md_row.TableRow'):
         raise NotImplementedError("This method not work on one to one relationships")
+
+    def __getattr__(self, item):
+        if self._rel_row is None:
+            raise AttributeError("Cannot load from empty row")
+        else:
+            return getattr(self._rel_row, item)
+
+    async def set(self, row: 'md_row.TableRow'):
+        """
+        Sets the row for this one-to-one relationship.
+
+        .. warning::
+            This will run an immediate insert/update of this row; if the parent row for this
+            relationship is not inserted it will run an immediate insert on the parent.
+
+        :param row: The :class:`.TableRow` to set.
+        """
+        # copied from the add() code
+
+        if not self.row._TableRow__existed:
+            # we need to insert the row for it to be ready
+            # so we do that now
+            self.row = await self.session.insert_now(row)
+
+        # get the data that we're updating the foreign column on
+        our_column = self.relationship.our_column
+        data = self.row.get_column_value(our_column)
+        # set said data on our row in the FK field
+        f_column = self.relationship.foreign_column
+        row.store_column_value(f_column, data)
+        # insert/update row
+        row = await self.session.add(row)
+        self._rel_row = row
+        return row
