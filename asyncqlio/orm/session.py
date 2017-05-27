@@ -2,6 +2,7 @@ import enum
 import functools
 import logging
 import typing
+import warnings
 
 from asyncqlio import db as md_db
 from asyncqlio.backends.base import BaseTransaction
@@ -74,6 +75,10 @@ class Session(object):
             await self.close()
 
         return False
+
+    def __del__(self):
+        if self._state == SessionState.READY:
+            warnings.warn("Session was destroyed without being closed!", stacklevel=2)
 
     # Query builders
     @property
@@ -229,6 +234,17 @@ class Session(object):
         await self.run_update_query(q)
         return row
 
+    @enforce_open
+    async def delete_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+        """
+        Deletes a row NOW.
+        """
+        q = md_query.RowDeleteQuery(self)
+        q.add_row(row)
+
+        await self.run_delete_query(q)
+        return row
+
     async def run_select_query(self, query: 'md_query.SelectQuery'):
         """
         Executes a select query.
@@ -377,3 +393,11 @@ class Session(object):
         :return: The :class:`.TableRow` once updated.
         """
         return await self.update_now(row)
+
+    async def remove(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+        """
+        Removes a row from the database.
+
+        :param row: The :class:`.TableRow` to remove.
+        """
+        return await self.delete_now(row)
