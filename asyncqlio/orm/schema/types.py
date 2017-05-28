@@ -3,7 +3,7 @@ import typing
 
 from asyncqlio.exc import DatabaseException
 from asyncqlio.orm import operators as md_operators
-from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.orm.schema import column as md_column, table as md_table
 
 
 class ColumnValidationError(DatabaseException):
@@ -79,7 +79,7 @@ class ColumnType(abc.ABC):
         :return: The str SQL name of this type. 
         """
 
-    def validate_set(self, row: 'md_row.TableRow',
+    def validate_set(self, row: 'md_table.Table',
                      value: typing.Any) -> bool:
         """
         Validates that the item being set is valid.
@@ -91,7 +91,7 @@ class ColumnType(abc.ABC):
         """
         return True
 
-    def store_value(self, row: 'md_row.TableRow',
+    def store_value(self, row: 'md_table.Table',
                     value: typing.Any):
         """
         Stores a value in the row's storage table.
@@ -103,7 +103,7 @@ class ColumnType(abc.ABC):
         """
         row.store_column_value(self.column, value)
 
-    def on_set(self, row: 'md_row.TableRow', value: typing.Any) -> typing.Any:
+    def on_set(self, row: 'md_table.Table', value: typing.Any) -> typing.Any:
         """
         Called when a value is a set on this column.
         
@@ -121,7 +121,7 @@ class ColumnType(abc.ABC):
 
         self.store_value(row, value)
 
-    def on_get(self, row: 'md_row.TableRow') -> typing.Any:
+    def on_get(self, row: 'md_table.Table') -> typing.Any:
         """
         Called when a value is retrieved from this column.
         
@@ -230,7 +230,7 @@ class Boolean(ColumnType):
     def sql(self):
         return "BOOLEAN"
 
-    def validate_set(self, row: 'md_row.TableRow', value: typing.Any):
+    def validate_set(self, row: 'md_table.Table', value: typing.Any):
         return value in [True, False]
 
 

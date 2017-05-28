@@ -2,12 +2,11 @@
 Decorator helpers for tables.
 """
 import functools
-import typing
 
-from asyncqlio.orm.schema.row import TableRow
+from asyncqlio.orm.schema import table as md_table
 
 # the generic signature for most decorators
-sig = typing.Callable[[TableRow], typing.Any]
+sig = 'typing.Callable[[md_table.Table], typing.Any]'
 
 
 def row_attr(func: sig) -> sig:
@@ -33,7 +32,7 @@ def row_attr(func: sig) -> sig:
 
     @functools.wraps(func)
     def wrapper(self):
-        if not isinstance(self, TableRow):
+        if not isinstance(self, md_table.Table):
             raise TypeError("This function cannot be resolved on a Table")
 
         return func(self)

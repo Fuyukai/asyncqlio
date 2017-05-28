@@ -6,7 +6,7 @@ import typing
 from cached_property import cached_property
 
 from asyncqlio.orm import query as md_query
-from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.orm.schema import column as md_column
 from asyncqlio.sentinels import NO_VALUE
 from asyncqlio.utils import iter_to_aiter
 
