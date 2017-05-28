@@ -125,6 +125,12 @@ class Relationship(object):
         #: If this relationship uses the iterable format.
         self.use_iter = use_iter
 
+        #: The owner table for this relationship.
+        self.owner_table = None
+
+        #: The name of this relationship.
+        self.name = None
+
         if self.use_iter is False:
             self.load_type = "joined"
 
@@ -133,10 +139,17 @@ class Relationship(object):
         self.name = name
 
     def __repr__(self):
-        o_name = "{}.{}".format(self.our_column.table.__tablename__,
-                                self.our_column.name)
-        f_name = "{}.{}".format(self.foreign_column.table.__tablename__,
-                                self.foreign_column.name)
+        try:
+            o_name = "{}.{}".format(self.our_column.table.__tablename__,
+                                    self.our_column.name)
+        except AttributeError:
+            o_name = "<unknown>"
+
+        try:
+            f_name = "{}.{}".format(self.foreign_column.table.__tablename__,
+                                    self.foreign_column.name)
+        except AttributeError:
+            f_name = "<unknown>"
         return "<Relationship '{}' <-> '{}'>".format(o_name, f_name)
 
     # right-wing logic
