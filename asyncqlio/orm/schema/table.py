@@ -119,11 +119,18 @@ class TableMetadata(object):
 
 
 class TableMeta(type):
+    """
+    The metaclass for a table object. This represents the "type" of a table class.
+    """
+
     def __prepare__(*args, **kwargs):
         return OrderedDict()
 
     def __new__(mcs, n, b, c, register: bool = True, *args, **kwargs):
         # hijack columns
+        if register is False:
+            return type.__new__(mcs, n, b, c)
+
         columns = OrderedDict()
         relationships = OrderedDict()
         for col_name, value in c.copy().items():
@@ -150,17 +157,21 @@ class TableMeta(type):
         # create the new type object
         super().__init__(tblname, tblbases, class_body)
 
+        # set tablename early
+        # this avoids a bug where `__repr__` causes a recursion error
+        self.__tablename__ = table_name or tblname.lower()
+
+        if register is False:
+            return
+        elif not hasattr(self, "_metadata"):
+            raise TypeError("Table {} has been created but has no metadata - did you subclass Table"
+                            " directly instead of a clone?".format(tblname))
+
         # emulate `__set_name__` on Python 3.5
         # also, set names on columns unconditionally
         it = itertools.chain(self._columns.items(), self._relationships.items())
         if not PY36:
             it = itertools.chain(class_body.items(), it)
-
-        if register is False:
-            return
-
-        # set tablename to avoid a giant iteration loop
-        self.__tablename__ = table_name or tblname.lower()
 
         for name, value in it:
             if hasattr(value, "__set_name__"):
@@ -187,6 +198,9 @@ class TableMeta(type):
         return self._get_table_row(**kwargs)
 
     def __getattr__(self, item):
+        if item.startswith("_"):
+            raise AttributeError("'{}' object has no attribute {}".format(self, item))
+
         col = self.get_column(item)
         if col is None:
             try:
@@ -310,6 +324,13 @@ class TableMeta(type):
         return row
 
 
+class Table(metaclass=TableMeta, register=False):
+    """
+    The "base" class for all tables. This class is not actually directly used; instead
+    :meth:`.table_base` should be called to get a fresh clone.
+    """
+
+
 def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     """
     Gets a new base object to use for OO-style tables.  
@@ -354,11 +375,8 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     if meta is None:
         meta = TableMetadata()
 
-    class Table(metaclass=TableMeta, register=False):
-        _metadata = meta
-
-    Table.__name__ = name
-    return Table
+    clone = type(name, (Table,), {"_metadata": meta}, register=False)
+    return clone
 
 
 class PrimaryKey(object):
