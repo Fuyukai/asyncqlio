@@ -157,15 +157,21 @@ class SelectQuery(object):
     def __aiter__(self):
         return _ResultGenerator(q=self)
 
-    def get_required_join_paths(self):
+    def _get_joins_for_table(self, table: 'md_table.Table', seen: list = None):
         """
-        Gets the required join paths for this query.
+        Gets the foreign joins for a table.
         """
+        if seen is None:
+            seen = [table]
+
         foreign_tables = []
         joins = []
-        for relationship in self.table.iter_relationships():
-            # ignore join relationships
+        for relationship in table.iter_relationships():
+            # ignore non-join relationships
             if relationship.load_type != "joined":
+                continue
+
+            if relationship.foreign_table in seen:
                 continue
 
             foreign_table = relationship.foreign_table
@@ -177,6 +183,39 @@ class SelectQuery(object):
             joins.append(fmt)
 
         return foreign_tables, joins
+
+    def _recursive_get_table_joins(self, table: 'md_table.Table',
+                                   seen: list = None):
+        """
+        Recursively loads the joins for a table.
+        """
+        # this scans the tree of relationships
+        # and determines how to join them properly
+        if seen is None:
+            seen = [table]
+        elif table in seen:
+            return [], []
+
+        foreign_tables, joins = self._get_joins_for_table(table, seen=seen)
+        for relationship in table.iter_relationships():
+            if relationship.load_type != "joined":
+                continue
+
+            if relationship.foreign_table in seen:
+                continue
+
+            # get the table joins for the foreign table
+            f, j = self._recursive_get_table_joins(relationship.foreign_table, seen=seen)
+            seen.append(relationship.foreign_table)
+            foreign_tables.extend(f), joins.extend(j)
+
+        return foreign_tables, joins
+
+    def get_required_join_paths(self):
+        """
+        Gets the required join paths for this query.
+        """
+        return self._recursive_get_table_joins(self.table, seen=None)
 
     def generate_sql(self) -> typing.Tuple[str, dict]:
         """

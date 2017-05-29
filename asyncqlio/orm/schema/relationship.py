@@ -454,6 +454,7 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
 
         :param row: The :class:`.TableRow` to set.
         """
+        # TODO: Setting None will delete
         # copied from the add() code
 
         if not self.row._TableRow__existed:
