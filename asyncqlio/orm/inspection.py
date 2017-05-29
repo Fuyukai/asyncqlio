@@ -50,9 +50,9 @@ def get_pk(row: 'md_table.Table', as_tuple: bool = True):
 
 # marker methods
 def _set_mangled(row: 'md_table.Table', name: str, mark: typing.Any):
-    setattr(row, "_{}__{}".format(type(row).__name__, name), mark)
+    setattr(row, "_Table__{}".format(name), mark)
     return row
 
 
 def _get_mangled(row: 'md_table.Table', name: str):
-    return getattr(row, "_{}__{}".format(type(row).__name__, name))
+    return getattr(row, "_Table__{}".format(name))
