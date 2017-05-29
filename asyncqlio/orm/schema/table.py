@@ -773,8 +773,55 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     if meta is None:
         meta = TableMetadata()
 
-    clone = type(name, (Table,), {"_metadata": meta}, register=False)
+    clone = type(name, (Table,), {"_metadata": meta}, metaclass=TableMeta,
+                 register=False)
     return clone
+
+
+class AliasedTable(object):
+    """
+    Represents an "aliased table". This is a transparent proxy to a :class:`.TableMeta` table, and
+    will create the right Table objects when called.
+
+    .. code-block:: python3
+
+        class User(Table):
+            id = Column(Integer, primary_key=True, autoincrement=True)
+            username = Column(String, nullable=False, unique=True)
+            password = Column(String, nullable=False)
+
+        NotUser = AliasedTable("not_user", User)
+
+    """
+
+    def __init__(self, alias_name: str, table: 'typing.Type[Table]'):
+        """
+        :param alias_name: The name of the alias for this table.
+        :param table: The :class:`.TableMeta` used to alias this table.
+        """
+        self.alias_name = alias_name
+        self.alias_table = table
+
+    # proxy getattr
+    def __getattr__(self, item):
+        return getattr(self.alias_table, item)
+
+    # proxy call to the alias table
+    # so it makes new rows
+    def __call__(self, *args, **kwargs):
+        return self.alias_table(*args, **kwargs)
+
+    def __repr__(self):
+        return "<Alias {} for {}>".format(self.alias_name, self.alias_table)
+
+    # override some attributes
+    @property
+    def __tablename__(self) -> str:
+        return self.alias_name
+
+    @property
+    def __quoted_name__(self):
+        return '"{}"'.format(self.alias_name)
 
 
 class PrimaryKey(object):
