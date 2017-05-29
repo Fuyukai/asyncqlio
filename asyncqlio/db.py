@@ -69,8 +69,8 @@ class DatabaseInterface(object):
             md = md._metadata
         # first set a bind on the metadata
         md._bind = self
-        # then resolve all outstanding relationships
-        md.resolve_floating_relationships()
+        # then setup tables
+        md.setup_tables()
         return md
 
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:

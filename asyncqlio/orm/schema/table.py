@@ -5,7 +5,7 @@ import sys
 import typing
 from collections import OrderedDict
 
-from asyncqlio import db as md_kg
+from asyncqlio import db as md_db
 from asyncqlio.exc import SchemaError
 from asyncqlio.orm import inspection as md_inspection, session as md_session
 from asyncqlio.orm.schema import column as md_column, relationship as md_relationship
@@ -31,7 +31,7 @@ class TableMetadata(object):
         self.tables = {}
 
         #: The DB object bound to this metadata.
-        self.bind = None  # type: md_kg.asyncqlio
+        self.bind = None  # type: md_db.DatabaseInterface
 
     def register_table(self, tbl: 'TableMeta') -> 'TableMeta':
         """
@@ -44,7 +44,7 @@ class TableMetadata(object):
 
         return tbl
 
-    def get_table(self, table_name: str) -> 'TableMeta':
+    def get_table(self, table_name: str) -> 'typing.Type[Table]':
         """
         Gets a table from the current metadata.
         
@@ -60,6 +60,34 @@ class TableMetadata(object):
                     return table
             else:
                 return None
+
+    def setup_tables(self):
+        """
+        Sets up the tables for usage in the ORM.
+        """
+        self.resolve_floating_relationships()
+        self.resolve_backrefs()
+
+    def resolve_backrefs(self):
+        for tbl in self.tables.values():
+            # type: TableMeta
+            for relationship in tbl.iter_relationships():
+                if relationship.back_reference is None:
+                    continue
+
+                table, name = relationship.back_reference.split(".")
+                table = self.get_table(table)
+                # create the new relationship object
+                # this flips the two columns so that the join path is correct
+                new_rel = md_relationship.Relationship(relationship.right_column,
+                                                       relationship.left_column,
+                                                       load="joined", use_iter=False)
+
+                # call `__set_name__` so that it knows what table it's assigned to
+                new_rel.__set_name__(table, name)
+
+                table._relationships[name] = new_rel
+                relationship.back_reference = new_rel
 
     def resolve_floating_relationships(self):
         """
@@ -117,28 +145,35 @@ class TableMeta(type):
     def __prepare__(*args, **kwargs):
         return OrderedDict()
 
-    def __new__(mcs, n, b, c, register: bool = True, *args, **kwargs):
+    def __new__(mcs, name: str, bases: tuple, class_body: dict,
+                register: bool = True, *args, **kwargs):
         # hijack columns
         if register is False:
-            return type.__new__(mcs, n, b, c)
+            return type.__new__(mcs, name, bases, class_body)
 
         columns = OrderedDict()
         relationships = OrderedDict()
-        for col_name, value in c.copy().items():
+        for col_name, value in class_body.copy().items():
             if isinstance(value, md_column.Column):
                 columns[col_name] = value
                 # nuke the column
-                c.pop(col_name)
+                class_body.pop(col_name)
             elif isinstance(value, md_relationship.Relationship):
                 relationships[col_name] = value
-                c.pop(col_name)
+                class_body.pop(col_name)
 
-        c["_columns"] = columns
-        c["_relationships"] = relationships
-        return type.__new__(mcs, n, b, c)
+        class_body["_columns"] = columns
+        class_body["_relationships"] = relationships
+
+        try:
+            class_body["__tablename__"] = kwargs["table_name"]
+        except KeyError:
+            class_body["__tablename__"] = name.lower()
+
+        return type.__new__(mcs, name, bases, class_body)
 
     def __init__(self, tblname: str, tblbases: tuple, class_body: dict, register: bool = True,
-                 *, table_name: str = None):
+                 *args, **kwargs):
         """
         Creates a new Table instance.
          
@@ -147,10 +182,6 @@ class TableMeta(type):
         """
         # create the new type object
         super().__init__(tblname, tblbases, class_body)
-
-        # set tablename early
-        # this avoids a bug where `__repr__` causes a recursion error
-        self.__tablename__ = table_name or tblname.lower()
 
         if register is False:
             return
@@ -671,6 +702,10 @@ class Table(metaclass=TableMeta, register=False):
 
         # store the new relationship data
         for table, subdict in buckets.items():
+            # Prevent null values from showing up
+            if all(i is None for i in subdict.values()):
+                continue
+
             row = table(**subdict)
             # ensure the row doesn't already exist with the PK
             try:

@@ -6,7 +6,7 @@ import typing
 from cached_property import cached_property
 
 from asyncqlio.orm import query as md_query
-from asyncqlio.orm.schema import column as md_column
+from asyncqlio.orm.schema import column as md_column, table as md_table
 from asyncqlio.sentinels import NO_VALUE
 from asyncqlio.utils import iter_to_aiter
 
@@ -97,21 +97,29 @@ class Relationship(object):
     def __init__(self,
                  left: 'typing.Union[md_column.Column, str]',
                  right: 'typing.Union[md_column.Column, str]', *,
-                 load: str = "select", use_iter: bool = True):
+                 load: str = "select", use_iter: bool = True,
+                 back_ref: str = None):
         """
         :param left: The left-hand column (the Column on this table) in this relationship.
         
         :param right: The right-hand column (the Column on the foreign table) in this relationship.
         
         :param load: The way to load this relationship.
+
             The default is "select" - this means that a separate select statement will be issued
             to iterate over the rows of the relationship.
             
             For all possible options, see :ref:`Relationship Loading`.
             
         :param use_iter: Should this relationship use the iterable format?
+
             This controls if this relationship is created as one to many, or as a many to one/one to
             one relationship.
+
+        :param back_ref: The "back reference" to add to the right table.
+
+            This will automatically add a relationship to the right table with the specified name,
+            and automatically fill it when querying over said relationship.
         """
         #: The left column for this relationship.
         self.left_column = left
@@ -130,6 +138,9 @@ class Relationship(object):
 
         #: The name of this relationship.
         self.name = None
+
+        #: The back-reference for this relationship.
+        self.back_reference = back_ref
 
         if self.use_iter is False:
             self.load_type = "joined"
@@ -184,7 +195,7 @@ class Relationship(object):
         """
         return self.our_column, self.foreign_column
 
-    def get_instance(self, row: 'md_row.TableRow', session):
+    def get_instance(self, row: 'md_table.Table', session):
         """
         Gets a new "relationship" instance.
         """
@@ -205,7 +216,7 @@ class BaseLoadedRelationship(object):
     Provides some common methods for specific relationship type subclasses.
     """
 
-    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+    def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
         :param rel: The :class:`.Relationship` that lies underneath this object. 
         :param row: The :class:`.TableRow` this is being loaded from.
@@ -218,12 +229,12 @@ class BaseLoadedRelationship(object):
     def _it_stored_rows(self):
         raise NotImplementedError
 
-    async def _add_row(self, row: 'md_row.TableRow'):
+    async def _add_row(self, row: 'md_table.Table'):
         """
         An overridable method called when a row is added.
         """
 
-    async def add(self, row: 'md_row.TableRow'):
+    async def add(self, row: 'md_table.Table'):
         """
         Adds a row to this relationship.
 
@@ -250,12 +261,12 @@ class BaseLoadedRelationship(object):
 
         return row
 
-    async def _remove_row(self, row: 'md_row.TableRow'):
+    async def _remove_row(self, row: 'md_table.Table'):
         """
         An overridable method called when a row is removed. 
         """
 
-    async def remove(self, row: 'md_row.TableRow'):
+    async def remove(self, row: 'md_table.Table'):
         """
         Removes a row from this query.
          
@@ -276,7 +287,7 @@ class BaseLoadedRelationship(object):
 
         return row
 
-    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+    def set_rows(self, rows: 'typing.List[md_table.Table]'):
         """
         Sets the rows for this relationship, if applicable.
         
@@ -294,12 +305,15 @@ class BaseLoadedRelationship(object):
 
         for row in self._it_stored_rows():
             # check for each relationship
+
             for relationship in row.table.iter_relationships():
                 if relationship.foreign_table not in mapping:
                     continue
 
                 # check if the columns match
                 rows = mapping[relationship.foreign_table]
+                # iterate over each new row in the mapping
+                # check if OUR column matches with the value in THEIR column
                 for nrow in rows:
                     if row.get_column_value(relationship.our_column) \
                             == nrow.get_column_value(relationship.foreign_column):
@@ -319,7 +333,7 @@ class SelectLoadedRelationship(BaseLoadedRelationship):
     """
 
     def _it_stored_rows(self):
-        raise NotImplementedError
+        return []
 
     @property
     def query(self) -> 'md_query.SelectQuery':
@@ -362,7 +376,7 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
     Represents a join-loaded one to many relationship.
     """
 
-    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+    def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
         :param rel: The :class:`.Relationship` that lies underneath this object. 
         :param row: The :class:`.TableRow` this is being loaded from.
@@ -381,13 +395,13 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
     def __iter__(self):
         return iter(self._row_storage)
 
-    def _add_row(self, row: 'md_row.TableRow'):
+    def _add_row(self, row: 'md_table.Table'):
         self._row_storage.append(row)
 
-    def _remove_row(self, row: 'md_row.TableRow'):
+    def _remove_row(self, row: 'md_table.Table'):
         self._row_storage.remove(row)
 
-    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+    def set_rows(self, rows: 'typing.List[md_table.Table]'):
         self._row_storage = rows
 
 
@@ -396,7 +410,7 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
     Represents a joined one<-to->one relationship.
     """
 
-    def __init__(self, rel: 'Relationship', row: 'md_row.TableRow', session):
+    def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
         :param rel: The :class:`.Relationship` that lies underneath this object. 
         :param row: The :class:`.TableRow` this is being loaded from.
@@ -412,16 +426,16 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
     def __repr__(self):
         return "<JoinLoadedOTORelationship row='{}'>".format(self._rel_row)
 
-    def set_rows(self, rows: 'typing.List[md_row.TableRow]'):
+    def set_rows(self, rows: 'typing.List[md_table.Table]'):
         try:
             self._rel_row = next(iter(rows))
         except StopIteration:
             return
 
-    def add(self, row: 'md_row.TableRow'):
+    def add(self, row: 'md_table.Table'):
         raise NotImplementedError("This method does not work on one to one relationships")
 
-    def remove(self, row: 'md_row.TableRow'):
+    def remove(self, row: 'md_table.Table'):
         raise NotImplementedError("This method not work on one to one relationships")
 
     def __getattr__(self, item):
@@ -430,7 +444,7 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
         else:
             return getattr(self._rel_row, item)
 
-    async def set(self, row: 'md_row.TableRow'):
+    async def set(self, row: 'md_table.Table'):
         """
         Sets the row for this one-to-one relationship.
 
