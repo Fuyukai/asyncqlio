@@ -170,7 +170,8 @@ class SelectQuery(object):
 
             foreign_table = relationship.foreign_table
             foreign_tables.append(foreign_table)
-            fmt = "JOIN {} ".format(foreign_table.__quoted_name__)
+            # TODO: Maybe customize join types?
+            fmt = "LEFT OUTER JOIN {} ".format(foreign_table.__quoted_name__)
             column1, column2 = relationship.join_columns
             fmt += 'ON {} = {}'.format(column1.quoted_fullname, column2.quoted_fullname)
             joins.append(fmt)
