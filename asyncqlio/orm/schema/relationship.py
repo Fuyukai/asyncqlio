@@ -98,7 +98,8 @@ class Relationship(object):
                  left: 'typing.Union[md_column.Column, str]',
                  right: 'typing.Union[md_column.Column, str]', *,
                  load: str = "select", use_iter: bool = True,
-                 back_ref: str = None):
+                 back_ref: str = None,
+                 table_alias: str = None):
         """
         :param left: The left-hand column (the Column on this table) in this relationship.
         
@@ -120,6 +121,11 @@ class Relationship(object):
 
             This will automatically add a relationship to the right table with the specified name,
             and automatically fill it when querying over said relationship.
+
+        :param table_alias: The table alias to use when joining.
+
+            This will rename the joined table to allow selecting specific rows in tables with
+            multiple relationships to the same table.
         """
         #: The left column for this relationship.
         self.left_column = left
@@ -141,6 +147,8 @@ class Relationship(object):
 
         #: The back-reference for this relationship.
         self.back_reference = back_ref
+
+        self._table_alias = table_alias
 
         if self.use_iter is False:
             self.load_type = "joined"
@@ -174,7 +182,7 @@ class Relationship(object):
 
         return self.right_column
 
-    @cached_property
+    @property
     def foreign_column(self) -> 'md_column.Column':
         """
         Gets the foreign column this relationship refers to.
@@ -184,8 +192,11 @@ class Relationship(object):
 
         return self.left_column
 
-    @cached_property
+    @property
     def foreign_table(self):
+        if isinstance(self._table_alias, md_table.AliasedTable):
+            return self._table_alias
+
         return self.foreign_column.table
 
     @property

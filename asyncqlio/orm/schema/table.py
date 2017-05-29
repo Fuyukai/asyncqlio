@@ -20,10 +20,11 @@ class TableMetadata(object):
     The root class for table metadata.  
     This stores a registry of tables, and is responsible for calculating relationships etc.
      
-    .. code-block:: python
+    .. code-block:: python3
     
         meta = TableMetadata()
         Table = table_base(metadata=meta)
+
     """
 
     def __init__(self):
@@ -66,11 +67,37 @@ class TableMetadata(object):
         Sets up the tables for usage in the ORM.
         """
         self.resolve_floating_relationships()
+        self.resolve_aliases()
         self.resolve_backrefs()
 
+    def resolve_aliases(self):
+        """
+        Resolves all alias tables on relationship objects.
+        """
+        for tbl in self.tables.copy().values():
+            if isinstance(tbl, AliasedTable):
+                continue
+
+            for relationship in tbl.iter_relationships():
+                if relationship._table_alias is None:
+                    # auto-create the alias name
+                    # using the relationship name
+                    relationship._table_alias = relationship.name.lower()
+
+                relationship._table_alias = AliasedTable(relationship._table_alias,
+                                                         relationship.foreign_table)
+                self.tables[relationship._table_alias.alias_name] = relationship._table_alias
+
     def resolve_backrefs(self):
+        """
+        Resolves back-references.
+        """
         for tbl in self.tables.values():
             # type: TableMeta
+            if isinstance(tbl, AliasedTable):
+                # don't try and setup aliased tables
+                continue
+
             for relationship in tbl.iter_relationships():
                 if relationship.back_reference is None:
                     continue
@@ -95,7 +122,12 @@ class TableMetadata(object):
         directly reference a column object.
         """
         for tbl in self.tables.values():
+            if isinstance(tbl, AliasedTable):
+                # don't try and resolve relationships on aliases
+                continue
+
             for column in tbl._columns.values():
+                # if the fk is none we don't need to set it up
                 if column.foreign_key is None:
                     continue
 
@@ -133,8 +165,13 @@ class TableMetadata(object):
 
                     if (to_resolve == relation.left_column) is True:
                         relation.left_column = col
+                        logger.debug("Resolved {} to {}".format(to_resolve, col))
                     elif (to_resolve == relation.right_column) is True:
                         relation.right_column = col
+                        logger.debug("Resolved {} to {}".format(to_resolve, col))
+                    else:
+                        raise SchemaError("Could not resolve column '{}' - it did not match the "
+                                          "left or right column!")
 
 
 class TableMeta(type):
