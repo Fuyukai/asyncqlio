@@ -4,19 +4,19 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 import typing
 
 from asyncqlio.orm import session as md_session
-from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.orm.schema import column as md_column, table as md_table
 
 
-def get_row_session(row: 'md_row.TableRow') -> 'md_session.Session':
+def get_row_session(row: 'md_table.Table') -> 'md_session.Session':
     """
     Gets the :class:`.Session` associated with a :class:`.TableRow`.
-    
-    :param row: The :class:`.TableRow` to inspect.
+
+    :param row: The :class:`.Table` instance to inspect.
     """
     return row._session
 
 
-def get_row_history(row: 'md_row.TableRow') \
+def get_row_history(row: 'md_table.Table') \
         -> 'typing.Dict[md_column.Column, typing.Dict[str, typing.Any]]':
     """
     Gets the history for the specified row.
@@ -34,11 +34,11 @@ def get_row_history(row: 'md_row.TableRow') \
     return d
 
 
-def get_pk(row: 'md_row.TableRow', as_tuple: bool = True):
+def get_pk(row: 'md_table.Table', as_tuple: bool = True):
     """
-    Gets the primary key for a TableRow.
+    Gets the primary key for a Table row.
     
-    :param row: The :class:`.TableRow` to extract the PK from. 
+    :param row: The :class:`.Table` instance to extract the PK from.
     :param as_tuple: Should this PK always be returned as a tuple?
     """
     pk = row.primary_key
@@ -46,3 +46,13 @@ def get_pk(row: 'md_row.TableRow', as_tuple: bool = True):
         return pk,
 
     return pk
+
+
+# marker methods
+def _set_mangled(row: 'md_table.Table', name: str, mark: typing.Any):
+    setattr(row, "_{}__{}".format(type(row).__name__, name), mark)
+    return row
+
+
+def _get_mangled(row: 'md_table.Table', name: str):
+    return getattr(row, "_{}__{}".format(type(row).__name__, name))

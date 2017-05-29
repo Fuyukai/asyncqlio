@@ -6,8 +6,9 @@ import itertools
 import typing
 
 from asyncqlio.backends.base import BaseResultSet
-from asyncqlio.orm import operators as md_operators, session as md_session
-from asyncqlio.orm.schema import column as md_column, row as md_row
+from asyncqlio.orm import inspection as md_inspection, operators as md_operators, \
+    session as md_session
+from asyncqlio.orm.schema import column as md_column, table as md_table
 from asyncqlio.sentinels import NO_VALUE
 
 
@@ -93,7 +94,7 @@ class _ResultGenerator(collections.AsyncIterator):
         except StopAsyncIteration:
             return None
 
-    async def flatten(self) -> 'typing.List[md_row.TableRow]':
+    async def flatten(self) -> 'typing.List[md_table.Table]':
         """
         Flattens this query into a single list.
         """
@@ -169,7 +170,8 @@ class SelectQuery(object):
 
             foreign_table = relationship.foreign_table
             foreign_tables.append(foreign_table)
-            fmt = "JOIN {} ".format(foreign_table.__quoted_name__)
+            # TODO: Maybe customize join types?
+            fmt = "LEFT OUTER JOIN {} ".format(foreign_table.__quoted_name__)
             column1, column2 = relationship.join_columns
             fmt += 'ON {} = {}'.format(column1.quoted_fullname, column2.quoted_fullname)
             joins.append(fmt)
@@ -232,11 +234,11 @@ class SelectQuery(object):
         return fmt, params
 
     # "fetch" methods
-    async def first(self) -> 'md_row.TableRow':
+    async def first(self) -> 'md_table.Table':
         """
         Gets the first result that matches from this query.
         
-        :return: A :class:`.TableRow` representing the first item, or None if no item matched.
+        :return: A :class:`.Table` instance representing the first item, or None if no item matched.
         """
         gen = await self.session.run_select_query(self)
         row = await gen.next()
@@ -253,12 +255,12 @@ class SelectQuery(object):
         return await self.session.run_select_query(self)
 
     # ORM methods
-    def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_row.TableRow':
+    def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_table.Table':
         """
-        Maps columns in a result row to a :class:`.TableRow` object.
+        Maps columns in a result row to a :class:`.Table` instance object.
         
         :param results: A single row of results from the query cursor.
-        :return: A new :class:`.TableRow` that represents the row returned.
+        :return: A new :class:`.Table` instance that represents the row returned.
         """
         # try and map columns to our Table
         mapping = {column.alias_name(self.table, quoted=False): column
@@ -273,13 +275,8 @@ class SelectQuery(object):
             else:
                 relation_data[colname] = results[colname]
 
-        # create a new TableRow
-        try:
-            row = self.table(**row_expando)  # type: md_row.TableRow
-        except TypeError:
-            # probably the unexpected argument error
-            raise TypeError("Failed to initialize a new row object. Does your `__init__` allow"
-                            "all columns to be passed as values?")
+        # create a new Table
+        row = self.table._internal_from_row(row_expando, existed=True)
 
         # update previous values
         for column in self.table.iter_columns():
@@ -288,7 +285,7 @@ class SelectQuery(object):
                 row._previous_values[column] = val
 
         # update the existed
-        row._TableRow__existed = True
+        md_inspection._set_mangled(row, "existed", True)
         # give the row a session
         row._session = self.session
 
@@ -429,15 +426,15 @@ class InsertQuery(object):
     def __await__(self):
         return self.run().__await__()
 
-    async def run(self) -> 'typing.List[md_row.TableRow]':
+    async def run(self) -> 'typing.List[md_table.Table]':
         """
         Runs this query.
         
-        :return: A list of inserted :class:`.md_row.TableRow`.
+        :return: A list of inserted :class:`.md_table.Table`.
         """
         return await self.session.run_insert_query(self)
 
-    def rows(self, *rows: 'md_row.TableRow') -> 'InsertQuery':
+    def rows(self, *rows: 'md_table.Table') -> 'InsertQuery':
         """
         Adds a set of rows to the query.
         
@@ -449,11 +446,11 @@ class InsertQuery(object):
 
         return self
 
-    def add_row(self, row: 'md_row.TableRow') -> 'InsertQuery':
+    def add_row(self, row: 'md_table.Table') -> 'InsertQuery':
         """
         Adds a row to this query, allowing it to be executed later.
         
-        :param row: The :class:`.TableRow` to use for this query.
+        :param row: The :class:`.Table` instance to use for this query.
         :return: This query.
         """
         self.rows_to_insert.append(row)
@@ -504,7 +501,7 @@ class RowUpdateQuery(object):
         """
         return await self.session.run_update_query(self)
 
-    def rows(self, *rows: 'md_row.TableRow') -> 'RowUpdateQuery':
+    def rows(self, *rows: 'md_table.Table') -> 'RowUpdateQuery':
         """
         Adds a set of rows to the query.
 
@@ -516,11 +513,11 @@ class RowUpdateQuery(object):
 
         return self
 
-    def add_row(self, row: 'md_row.TableRow') -> 'RowUpdateQuery':
+    def add_row(self, row: 'md_table.Table') -> 'RowUpdateQuery':
         """
         Adds a row to this query, allowing it to be executed later.
 
-        :param row: The :class:`.TableRow` to use for this query.
+        :param row: The :class:`.Table` instance to use for this query.
         :return: This query.
         """
         self.rows_to_update.append(row)
@@ -562,7 +559,7 @@ class RowDeleteQuery(object):
         #: The list of rows to delete.
         self.rows_to_delete = []
 
-    def rows(self, *rows: 'md_row.TableRow') -> 'RowDeleteQuery':
+    def rows(self, *rows: 'md_table.Table') -> 'RowDeleteQuery':
         """
         Adds a set of rows to the query.
 
@@ -574,11 +571,11 @@ class RowDeleteQuery(object):
 
         return self
 
-    def add_row(self, row: 'md_row.TableRow'):
+    def add_row(self, row: 'md_table.Table'):
         """
         Adds a row to this query.
         
-        :param row: The :class:`.TableRow`  
+        :param row: The :class:`.Table` instance  
         :return: 
         """
         self.rows_to_delete.append(row)

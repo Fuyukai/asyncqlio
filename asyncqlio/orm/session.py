@@ -6,8 +6,8 @@ import warnings
 
 from asyncqlio import db as md_db
 from asyncqlio.backends.base import BaseTransaction
-from asyncqlio.orm import query as md_query
-from asyncqlio.orm.schema import row as md_row
+from asyncqlio.orm import inspection as md_inspection, query as md_query
+from asyncqlio.orm.schema import table as md_table
 from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
 
 logger = logging.getLogger(__name__)
@@ -191,7 +191,7 @@ class Session(object):
         return await self.transaction.cursor(sql, params)
 
     @enforce_open
-    async def insert_now(self, row: 'md_row.TableRow') -> typing.Any:
+    async def insert_now(self, row: 'md_table.Table') -> typing.Any:
         """
         Inserts a row NOW. 
         
@@ -202,7 +202,7 @@ class Session(object):
             Also, tables with auto-incrementing fields will only have their first field filled in
             outside of Postgres databases.
         
-        :param row: The :class:`.TableRow` to insert.
+        :param row: The :class:`.Table` instance to insert.
         :return: The row, with primary key included.
         """
         # this just creates a new query
@@ -217,7 +217,7 @@ class Session(object):
             return None
 
     @enforce_open
-    async def update_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+    async def update_now(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Updates a row NOW. 
 
@@ -225,8 +225,8 @@ class Session(object):
             This will only generate the UPDATE statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
 
-        :param row: The :class:`.TableRow` to update.
-        :return: The :class:`.TableRow` that was updated.
+        :param row: The :class:`.Table` instance to update.
+        :return: The :class:`.Table` instance that was updated.
         """
         q = md_query.RowUpdateQuery(self)
         q.add_row(row)
@@ -235,7 +235,7 @@ class Session(object):
         return row
 
     @enforce_open
-    async def delete_now(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+    async def delete_now(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Deletes a row NOW.
         """
@@ -276,8 +276,8 @@ class Session(object):
         results = []
 
         for row, (sql, params) in zip(query.rows_to_insert, queries):
-            if row._TableRow__deleted:
-                raise RuntimeError("Row '{}' is marked as deleted".format(row._TableRow__deleted))
+            if md_inspection._get_mangled(row, "deleted"):
+                raise RuntimeError("Row '{}' is marked as deleted".format(row))
 
             # this needs to be a cursor
             # since postgres uses RETURNING
@@ -318,8 +318,8 @@ class Session(object):
 
                 await cur.close()
 
-            row._TableRow__deleted = False
-            row._TableRow__existed = True
+            md_inspection._set_mangled(row, "deleted", False)
+            md_inspection._set_mangled(row, "existed", True)
             results.append(row)
 
         return results
@@ -332,7 +332,7 @@ class Session(object):
         """
         if isinstance(query, md_query.RowUpdateQuery):
             for row, (sql, params) in zip(query.rows_to_update, query.generate_sql()):
-                if row._TableRow__deleted:
+                if md_inspection._get_mangled(row, "deleted"):
                     raise RuntimeError("Row '{}' is marked as deleted".format(row))
 
                 if sql is None and params is None:
@@ -352,18 +352,18 @@ class Session(object):
         """
         if isinstance(query, md_query.RowDeleteQuery):
             for row, (sql, params) in zip(query.rows_to_delete, query.generate_sql()):
-                if row._TableRow__deleted:
+                if md_inspection._get_mangled(row, "deleted"):
                     raise RuntimeError("Row '{}' is already marked as deleted".format(row))
 
                 if sql is None and params is None:
                     continue
 
                 await self.execute(sql, params)
-                row._TableRow__deleted = True
+                md_inspection._set_mangled(row, "deleted", True)
 
         return query
 
-    async def add(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+    async def add(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Adds a row to the current transaction. This will emit SQL that will generate an INSERT or 
         UPDATE statement, and then update the primary key of this row.
@@ -372,32 +372,32 @@ class Session(object):
             This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
     
-        :param row: The :class:`.TableRow` object to add to the transaction.
-        :return: The :class:`.TableRow` with primary key filled in, if applicable.
+        :param row: The :class:`.Table` instance object to add to the transaction.
+        :return: The :class:`.Table` instance with primary key filled in, if applicable.
         """
         # it already existed in our session, so emit a UPDATE
-        if row._TableRow__existed:
+        if md_inspection._get_mangled(row, "existed"):
             return await self.update_now(row)
         # otherwise, emit an INSERT
         else:
             return await self.insert_now(row)
 
-    async def merge(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+    async def merge(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Merges a row with a row that already exists in the database.
         
         This should be used for rows that have a primary key, but were not returned from 
         :meth:`.select`.
         
-        :param row: The :class:`.TableRow` to merge. 
-        :return: The :class:`.TableRow` once updated.
+        :param row: The :class:`.Table` instance to merge. 
+        :return: The :class:`.Table` instance once updated.
         """
         return await self.update_now(row)
 
-    async def remove(self, row: 'md_row.TableRow') -> 'md_row.TableRow':
+    async def remove(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Removes a row from the database.
 
-        :param row: The :class:`.TableRow` to remove.
+        :param row: The :class:`.Table` instance to remove.
         """
         return await self.delete_now(row)
