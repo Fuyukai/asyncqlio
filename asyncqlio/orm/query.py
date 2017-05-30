@@ -177,7 +177,8 @@ class SelectQuery(object):
             foreign_table = relationship.foreign_table
             foreign_tables.append(foreign_table)
             # TODO: Maybe customize join types?
-            fmt = "LEFT OUTER JOIN {} ".format(foreign_table.__quoted_name__)
+            fmt = "LEFT OUTER JOIN {} {}".format(foreign_table.alias_table.__quoted_name__,
+                                                 foreign_table.__quoted_name__)
             column1, column2 = relationship.join_columns
             fmt += 'ON {} = {}'.format(column1.quoted_fullname, column2.quoted_fullname)
             joins.append(fmt)
@@ -226,11 +227,12 @@ class SelectQuery(object):
         # calculate the column names
         foreign_tables, joins = self.get_required_join_paths()
         selected_columns = self.table.iter_columns()
-        column_names = [r'"{}"."{}" AS {}'.format(column.table.__tablename__,
-                                                  column.name, column.alias_name(quoted=True))
-                        for column in
-                        itertools.chain(self.table.iter_columns(),
-                                        *[tbl.iter_columns() for tbl in foreign_tables])]
+        column_names = []
+
+        for table in [self.table] + foreign_tables:
+            for column in table.iter_columns():
+                a = column.alias_name(table=table, quoted=True)
+                column_names.append(r'{} AS {}'.format(column.quoted_fullname_with_table(table), a))
 
         # BEGIN THE GENERATION
         fmt = "SELECT {} FROM {} ".format(", ".join(column_names), self.table.__quoted_name__)
