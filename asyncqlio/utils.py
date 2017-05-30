@@ -23,7 +23,10 @@ class IterToAiter(collections.abc.Iterator, collections.abc.AsyncIterator):
         return self
 
     async def __anext__(self):
-        return self.__next__()
+        try:
+            return self.__next__()
+        except StopIteration:
+            raise StopAsyncIteration
 
 
 def iter_to_aiter(type_):
