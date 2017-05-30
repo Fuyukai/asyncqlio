@@ -229,7 +229,7 @@ class SelectQuery(object):
         selected_columns = self.table.iter_columns()
         column_names = []
 
-        for table in [self.table] + foreign_tables:
+        for table in itertools.chain([self.table], foreign_tables):
             for column in table.iter_columns():
                 a = column.alias_name(table=table, quoted=True)
                 column_names.append(r'{} AS {}'.format(column.quoted_fullname_with_table(table), a))
