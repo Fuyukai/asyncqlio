@@ -7,7 +7,8 @@ from cached_property import cached_property
 
 from asyncqlio.meta import proxy_to_getattr
 from asyncqlio.orm import operators as md_operators
-from asyncqlio.orm.schema import relationship as md_relationship, types as md_types
+from asyncqlio.orm.schema import relationship as md_relationship, table as md_table, \
+    types as md_types
 from asyncqlio.sentinels import NO_DEFAULT
 
 logger = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ class Column(object):
         # otherwise just return the attribute
         return i
 
-    def __eq__(self, other: typing.Any) -> 'md_operators.Eq':
+    def __eq__(self, other: typing.Any) -> 'typing.Union[md_operators.Eq, bool]':
         # why is this here?
         # sometimes, we need to check if two columns are equal
         # so this does `col1 == col2` etc
@@ -153,7 +154,7 @@ class Column(object):
 
         return md_operators.Eq(self, other)
 
-    def __ne__(self, other) -> 'md_operators.NEq':
+    def __ne__(self, other) -> 'typing.Union[md_operators.NEq, bool]':
         if isinstance(other, Column):
             return self.table != other.table or self.name != other.name
 
@@ -182,6 +183,16 @@ class Column(object):
         Returns the descending sorter operator for this column.
         """
         return md_operators.DescSorter(self)
+
+    def quoted_fullname_with_table(self, table: 'md_table.Table') -> str:
+        """
+        Gets the quoted fullname with a table.
+        This is used for columns with alias tables.
+
+        :param table: The :class:`.Table` or :class:`.AliasedTable` to use.
+        :return:
+        """
+        return r'"{}"."{}"'.format(table.__tablename__, self.name)
 
     @cached_property
     def quoted_name(self) -> str:
