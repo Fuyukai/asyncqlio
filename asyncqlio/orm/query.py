@@ -177,10 +177,13 @@ class SelectQuery(object):
             foreign_table = relationship.foreign_table
             foreign_tables.append(foreign_table)
             # TODO: Maybe customize join types?
-            fmt = "LEFT OUTER JOIN {} {}".format(foreign_table.alias_table.__quoted_name__,
-                                                 foreign_table.__quoted_name__)
-            column1, column2 = relationship.join_columns
-            fmt += 'ON {} = {}'.format(column1.quoted_fullname, column2.quoted_fullname)
+            fmt = "LEFT OUTER JOIN {} {} ".format(foreign_table.alias_table.__quoted_name__,
+                                                  foreign_table.__quoted_name__)
+            left = relationship.our_column.quoted_fullname_with_table(relationship.owner_table)
+            right = relationship.foreign_column.quoted_fullname_with_table(
+                relationship.foreign_table
+            )
+            fmt += 'ON {} = {}'.format(left, right)
             joins.append(fmt)
 
         return foreign_tables, joins
