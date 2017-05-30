@@ -851,6 +851,23 @@ class AliasedTable(object):
     def __repr__(self):
         return "<Alias {} for {}>".format(self.alias_name, self.alias_table)
 
+    def get_column(self, column_name: str) -> 'md_column.Column':
+        """
+        Gets a column by name from the specified table.
+
+        This will use the base :meth:`.TableMeta.get_column`, and then search for columns via
+        their alias name using this table.
+        """
+        c = self.alias_table.get_column(column_name)
+        if c is not None:
+            return c
+
+        for column in self.alias_table.iter_columns():
+            if column.alias_name(self) == column_name:
+                return column
+
+        return None
+
     # override some attributes
     @property
     def __tablename__(self) -> str:
