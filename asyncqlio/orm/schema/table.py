@@ -82,7 +82,9 @@ class TableMetadata(object):
                 if relationship._table_alias is None:
                     # auto-create the alias name
                     # using the relationship name
-                    relationship._table_alias = relationship.name.lower()
+                    relationship._table_alias = "r_{}_{}".format(
+                        relationship.owner_table.__name__, relationship.name.lower()
+                    )
 
                 relationship._table_alias = AliasedTable(relationship._table_alias,
                                                          relationship.foreign_table)
