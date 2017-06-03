@@ -8,7 +8,8 @@ import typing
 from asyncqlio.backends.base import BaseResultSet
 from asyncqlio.orm import inspection as md_inspection, operators as md_operators, \
     session as md_session
-from asyncqlio.orm.schema import column as md_column, table as md_table
+from asyncqlio.orm.schema import column as md_column, relationship as md_relationship, \
+    table as md_table
 from asyncqlio.sentinels import NO_VALUE
 
 
@@ -157,7 +158,8 @@ class SelectQuery(object):
     def __aiter__(self):
         return _ResultGenerator(q=self)
 
-    def _get_joins_for_table(self, table: 'md_table.Table', seen: list = None):
+    def _get_joins_for_table(self, parent: 'md_relationship.Relationship',
+                             table: 'md_table.Table', seen: list = None):
         """
         Gets the foreign joins for a table.
         """
@@ -176,22 +178,20 @@ class SelectQuery(object):
 
             foreign_table = relationship.foreign_table
             foreign_tables.append(foreign_table)
-            # TODO: Maybe customize join types?
-            fmt = "LEFT OUTER JOIN {} {} ".format(foreign_table.alias_table.__quoted_name__,
-                                                  foreign_table.__quoted_name__)
-            left = relationship.our_column.quoted_fullname_with_table(relationship.owner_table)
-            right = relationship.foreign_column.quoted_fullname_with_table(
-                relationship.foreign_table
-            )
-            fmt += 'ON {} = {}'.format(left, right)
-            joins.append(fmt)
+
+            joins.append(relationship._get_join_query(parent))
 
         return foreign_tables, joins
 
-    def _recursive_get_table_joins(self, table: 'md_table.Table',
-                                   seen: list = None):
+    def _recursive_get_table_joins(self, parent: 'md_relationship.Relationship',
+                                   table: 'md_table.Table', seen: list = None):
         """
         Recursively loads the joins for a table.
+
+        :param parent: The parent relationship this table is being loaded from, or None if it was \
+            loaded directly.
+        :param table: The table to get joins for.
+        :param seen: A list of tables that have already been seen and should not be re-joined.
         """
         # this scans the tree of relationships
         # and determines how to join them properly
@@ -200,7 +200,7 @@ class SelectQuery(object):
         elif table in seen:
             return [], []
 
-        foreign_tables, joins = self._get_joins_for_table(table, seen=seen)
+        foreign_tables, joins = self._get_joins_for_table(parent, table, seen=seen)
         for relationship in table.iter_relationships():
             if relationship.load_type != "joined":
                 continue
@@ -209,7 +209,8 @@ class SelectQuery(object):
                 continue
 
             # get the table joins for the foreign table
-            f, j = self._recursive_get_table_joins(relationship.foreign_table, seen=seen)
+            f, j = self._recursive_get_table_joins(relationship,
+                                                   relationship.foreign_table, seen=seen)
             seen.append(relationship.foreign_table)
             foreign_tables.extend(f), joins.extend(j)
 
@@ -219,7 +220,8 @@ class SelectQuery(object):
         """
         Gets the required join paths for this query.
         """
-        return self._recursive_get_table_joins(self.table, seen=None)
+        # we can just pass None since it's the first in the chain
+        return self._recursive_get_table_joins(None, self.table, seen=None)
 
     def generate_sql(self) -> typing.Tuple[str, dict]:
         """

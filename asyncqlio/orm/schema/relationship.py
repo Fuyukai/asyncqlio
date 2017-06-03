@@ -143,7 +143,7 @@ class Relationship(object):
         self.owner_table = None
 
         #: The name of this relationship.
-        self.name = None
+        self._name = None
 
         #: The back-reference for this relationship.
         self.back_reference = back_ref
@@ -153,9 +153,16 @@ class Relationship(object):
         if self.use_iter is False:
             self.load_type = "joined"
 
+    def __getattr__(self, item):
+        column = self.foreign_table.get_column(item)
+        if column is None:
+            raise AttributeError(item)
+
+        return md_column.AliasedColumn(self._table_alias, column)
+
     def __set_name__(self, owner, name):
         self.owner_table = owner
-        self.name = name
+        self._name = name
 
     def __repr__(self):
         try:
@@ -170,6 +177,32 @@ class Relationship(object):
         except AttributeError:
             f_name = "<unknown>"
         return "<Relationship '{}' <-> '{}'>".format(o_name, f_name)
+
+    def _get_join_query(self, parent: 'Relationship'):
+        """
+        Gets the join part of a SELECT query for this relationship.
+
+
+        """
+        # TODO: Maybe customize join types?
+        fmt = "LEFT OUTER JOIN {} {} ".format(self.foreign_table.alias_table.__quoted_name__,
+                                              self.foreign_table.__quoted_name__)
+
+        # explanation
+        # if parent is None, we can assume we're the first in the chain
+        # and we want to join using the normal name since there's no aliases (yet)
+        # however, if it isn't
+        # we need to join using the alias table name
+        # since that has been used instead of the actual table name
+        if parent is not None:
+            left = self.our_column.quoted_fullname_with_table(parent.foreign_table)
+        else:
+            left = self.our_column.quoted_fullname_with_table(self.owner_table)
+
+        right = self.foreign_column.quoted_fullname_with_table(self.foreign_table)
+        fmt += 'ON {} = {}'.format(left, right)
+
+        return fmt
 
     # right-wing logic
     @cached_property

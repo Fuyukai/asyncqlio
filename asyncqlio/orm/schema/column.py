@@ -14,6 +14,55 @@ from asyncqlio.sentinels import NO_DEFAULT
 logger = logging.getLogger(__name__)
 
 
+def _wrap(self, i):
+    if not inspect.ismethod(i):
+        return i
+
+    # create a wrapper function
+    # that hijacks any ColumnValueMixins
+    def _wrapper(*args, **kwargs):
+        result = i(*args, **kwargs)
+
+        if not isinstance(result, md_operators.ColumnValueMixin):
+            return result
+
+        result.column = self
+        return result
+
+    return _wrapper
+
+
+@proxy_to_getattr("__eq__", "__neq__", "__gt__", "__lt__", "__gte__", "__lte__")
+class AliasedColumn(object):
+    """
+    Represents a column on an aliased table.
+    """
+
+    def __init__(self, alias_table: 'md_table.AliasedTable',
+                 column: 'Column'):
+        """
+        :param alias_table: The alias table this column is a member of.
+        :param column: The Column object this aliased column proxies.
+        """
+        self.alias_table = alias_table
+        self.column = column
+
+    @property
+    def quoted_fullname(self):
+        return r'"{}"."{}"'.format(self.alias_table.alias_name, self.column.name)
+
+    # needed since we override `__eq__`
+    def __hash__(self):
+        return self.column.__hash__()
+
+    # proxy to the column object
+    def __getattr__(self, item):
+        i = getattr(self.column, item)
+        # check if it's a metho
+
+        return _wrap(self, i)
+
+
 @proxy_to_getattr("__contains__")
 class Column(object):
     """

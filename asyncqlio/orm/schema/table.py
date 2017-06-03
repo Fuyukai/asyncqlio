@@ -83,7 +83,7 @@ class TableMetadata(object):
                     # auto-create the alias name
                     # using the relationship name
                     relationship._table_alias = "r_{}_{}".format(
-                        relationship.owner_table.__name__, relationship.name.lower()
+                        relationship.owner_table.__name__, relationship._name.lower()
                     )
 
                 relationship._table_alias = AliasedTable(relationship._table_alias,
@@ -693,7 +693,7 @@ class Table(metaclass=TableMeta, register=False):
         """
         try:
             relation = next(filter(
-                lambda relationship: relationship.name == relation_name,
+                lambda relationship: relationship._name == relation_name,
                 self.table.iter_relationships()
             ))
         except StopIteration:
