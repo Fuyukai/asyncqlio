@@ -155,10 +155,15 @@ class Relationship(object):
 
     def __getattr__(self, item):
         column = self.foreign_table.get_column(item)
-        if column is None:
-            raise AttributeError(item)
+        if column is not None:
+            return md_column.AliasedColumn(self._table_alias, column)
 
-        return md_column.AliasedColumn(self._table_alias, column)
+        relationship = self.foreign_table.get_relationship(item)
+        if relationship is not None:
+            return relationship
+
+        raise AttributeError(item)
+
 
     def __set_name__(self, owner, name):
         self.owner_table = owner

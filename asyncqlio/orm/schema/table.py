@@ -304,7 +304,7 @@ class TableMeta(type):
             yield col
 
     def get_column(self, column_name: str, *,
-                   raise_si: bool = False) -> 'md_column.Column':
+                   raise_si: bool = False) -> 'typing.Union[md_column.Column, None]':
         """
         Gets a column by name.
         
@@ -325,6 +325,19 @@ class TableMeta(type):
                     return column
 
         return None
+
+    def get_relationship(self,
+                         relationship_name) -> 'typing.Union[md_relationship.Relationship, None]':
+        """
+        Gets a relationship by name.
+
+        :param relationship_name: The name of the relationship to get.
+        :return: The :class:`.Relationship` associated with that name, or None if it doesn't existr.
+        """
+        try:
+            return self._relationships[relationship_name]
+        except KeyError:
+            return None
 
     def _calculate_primary_key(self) -> typing.Union['PrimaryKey', None]:
         """
