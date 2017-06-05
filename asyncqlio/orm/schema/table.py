@@ -704,6 +704,53 @@ class Table(metaclass=TableMeta, register=False):
         rel._update_sub_relationships(self._relationship_mapping)
         return rel
 
+    def _load_columns_using_table(self, table: 'TableMeta', record: dict, buckets: dict,
+                                  seen: list):
+        """
+        Recursively organizes columns in a record into table buckets by scanning the
+        relationships inside the table.
+
+        :param table: The :class:`.TableMeta` to use to load the table.
+        :param record: The dict-like record to read from.
+        :param buckets: The dict of buckets to store tables in.
+        :param seen: A list of relationships that have already been seen. This prevents infinite \
+            loops.
+
+            Outside of internal code, this should be passed in as an empty list.
+
+        """
+        for relationship in table.iter_relationships():
+            if relationship in seen:
+                continue
+
+            seen.append(relationship)
+
+            self._load_columns_using_relationship(relationship, record, buckets)
+            self._load_columns_using_table(relationship.foreign_table, record, buckets, seen)
+
+    def _load_columns_using_relationship(self, relationship, record: dict, buckets: dict):
+        """
+        Loads columns from a record dict using a relationship object.
+        """
+        if relationship not in buckets:
+            buckets[relationship] = {}
+
+        # iterate over every column in the record
+        # checking to see if the column adds up
+        for cname, value in record.copy().items():
+            # this will load using cname too, thankfully
+            # use the foreign column to load the columns
+            # since this is the one we're joining on
+            column = relationship.foreign_table.get_column(cname)
+            if column is not None:
+                # use the actual name
+                # if we use the cname, it won't expand into the row correctly
+                actual_name = column.name
+                buckets[relationship][actual_name] = value
+                # get rid of the record
+                # so it doesn't come around in the next relationship check
+                record.pop(cname)
+
     def _update_relationships(self, record: dict):
         """
         Updates relationship data for this row, storing any extra rows that are needed.
@@ -717,43 +764,25 @@ class Table(metaclass=TableMeta, register=False):
             self._relationship_mapping[self.table] = [self]
 
         buckets = {}
-        for relationship in self.table.iter_relationships():
-            # type: md_relationship.Relationship
-            table = relationship.foreign_table
-            if table not in buckets:
-                buckets[table] = {}
-
-            # iterate over every column in the record
-            # checking to see if the column adds up
-            for cname, value in record.copy().items():
-                # this will load using cname too, thankfully
-                # use the foreign column to load the columns
-                # since this is the one we're joining on
-                column = relationship.foreign_table.get_column(cname)
-                if column is not None:
-                    # use the actual name
-                    # if we use the cname, it won't expand into the row correctly
-                    actual_name = column.name
-                    buckets[table][actual_name] = value
-                    # get rid of the record
-                    # so it doesn't come around in the next relationship check
-                    record.pop(cname)
+        seen = []
+        # this will load columns recursively
+        self._load_columns_using_table(self.table, record, buckets, seen)
 
         # store the new relationship data
-        for table, subdict in buckets.items():
+        for relationship, subdict in buckets.items():
             # Prevent null values from showing up
             if all(i is None for i in subdict.values()):
                 continue
 
-            row = table(**subdict)
+            row = relationship.foreign_table._internal_from_row(subdict, existed=True)
             # ensure the row doesn't already exist with the PK
             try:
                 next(filter(lambda r: r.primary_key == row.primary_key,
-                            self._relationship_mapping[table]))
+                            self._relationship_mapping[relationship]))
             except StopIteration:
                 # only append if the row didn't exist earlier
                 # i.e that the filter raised StopIteration
-                self._relationship_mapping[table].append(row)
+                self._relationship_mapping[relationship].append(row)
             else:
                 row._session = self._session
 
