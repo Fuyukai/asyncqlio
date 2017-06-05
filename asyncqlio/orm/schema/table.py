@@ -700,7 +700,7 @@ class Table(metaclass=TableMeta, register=False):
             raise ValueError("No such relationship '{}'".format(relation_name))
 
         rel = relation.get_instance(self, self._session)
-        rel.set_rows(self._relationship_mapping[relation.foreign_table])
+        rel.set_rows(self._relationship_mapping[relation])
         rel._update_sub_relationships(self._relationship_mapping)
         return rel
 

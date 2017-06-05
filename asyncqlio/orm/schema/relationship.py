@@ -351,18 +351,18 @@ class BaseLoadedRelationship(object):
             # check for each relationship
 
             for relationship in row.table.iter_relationships():
-                if relationship.foreign_table not in mapping:
+                if relationship not in mapping:
                     continue
 
                 # check if the columns match
-                rows = mapping[relationship.foreign_table]
+                rows = mapping[relationship]
                 # iterate over each new row in the mapping
                 # check if OUR column matches with the value in THEIR column
                 for nrow in rows:
                     if row.get_column_value(relationship.our_column) \
                             == nrow.get_column_value(relationship.foreign_column):
 
-                        row._relationship_mapping[relationship.foreign_table].append(nrow)
+                        row._relationship_mapping[relationship].append(nrow)
 
     def __iter__(self):
         raise TypeError("This cannot be iterated over normally")
