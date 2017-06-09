@@ -164,7 +164,6 @@ class Relationship(object):
 
         raise AttributeError(item)
 
-
     def __set_name__(self, owner, name):
         self.owner_table = owner
         self._name = name

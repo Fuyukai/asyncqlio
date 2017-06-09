@@ -12,7 +12,7 @@ from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
 from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction
-from asyncqlio.exc import IntegrityError, OperationalError
+from asyncqlio.exc import DatabaseException, IntegrityError, OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +138,8 @@ class AsyncpgTransaction(BaseTransaction):
             raise IntegrityError(*e.args) from e
         except asyncpg.ObjectNotInPrerequisiteStateError as e:
             raise OperationalError(*e.args) from e
+        except asyncpg.SyntaxOrAccessError as e:
+            raise DatabaseException(*e.args) from e
 
         return results
 
