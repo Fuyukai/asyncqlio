@@ -136,11 +136,11 @@ class TableMetadata(object):
                 foreignkey = column.foreign_key
                 if foreignkey.foreign_column is None:
                     table, column = foreignkey._f_name.split(".")
-                    table = self.get_table(table)
-                    if table is None:
+                    table_obb = self.get_table(table)
+                    if table_obb is None:
                         raise SchemaError("No such table '{}' exists".format(table))
 
-                    col = table.get_column(column)
+                    col = table_obb.get_column(column)
                     if col is None:
                         raise SchemaError("No such column '{}' exists on table '{}'"
                                           .format(column, table))
@@ -155,12 +155,12 @@ class TableMetadata(object):
 
                 for to_resolve in resolving_columns:
                     table, column = to_resolve.split(".")
-                    table = self.get_table(table)
+                    table_obb = self.get_table(table)
 
-                    if table is None:
+                    if table_obb is None:
                         raise SchemaError("No such table '{}' exists".format(table))
 
-                    col = table.get_column(column)
+                    col = table_obb.get_column(column)
                     if col is None:
                         raise SchemaError("No such column '{}' exists on table '{}'"
                                           .format(table, column))
