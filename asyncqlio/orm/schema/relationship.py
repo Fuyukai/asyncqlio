@@ -44,6 +44,9 @@ class ForeignKey(object):
         #: The :class:`.Column` object this FK is associated with.
         self.column = None  # type: md_column.Column
 
+    def __repr__(self):
+        return "<ForeignKey owner='{}' foreign='{}'>".format(self.column, self.foreign_column)
+
 
 class Relationship(object):
     """

@@ -138,12 +138,14 @@ class TableMetadata(object):
                     table, column = foreignkey._f_name.split(".")
                     table_obb = self.get_table(table)
                     if table_obb is None:
-                        raise SchemaError("No such table '{}' exists".format(table))
+                        raise SchemaError("No such table '{}' exists in FK {}"
+                                          .format(table, foreignkey))
 
                     col = table_obb.get_column(column)
                     if col is None:
                         raise SchemaError("No such column '{}' exists on table '{}'"
-                                          .format(column, table))
+                                          "(from FK {})"
+                                          .format(column, table, foreignkey))
 
                     foreignkey.foreign_column = col
 
@@ -158,7 +160,8 @@ class TableMetadata(object):
                     table_obb = self.get_table(table)
 
                     if table_obb is None:
-                        raise SchemaError("No such table '{}' exists".format(table))
+                        raise SchemaError("No such table '{}' exists"
+                                          "(from relationship {})".format(table, relation))
 
                     col = table_obb.get_column(column)
                     if col is None:
