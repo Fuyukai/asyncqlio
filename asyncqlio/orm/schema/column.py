@@ -93,7 +93,8 @@ class Column(object):
                  autoincrement: bool = False,
                  index: bool = True,
                  unique: bool = False,
-                 foreign_key: 'md_relationship.ForeignKey' = None):
+                 foreign_key: 'md_relationship.ForeignKey' = None,
+                 table: 'md_table.Table' = None):
         """
         :param type_:
             The :class:`.ColumnType` that represents the type of this column.
@@ -125,7 +126,7 @@ class Column(object):
         self.name = None  # type: str
 
         #: The :class:`.Table` instance this Column is associated with.
-        self.table = None
+        self.table = table  # type: md_table.Table
 
         #: The :class:`.ColumnType` that represents the type of this column.
         self.type = type_  # type: md_types.ColumnType
