@@ -5,8 +5,7 @@ import typing
 import warnings
 
 from asyncqlio import db as md_db
-from asyncqlio.backends.base import BaseTransaction
-from asyncqlio.exc import DatabaseException
+from asyncqlio.backends.base import BaseResultSet, BaseTransaction
 from asyncqlio.orm import inspection as md_inspection, query as md_query
 from asyncqlio.orm.schema import table as md_table
 from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
@@ -32,23 +31,14 @@ def enforce_open(func):
     return wrapper
 
 
-class Session(object):
+class SessionBase(object):
     """
-    Sessions act as a temporary window into the database. They are responsible for creating queries,
-    inserting and updating rows, etc.
-    
-    Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction 
-    and execute queries in.
-    
-    .. code-block:: python3
-
-        # get a session from our db interface
-        sess = db.get_session()
+    A superclass for session-like objects.
     """
 
     def __init__(self, bind: 'md_db.DatabaseInterface'):
         """
-        :param bind: The :class:`.DatabaseInterface` instance we are bound to. 
+        :param bind: The :class:`.DatabaseInterface` instance we are bound to.
         """
         self.bind = bind
 
@@ -59,7 +49,7 @@ class Session(object):
         #: The transaction is used for making queries and inserts, etc.
         self.transaction = None  # type: BaseTransaction
 
-    async def __aenter__(self) -> 'Session':
+    async def __aenter__(self) -> 'SessionBase':
         await self.start()
         return self
 
@@ -78,6 +68,116 @@ class Session(object):
     def __del__(self):
         if self._state == SessionState.READY:
             warnings.warn("Session was destroyed without being closed!", stacklevel=2)
+
+    # util methods
+    async def start(self) -> 'SessionBase':
+        """
+        Starts the session, acquiring a transaction connection which will be used to modify the DB.
+        This **must** be called before using the session.
+
+        .. code-block:: python
+            sess = db.get_session()  # or get_ddl_session etc
+            await sess.start()
+
+        .. note::
+            When using ``async with``, this is automatically called.
+        """
+        if self._state is not SessionState.NOT_READY:
+            raise RuntimeError("Session must not be ready or closed")
+
+        logger.debug("Acquiring new transaction, and beginning")
+        self.transaction = self.bind.get_transaction()
+        await self.transaction.begin()
+
+        self._state = SessionState.READY
+        return self
+
+    @enforce_open
+    async def commit(self) -> 'SessionBase':
+        """
+        Commits the current session, running inserts/updates/deletes.
+
+        This will **not** close the session; it can be re-used after a commit.
+        """
+        logger.debug("Committing transaction")
+        await self.transaction.commit()
+        return self
+
+    @enforce_open
+    async def rollback(self, checkpoint: str = None) -> 'SessionBase':
+        """
+        Rolls the current session back.
+        This is useful if an error occurs inside your code.
+
+        :param checkpoint: The checkpoint to roll back to, if applicable.
+        """
+        logger.debug("Rolling back session to checkpoint {}".format(checkpoint))
+        await self.transaction.rollback(checkpoint=checkpoint)
+        return self
+
+    @enforce_open
+    async def close(self):
+        """
+        Closes the current session.
+
+        .. warning::
+
+            This will **NOT COMMIT ANY DATA**. Old data will die.
+        """
+        await self.transaction.close()
+        self._state = SessionState.CLOSED
+        del self.transaction
+
+    # sql methods
+    # generic methods for wrapping the transaction
+    @enforce_open
+    async def fetch(self, sql: str, params=None) -> 'typing.Mapping':
+        """
+        Fetches a single row.
+        """
+        cur = await self.transaction.cursor(sql, params)
+        next = await cur.fetch_row()
+        await cur.close()
+        return next
+
+    @enforce_open
+    async def execute(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
+                                                           typing.Iterable[typing.Any]] = None):
+        """
+        Executes SQL inside the current session.
+
+        This is part of the **low-level API.**
+
+        :param sql: The SQL to execute.
+        :param params: The parameters to use inside the query.
+        """
+        return await self.transaction.execute(sql, params)
+
+    @enforce_open
+    async def cursor(self, sql: str,
+                     params: typing.Union[typing.Mapping[str, typing.Any],
+                                          typing.Iterable[typing.Any]] = None) -> BaseResultSet:
+        """
+        Executes SQL inside the current session, and returns a new :class:`.BaseResultSet.`
+
+        :param sql: The SQL to execute.
+        :param params: The parameters to use inside the query.
+        """
+        return await self.transaction.cursor(sql, params)
+
+
+class Session(SessionBase):
+    """
+    Sessions act as a temporary window into the database. They are responsible for creating queries,
+    inserting and updating rows, etc.
+    
+    Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction 
+    and execute queries in.
+    
+    .. code-block:: python
+        # get a session from our db interface
+        sess = db.get_session()
+    """
 
     # Query builders
     @property
@@ -98,144 +198,6 @@ class Session(object):
         :return: A new :class:`.InsertQuery`. 
         """
         return md_query.InsertQuery(self)
-
-    @property
-    def update(self) -> 'md_query.BulkUpdateQuery':
-        """
-        Creates a new bulk UPDATE query that can be built upon.
-
-        :return: A new :class:`.BulkUpdateQuery`.
-        """
-        return md_query.BulkUpdateQuery(self)
-
-    @property
-    def delete(self) -> 'md_query.BulkDeleteQuery':
-        """
-        Creates a new bulk DELETE query that can be built upon.
-
-        :return: A new :class:`.BulkDeleteQuery`.
-        """
-        return md_query.BulkDeleteQuery(self)
-
-    async def start(self) -> 'Session':
-        """
-        Starts the session, acquiring a transaction connection which will be used to modify the DB.
-
-        This **must** be called before using the session.  
-        
-        .. code-block:: python3
-
-            sess = db.get_session()
-            await sess.start()
-        
-        .. note::
-            When using ``async with``, this is automatically called.
-        """
-        if self._state is not SessionState.NOT_READY:
-            raise RuntimeError("Session must not be ready or closed")
-
-        logger.debug("Acquiring new transaction, and beginning")
-        self.transaction = self.bind.get_transaction()
-        await self.transaction.begin()
-
-        self._state = SessionState.READY
-        return self
-
-    @enforce_open
-    async def checkpoint(self, checkpoint_name: str):
-        """
-        Sets a new checkpoint.
-
-        :param checkpoint_name: The name of the checkpoint to use.
-        """
-        if not self.bind.dialect.has_checkpoints:
-            raise NotImplementedError("The {} dialect has no checkpoints".format(
-                self.bind.dialect.__class__.__name__))
-
-        return await self.transaction.create_savepoint(checkpoint_name)
-
-    @enforce_open
-    async def uncheckpoint(self, checkpoint_name: str):
-        """
-        Releases a checkpoint.
-
-        :param checkpoint_name: The name of the checkpoint to release.
-        """
-        if not self.bind.dialect.has_checkpoints:
-            raise NotImplementedError("The {} dialect has no checkpoints".format(
-                self.bind.dialect.__class__.__name__))
-
-        return await self.transaction.release_savepoint(checkpoint_name)
-
-    @enforce_open
-    async def commit(self):
-        """
-        Commits the current session, running inserts/updates/deletes.
-         
-        This will **not** close the session; it can be re-used after a commit.
-        """
-        logger.debug("Committing transaction")
-        await self.transaction.commit()
-        return self
-
-    @enforce_open
-    async def rollback(self, checkpoint: str = None):
-        """
-        Rolls the current session back.  
-        This is useful if an error occurs inside your code.
-        
-        :param checkpoint: The checkpoint to roll back to, if applicable. 
-        """
-        logger.debug("Rolling back session to checkpoint {}".format(checkpoint))
-        await self.transaction.rollback(checkpoint=checkpoint)
-        return self
-
-    @enforce_open
-    async def close(self):
-        """
-        Closes the current session.
-        
-        .. warning::
-
-            This will **NOT COMMIT ANY DATA**. Old data will die.
-        """
-        await self.transaction.close()
-        self._state = SessionState.CLOSED
-        del self.transaction
-
-    @enforce_open
-    async def fetch(self, sql: str, params=None):
-        """
-        Fetches a single row.
-        """
-        cur = await self.transaction.cursor(sql, params)
-        next = await cur.fetch_row()
-        await cur.close()
-        return next
-
-    @enforce_open
-    async def execute(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
-                                                           typing.Iterable[typing.Any]] = None):
-        """
-        Executes SQL inside the current session.
-        
-        This is part of the **low-level API.**
-        
-        :param sql: The SQL to execute.
-        :param params: The parameters to use inside the query.
-        """
-        return await self.transaction.execute(sql, params)
-
-    @enforce_open
-    async def cursor(self, sql: str, params: typing.Union[typing.Mapping[str, typing.Any],
-                                                          typing.Iterable[typing.Any]] = None):
-        """
-        Executes SQL inside the current session, and returns a new :class:`.BaseResultSet.`
-        
-        :param sql: The SQL to execute.
-        :param params: The parameters to use inside the query.
-        """
-        return await self.transaction.cursor(sql, params)
 
     @enforce_open
     async def insert_now(self, row: 'md_table.Table') -> typing.Any:
