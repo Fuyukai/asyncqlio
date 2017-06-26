@@ -222,6 +222,7 @@ async def get_current_version(iface: DatabaseInterface) -> int:
         row = await (await sess.cursor('''SELECT version from asql_version''')).fetch_row()
         if row is None:
             await sess.execute('''INSERT INTO asql_version VALUES (0)''')
+            return 0
         else:
             return row["version"]
 
