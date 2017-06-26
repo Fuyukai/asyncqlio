@@ -15,6 +15,7 @@ setup(
         'asyncqlio',
         'asyncqlio.orm',
         'asyncqlio.orm.schema',
+        'asyncqlio.orm.ddl',
         # namespace packages yay
         'asyncqlio.backends',
         # postgres backend
@@ -29,7 +30,7 @@ setup(
     install_requires=[
         "cached_property==1.3.0"
     ],
-    scripts=[
-        "tools/asql-migrate.py"
-    ]
+    entry_points={
+        'console_scripts': ['asql-migrate=asyncqlio.orm.ddl.migration_tool:cli']
+    }
 )

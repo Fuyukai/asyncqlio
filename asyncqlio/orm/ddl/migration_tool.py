@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 AsyncQLio migration tool.
 
@@ -250,6 +251,7 @@ def cli(migration_dir: str):
 
 
 @cli.command()
+@click.argument("directory", default="migrations")
 @click.option("-d", "--dsn", required=False, default=None)
 def init(directory: str, dsn: str):
     """
@@ -263,9 +265,9 @@ def init(directory: str, dsn: str):
     if dsn is not None:
         dsn = '"{}"'.format(dsn)
 
-    click.secho("Writing env.py...", fg='blue')
+    click.secho("Writing env.py...", fg='cyan')
     (Path(directory) / "env.py").write_text(env_file.format(dsn=dsn))
-    click.secho("Making versions directory...", fg='blue')
+    click.secho("Making versions directory...", fg='cyan')
     (Path(directory) / "versions").mkdir(mode=0o755)
     (Path(directory) / "README").write_text("Basic asql-migrate setup.")
     click.secho("Done!", fg='green')
@@ -304,7 +306,7 @@ async def migrate(revision: str = "head"):
 
 
 @cli.command()
-@click.argument("message")
+@click.argument("message", nargs=-1, required=True)
 @coro
 async def new(message: str):
     """
@@ -313,9 +315,9 @@ async def new(message: str):
     files = _get_files()
     # build the message filename
     next_num = len(files) + 1
-    f_message = list(message[32:].lower().replace(" ", "_"))
+    f_message = list(' '.join(message)[:32].lower().replace(" ", "_"))
 
-    filename_message = ''.join(filter(lambda c: c in string.ascii_lowercase, f_message))
+    filename_message = ''.join(filter(lambda c: c in string.ascii_lowercase + "_", f_message))
     f_name = "{:03d}_{}.py".format(next_num, filename_message)
 
     # format the template
