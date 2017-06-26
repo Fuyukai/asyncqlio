@@ -122,7 +122,7 @@ async def create_database_interface() -> DatabaseInterface:
 sig = typing.Callable[[Session], None]
 
 
-async def run_migration_online(db: Session, upgrade: sig):
+async def run_migration_online(sess: Session, upgrade: sig):
     """
     Runs a migration file "online". This will acquire a session, call the upgrade function, 
     and then commit the session.
@@ -130,7 +130,7 @@ async def run_migration_online(db: Session, upgrade: sig):
     await upgrade(sess)
 
         
-async def run_migration_offline(db: DatabaseInterface, upgrade: sig):
+async def run_migration_offline(sess: Session, upgrade: sig):
     """
     Runs a migration file "offline". 
     """
