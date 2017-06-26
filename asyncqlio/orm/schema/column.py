@@ -233,7 +233,7 @@ class Column(object):
         """
         return md_operators.DescSorter(self)
 
-    def quoted_fullname_with_table(self, table: 'md_table.Table') -> str:
+    def quoted_fullname_with_table(self, table: 'md_table.TableMeta') -> str:
         """
         Gets the quoted fullname with a table.
         This is used for columns with alias tables.

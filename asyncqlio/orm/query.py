@@ -1,16 +1,37 @@
 """
 Classes for query objects.
 """
+import abc
 import collections
 import itertools
 import typing
 
 from asyncqlio.backends.base import BaseResultSet
+from asyncqlio.meta import AsyncABC
 from asyncqlio.orm import inspection as md_inspection, operators as md_operators, \
     session as md_session
 from asyncqlio.orm.schema import column as md_column, relationship as md_relationship, \
     table as md_table
 from asyncqlio.sentinels import NO_VALUE
+
+
+class BaseQuery(AsyncABC):
+    """
+    A base query object.
+    """
+
+    def __init__(self, sess: 'md_session.Session'):
+        """
+        :param sess: The :class:`.Session` associated with this query.
+        """
+        self.session = sess
+
+    @abc.abstractmethod
+    def generate_sql(self) -> typing.Tuple[str, typing.Mapping[str, typing.Any]]:
+        """
+        Generates the SQL for this query.
+        :return: A two item tuple, the SQL to use and a mapping of params to pass.
+        """
 
 
 class _ResultGenerator(collections.AsyncIterator):
@@ -106,7 +127,7 @@ class _ResultGenerator(collections.AsyncIterator):
         return l
 
 
-class SelectQuery(object):
+class SelectQuery(BaseQuery):
     """
     Represents a SELECT query, which fetches data from the database.
     
@@ -131,10 +152,7 @@ class SelectQuery(object):
     """
 
     def __init__(self, session: 'md_session.Session'):
-        """
-        :param session: The session to bind to this query.
-        """
-        self.session = session
+        super().__init__(session)
 
         #: The table being queried.
         self.table = None
@@ -454,17 +472,13 @@ class SelectQuery(object):
         return self
 
 
-class InsertQuery(object):
+class InsertQuery(BaseQuery):
     """
     Represents an INSERT query.
     """
 
     def __init__(self, sess: 'md_session.Session'):
-        """
-        :param sess: The :class:`.Session` this object is bound to. 
-        """
-        #: The :class:`.Session` associated with this query.
-        self.session = sess
+        super().__init__(sess)
 
         #: A list of rows to generate the insert statements for.
         self.rows_to_insert = []
@@ -522,18 +536,14 @@ class InsertQuery(object):
         return queries
 
 
-class RowUpdateQuery(object):
+class RowUpdateQuery(BaseQuery):
     """
     Represents a **row update query**. This is **NOT** a bulk update query - it is used for updating
     specific rows.
     """
 
     def __init__(self, sess: 'md_session.Session'):
-        """
-        :param sess: The :class:`.Session` this object is bound to. 
-        """
-        #: The :class:`.Session` for this query.
-        self.session = sess
+        super().__init__(sess)
 
         #: The list of rows to update.
         self.rows_to_update = []
@@ -589,18 +599,14 @@ class RowUpdateQuery(object):
         return queries
 
 
-class RowDeleteQuery(object):
+class RowDeleteQuery(BaseQuery):
     """
     Represents a row deletion query. This is **NOT** a bulk delete query - it is used for deleting
     specific rows.
     """
 
     def __init__(self, sess: 'md_session.Session'):
-        """
-        :param sess: The :class:`.Session` this object is bound to. 
-        """
-        #: The :class:`.Session` for this query.
-        self.session = sess
+        super().__init__(sess)
 
         #: The list of rows to delete.
         self.rows_to_delete = []
