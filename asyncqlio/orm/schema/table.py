@@ -86,8 +86,9 @@ class TableMetadata(object):
                         relationship.owner_table.__name__, relationship._name.lower()
                     )
 
-                relationship._table_alias = AliasedTable(relationship._table_alias,
-                                                         relationship.foreign_table)
+                if not isinstance(relationship._table_alias, AliasedTable):
+                    relationship._table_alias = AliasedTable(relationship._table_alias,
+                                                             relationship.foreign_table)
                 self.tables[relationship._table_alias.alias_name] = relationship._table_alias
 
     def resolve_backrefs(self):
