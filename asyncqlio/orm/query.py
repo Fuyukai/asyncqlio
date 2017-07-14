@@ -536,6 +536,97 @@ class InsertQuery(BaseQuery):
         return queries
 
 
+class BulkUpdateQuery(BaseQuery):
+    """
+    Represents a **bulk update query**. This updates many rows based on certain criteria.
+
+    .. code-block:: python3
+        query = BulkUpdateQuery(session)
+
+        # style 1: manual
+        query.set_table(User)
+        query.add_condition(User.xp < 300)
+        # add on a value
+        query.set_update(User.xp + 100)
+        # or set a value
+        query.set_update(User.xp.set(300))
+        await query.run()
+
+        # style 2: builder
+        await query.table(User).where(User.xp < 300).set(User.xp + 100).run()
+        await query.table(User).where(User.xp < 300).set(User.xp, 300).run()
+
+    """
+
+    def __init__(self, sess: 'md_session.Session'):
+        super().__init__(sess)
+
+        #: The table to update.
+        self.table = None  # type: md_table.TableMeta
+
+        #: The list of conditions to query by.
+        self.conditions = []
+
+        #: The thing to set on the updated rows.
+        self.setting = None
+
+    # Manual-style methods
+    def set_table(self, table: 'typing.Type[md_table.Table]'):
+        """
+        Sets a table on this query.
+        """
+        self.table = table
+
+    def add_condition(self, condition: 'md_operators.BaseOperator'):
+        """
+        Adds a condition to this query.
+        """
+        self.conditions.append(condition)
+
+    def set_update(self, update):
+        """
+        Sets the update for this query.
+        """
+        self.setting = update
+
+    def generate_sql(self):
+        """
+        Generates the SQL for this query.
+        """
+        # base query is update table
+        query = 'UPDATE {} SET '.format(self.table.__quoted_name__)
+
+        # define counter and params used in generating sql
+        counter = itertools.count()
+        params = {}
+
+        # get the sql and params from the generate_sql call
+        sql, name, val = self.setting.generate_sql(self.session.bind.emit_param, counter)
+        # update params
+        params[name] = val
+        query += sql
+
+        # format conditions
+        c_sql = []
+        for condition in self.conditions:
+            # pass the condition offset
+            condition_sql, name, val = condition.generate_sql(self.session.bind.emit_param, counter)
+            if val is not None:
+                # special-case
+                # this means it's a coalescing token
+                if isinstance(val, dict) and name is None:
+                    params.update(val)
+                else:
+                    params[name] = val
+
+            c_sql.append(condition_sql)
+
+        query += ' WHERE ' + ' AND '.join(c_sql)
+
+        # all generated
+        return query, params
+
+
 class RowUpdateQuery(BaseQuery):
     """
     Represents a **row update query**. This is **NOT** a bulk update query - it is used for updating
