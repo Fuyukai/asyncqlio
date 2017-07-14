@@ -190,10 +190,10 @@ class TableMeta(type):
 
     def __new__(mcs, name: str, bases: tuple, class_body: dict,
                 register: bool = True, *args, **kwargs):
-        # hijack columns
         if register is False:
             return type.__new__(mcs, name, bases, class_body)
 
+        # hijack columns
         columns = OrderedDict()
         relationships = OrderedDict()
         for col_name, value in class_body.copy().items():
@@ -858,8 +858,12 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     if meta is None:
         meta = TableMetadata()
 
-    clone = type(name, (Table,), {"_metadata": meta}, metaclass=TableMeta,
-                 register=False)
+    # python 3.5 doesn't like this type of cloning
+    if PY36:
+        clone = type(name, (Table,), {"_metadata": meta}, metaclass=TableMeta,
+                     register=False)
+    else:
+        clone = TableMeta.__new__(TableMeta, name, (Table,), {"_metadata": meta}, register=False)
     return clone
 
 
