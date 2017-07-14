@@ -31,12 +31,18 @@ class DummyTqdmFile(object):
     def __init__(self, file):
         self.file = file
 
+    def __getattr__(self, item):
+        return getattr(self.file, item)
+
     # needed for colour output
     def isatty(self) -> bool:
         try:
             return self.file.isatty()
         except AttributeError:
             return False
+
+    def fileno(self):
+        return self.file.fileno()
 
     # main write method
     def write(self, x: typing.Union[bytes, str]) -> None:
