@@ -4,7 +4,7 @@ The base implementation of a backend. This provides some ABC classes.
 import collections
 import typing
 from abc import abstractmethod
-from urllib.parse import ParseResult
+from urllib.parse import ParseResult, parse_qs
 
 from asyncqlio.meta import AsyncABC
 
@@ -248,7 +248,8 @@ class BaseConnector(AsyncABC):
         self.port = dsn.port
         self.username = dsn.username
         self.password = dsn.password
-        self.db = dsn.query
+        self.db = dsn.path
+        self.params = {k: v[0] for k, v in parse_qs(dsn.query).items()}
 
     @abstractmethod
     async def connect(self) -> 'BaseConnector':
