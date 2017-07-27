@@ -156,6 +156,12 @@ class AsyncpgTransaction(BaseTransaction):
 
         return result
 
+    async def create_savepoint(self, name: str):
+        await self.acquired_connection.execute("SAVEPOINT {};".format(name))
+
+    async def release_savepoint(self, name: str):
+        await self.acquired_connection.execute("RELEASE SAVEPOINT {};".format(name))
+
 
 class AsyncpgConnector(BaseConnector):
     """
