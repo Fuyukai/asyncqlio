@@ -537,7 +537,50 @@ class InsertQuery(BaseQuery):
         return queries
 
 
-class BulkUpdateQuery(BaseQuery):
+class BulkQuery(BaseQuery, metaclass=abc.ABCMeta):
+    """
+    Represents a **bulk query**.
+
+    This allows adding conditionals to the query.
+    """
+
+    def __init__(self, sess: 'md_session.Session'):
+        super().__init__(sess)
+
+        #: The table to update.
+        self.table = None  # type: md_table.TableMeta
+
+        #: The list of conditions to query by.
+        self.conditions = []
+
+    # Builder methods
+    def table(self, table: 'typing.Type[md_table.Table]'):
+        """
+        Sets the table for this query.
+        """
+        self.table = table
+
+    def where(self, *conditions: 'md_operators.ComparisonOp'):
+        """
+        Sets the conditions for this query.
+        """
+        self.conditions.extend(conditions)
+
+    # Manual-style methods
+    def set_table(self, table: 'typing.Type[md_table.Table]'):
+        """
+        Sets a table on this query.
+        """
+        self.table = table
+
+    def add_condition(self, condition: 'md_operators.BaseOperator'):
+        """
+        Adds a condition to this query.
+        """
+        self.conditions.append(condition)
+
+
+class BulkUpdateQuery(BulkQuery):
     """
     Represents a **bulk update query**. This updates many rows based on certain criteria.
 
@@ -561,28 +604,8 @@ class BulkUpdateQuery(BaseQuery):
 
     def __init__(self, sess: 'md_session.Session'):
         super().__init__(sess)
-
-        #: The table to update.
-        self.table = None  # type: md_table.TableMeta
-
-        #: The list of conditions to query by.
-        self.conditions = []
-
         #: The thing to set on the updated rows.
         self.setting = None
-
-    # Builder methods
-    def table(self, table: 'typing.Type[md_table.Table]'):
-        """
-        Sets the table for this query.
-        """
-        self.table = table
-
-    def where(self, *conditions: 'md_operators.ComparisonOp'):
-        """
-        Sets the conditions for this query.
-        """
-        self.conditions.extend(conditions)
 
     def set(self, setter, value: typing.Any = None):
         """
@@ -592,19 +615,6 @@ class BulkUpdateQuery(BaseQuery):
             setter = md_operators.ValueSetter(setter, value)
 
         self.setting = setter
-
-    # Manual-style methods
-    def set_table(self, table: 'typing.Type[md_table.Table]'):
-        """
-        Sets a table on this query.
-        """
-        self.table = table
-
-    def add_condition(self, condition: 'md_operators.BaseOperator'):
-        """
-        Adds a condition to this query.
-        """
-        self.conditions.append(condition)
 
     def set_update(self, update):
         """
