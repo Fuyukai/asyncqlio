@@ -324,7 +324,7 @@ class Session(object):
 
         return results
 
-    async def run_update_query(self, query: 'md_query.RowUpdateQuery'):
+    async def run_update_query(self, query: 'md_query.BaseQuery'):
         """
         Executes an update query.
         
@@ -341,6 +341,11 @@ class Session(object):
                 await self.execute(sql, params)
                 # copy the history of the row
                 row._previous_values = row._values
+        elif isinstance(query, md_query.BulkUpdateQuery):
+            sql, params = query.generate_sql()
+            await self.execute(sql, params)
+        else:
+            raise TypeError("Type {0.__class__.__name__} is not an update query".format(query))
 
         return query
 
