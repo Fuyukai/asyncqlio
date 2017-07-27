@@ -34,14 +34,19 @@ class TableMetadata(object):
         #: The DB object bound to this metadata.
         self.bind = None  # type: md_db.DatabaseInterface
 
-    def register_table(self, tbl: 'TableMeta') -> 'TableMeta':
+    def register_table(self, tbl: 'TableMeta', *,
+                       autosetup_tables: bool = False) -> 'TableMeta':
         """
         Registers a new table object.
         
-        :param tbl: The table to register. 
+        :param tbl: The table to register.
+        :param autosetup_tables: Should tables be setup again?
         """
-        tbl._metadata = self
+        tbl.metadata = self
         self.tables[tbl.__tablename__] = tbl
+
+        if autosetup_tables:
+            self.setup_tables()
 
         return tbl
 
@@ -228,7 +233,7 @@ class TableMeta(type):
 
         if register is False:
             return
-        elif not hasattr(self, "_metadata"):
+        elif not hasattr(self, "metadata"):
             raise TypeError("Table {} has been created but has no metadata - did you subclass Table"
                             " directly instead of a clone?".format(tblname))
 
@@ -257,7 +262,7 @@ class TableMeta(type):
         self._primary_key = self._calculate_primary_key()
 
         logger.debug("Registered new table {}".format(tblname))
-        self._metadata.register_table(self)
+        self.metadata.register_table(self)
 
     def __getattr__(self, item):
         if item.startswith("_"):
@@ -274,7 +279,7 @@ class TableMeta(type):
 
     @property
     def _bind(self):
-        return self._metadata._bind
+        return self.metadata._bind
 
     @property
     def __quoted_name__(self):
@@ -860,10 +865,10 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
 
     # python 3.5 doesn't like this type of cloning
     if PY36:
-        clone = type(name, (Table,), {"_metadata": meta}, metaclass=TableMeta,
+        clone = type(name, (Table,), {"metadata": meta}, metaclass=TableMeta,
                      register=False)
     else:
-        clone = TableMeta.__new__(TableMeta, name, (Table,), {"_metadata": meta}, register=False)
+        clone = TableMeta.__new__(TableMeta, name, (Table,), {"metadata": meta}, register=False)
     return clone
 
 

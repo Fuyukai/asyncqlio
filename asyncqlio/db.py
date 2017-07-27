@@ -67,7 +67,7 @@ class DatabaseInterface(object):
         Binds tables to this DB instance. 
         """
         if isinstance(md, md_table.TableMeta):
-            md = md._metadata
+            md = md.metadata
         # first set a bind on the metadata
         md._bind = self
         # then setup tables
