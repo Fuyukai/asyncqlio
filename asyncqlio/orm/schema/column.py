@@ -245,11 +245,23 @@ class Column(object):
         """
         return md_operators.IncrementSetter(self, value)
 
+    def __add__(self, other):
+        """
+        Magic method for incr()
+        """
+        return self.incr(other)
+
     def decr(self, value: typing.Any) -> 'md_operators.DecrementSetter':
         """
         Decrements this column in a bulk update.
         """
         return md_operators.DecrementSetter(self, value)
+
+    def __sub__(self, other):
+        """
+        Magic method for decr()
+        """
+        return self.decr(other)
 
     def quoted_fullname_with_table(self, table: 'md_table.TableMeta') -> str:
         """
