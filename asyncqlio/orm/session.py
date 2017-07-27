@@ -147,6 +147,10 @@ class Session(object):
 
         :param checkpoint_name: The name of the checkpoint to use.
         """
+        if not self.bind.dialect.has_checkpoints:
+            raise NotImplementedError("The {} dialect has no checkpoints".format(
+                self.bind.dialect.__class__.__name__))
+
         return await self.transaction.create_savepoint(checkpoint_name)
 
     @enforce_open
@@ -156,6 +160,10 @@ class Session(object):
 
         :param checkpoint_name: The name of the checkpoint to release.
         """
+        if not self.bind.dialect.has_checkpoints:
+            raise NotImplementedError("The {} dialect has no checkpoints".format(
+                self.bind.dialect.__class__.__name__))
+
         return await self.transaction.release_savepoint(checkpoint_name)
 
     @enforce_open
