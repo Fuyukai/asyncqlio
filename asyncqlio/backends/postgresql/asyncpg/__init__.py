@@ -169,9 +169,7 @@ class AsyncpgConnector(BaseConnector):
     """
 
     def __init__(self, parsed, *, loop: asyncio.AbstractEventLoop = None):
-        super().__init__(parsed)
-
-        self.loop = loop or asyncio.get_event_loop()
+        super().__init__(parsed, loop=loop)
 
         #: The :class:`asyncpg.pool.Pool` connection pool.
         self.pool = None  # type: asyncpg.pool.Pool
@@ -194,7 +192,7 @@ class AsyncpgConnector(BaseConnector):
     async def connect(self) -> 'BaseConnector':
         # create our connection pool
         port = self.port or 5432
-        logger.debug("Connecting to postgresql://{}:{}{}".format(self.host, port, self.db))
+        logger.debug("Connecting to postgresql://{}:{}/{}".format(self.host, port, self.db))
         self.pool = await asyncpg.create_pool(self.dsn, loop=self.loop)
         return self
 

@@ -1,9 +1,10 @@
 # used for namespace packages
 from pkgutil import extend_path
 
+from asyncqlio.backends.base import BaseDialect
+
 __path__ = extend_path(__path__, __name__)
 
-from asyncqlio.backends.base import BaseDialect
 
 DEFAULT_CONNECTOR = "asyncpg"
 

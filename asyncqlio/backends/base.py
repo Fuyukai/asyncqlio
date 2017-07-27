@@ -1,6 +1,7 @@
 """
 The base implementation of a backend. This provides some ABC classes.
 """
+import asyncio
 import collections
 import typing
 from abc import abstractmethod
@@ -238,17 +239,19 @@ class BaseConnector(AsyncABC):
         - :meth:`.BaseConnector.get_db_server_info`
     """
 
-    def __init__(self, dsn: ParseResult):
+    def __init__(self, dsn: ParseResult, *, loop: asyncio.AbstractEventLoop = None):
         """
         :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN. 
         """
+        self.loop = loop or asyncio.get_event_loop()
+
         self._parse_result = dsn
         self.dsn = dsn.geturl()
         self.host = dsn.hostname
         self.port = dsn.port
         self.username = dsn.username
         self.password = dsn.password
-        self.db = dsn.path
+        self.db = dsn.path[1:]
         self.params = {k: v[0] for k, v in parse_qs(dsn.query).items()}
 
     @abstractmethod
