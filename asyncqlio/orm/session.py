@@ -141,6 +141,24 @@ class Session(object):
         return self
 
     @enforce_open
+    async def checkpoint(self, checkpoint_name: str):
+        """
+        Sets a new checkpoint.
+
+        :param checkpoint_name: The name of the checkpoint to use.
+        """
+        return await self.transaction.create_savepoint(checkpoint_name)
+
+    @enforce_open
+    async def uncheckpoint(self, checkpoint_name: str):
+        """
+        Releases a checkpoint.
+
+        :param checkpoint_name: The name of the checkpoint to release.
+        """
+        return await self.transaction.release_savepoint(checkpoint_name)
+
+    @enforce_open
     async def commit(self):
         """
         Commits the current session, running inserts/updates/deletes.
