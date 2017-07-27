@@ -242,6 +242,7 @@ class BaseConnector(AsyncABC):
         """
         :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN. 
         """
+        self._parse_result = dsn
         self.dsn = dsn.geturl()
         self.host = dsn.hostname
         self.port = dsn.port
