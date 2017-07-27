@@ -214,7 +214,7 @@ class BasicSetter(BaseOperator, ColumnValueMixin, metaclass=abc.ABCMeta):
         param_name, name = self.get_param(emitter, counter)
         params = {name: self.value}
 
-        sql = "{} {} {}".format(self.column.quoted_fullname, self.set_operator, param_name)
+        sql = "{0} = {0} {1} {2}".format(self.column.quoted_name, self.set_operator, param_name)
         return OperatorResponse(sql, params)
 
 
@@ -224,19 +224,27 @@ class ValueSetter(BasicSetter):
     """
     set_operator = "="
 
+    # override as the default setter impl doesn't work
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        param_name, name = self.get_param(emitter, counter)
+        params = {name: self.value}
+
+        sql = "{0} = {1}".format(self.column.quoted_name, param_name)
+        return OperatorResponse(sql, params)
+
 
 class IncrementSetter(BasicSetter):
     """
-    Represents an increment setter.
+    Represents an increment setter. (``col = col + 1``)
     """
-    set_operator = "+="
+    set_operator = "+"
 
 
 class DecrementSetter(BasicSetter):
     """
     Represents a decrement setter.
     """
-    set_operator = "-="
+    set_operator = "-"
 
 
 class In(BaseOperator, ColumnValueMixin):
