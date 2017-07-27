@@ -553,18 +553,26 @@ class BulkQuery(BaseQuery, metaclass=abc.ABCMeta):
         #: The list of conditions to query by.
         self.conditions = []
 
+    def __call__(self, *args, **kwargs):
+        return self.table(*args, **kwargs)
+
+    def __await__(self):
+        return self.run().__await__()
+
     # Builder methods
     def table(self, table: 'typing.Type[md_table.Table]'):
         """
         Sets the table for this query.
         """
         self.table = table
+        return self
 
     def where(self, *conditions: 'md_operators.ComparisonOp'):
         """
         Sets the conditions for this query.
         """
         self.conditions.extend(conditions)
+        return self
 
     # Manual-style methods
     def set_table(self, table: 'typing.Type[md_table.Table]'):
@@ -615,6 +623,7 @@ class BulkUpdateQuery(BulkQuery):
             setter = md_operators.ValueSetter(setter, value)
 
         self.setting = setter
+        return self
 
     def set_update(self, update):
         """
