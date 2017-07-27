@@ -658,7 +658,7 @@ class BulkUpdateQuery(BulkQuery):
 
 class BulkDeleteQuery(BulkQuery):
     """
-        Represents a **bulk delete query**. This deletes many roles based on criteria.
+    Represents a **bulk delete query**. This deletes many rows based on criteria.
 
     .. code-block:: python3
         query = BulkDeleteQuery(session)
