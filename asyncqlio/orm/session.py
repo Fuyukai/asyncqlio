@@ -100,6 +100,24 @@ class Session(object):
         """
         return md_query.InsertQuery(self)
 
+    @property
+    def update(self) -> 'md_query.BulkUpdateQuery':
+        """
+        Creates a new bulk UPDATE query that can be built upon.
+
+        :return: A new :class:`.BulkUpdateQuery`.
+        """
+        return md_query.BulkUpdateQuery(self)
+
+    @property
+    def delete(self) -> 'md_query.BulkDeleteQuery':
+        """
+        Creates a new bulk DELETE query that can be built upon.
+
+        :return: A new :class:`.BulkDeleteQuery`.
+        """
+        return md_query.BulkDeleteQuery(self)
+
     async def start(self) -> 'Session':
         """
         Starts the session, acquiring a transaction connection which will be used to modify the DB.
@@ -366,6 +384,11 @@ class Session(object):
 
                 await self.execute(sql, params)
                 md_inspection._set_mangled(row, "deleted", True)
+        elif isinstance(query, md_query.BulkDeleteQuery):
+            sql, params = query.generate_sql()
+            await self.execute(sql, params)
+        else:
+            raise TypeError("Type {0.__class__.__name__} is not a delete query".format(query))
 
         return query
 
