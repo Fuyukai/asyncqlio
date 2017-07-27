@@ -63,7 +63,7 @@ class AliasedColumn(object):
         return _wrap(self, i)
 
 
-@proxy_to_getattr("__contains__")
+@proxy_to_getattr("__contains__", "__getitem__", "__setitem__")
 class Column(object):
     """
     Represents a column in a table in a database.
