@@ -187,7 +187,8 @@ class AsyncpgConnector(BaseConnector):
 
     async def connect(self) -> 'BaseConnector':
         # create our connection pool
-        logger.debug("Connecting to postgresql://{}:{}/{}".format(self.host, self.port, self.db))
+        port = self.port or 5432
+        logger.debug("Connecting to postgresql://{}:{}{}".format(self.host, port, self.db))
         self.pool = await asyncpg.create_pool(self.dsn)
         return self
 
