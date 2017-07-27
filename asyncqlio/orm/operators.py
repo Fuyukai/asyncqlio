@@ -117,10 +117,9 @@ class And(BaseOperator):
         final = []
         vals = {}
         for op in self.operators:
-            sql, name, val = op.generate_sql(emitter, counter)
-            final.append(sql)
-            if name is not None and val is not None:
-                vals[name] = val
+            response = op.generate_sql(emitter, counter)
+            final.append(response.sql)
+            vals.update(response.parameters)
 
         fmt = "({})".format(" AND ".join(final))
         res = OperatorResponse(fmt, vals)
@@ -141,10 +140,9 @@ class Or(BaseOperator):
         final = []
         vals = {}
         for op in self.operators:
-            sql, name, val = op.generate_sql(emitter, counter)
-            final.append(sql)
-            if name is not None and val is not None:
-                vals[name] = val
+            response = op.generate_sql(emitter, counter)
+            final.append(response.sql)
+            vals.update(response.parameters)
 
         fmt = "({})".format(" OR ".join(final))
         return OperatorResponse(fmt, vals)
