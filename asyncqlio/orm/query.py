@@ -266,17 +266,9 @@ class SelectQuery(BaseQuery):
         params = {}
         c_sql = []
         for condition in self.conditions:
-            # pass the condition offset
-            condition_sql, name, val = condition.generate_sql(self.session.bind.emit_param, counter)
-            if val is not None:
-                # special-case
-                # this means it's a coalescing token
-                if isinstance(val, dict) and name is None:
-                    params.update(val)
-                else:
-                    params[name] = val
-
-            c_sql.append(condition_sql)
+            response = condition.generate_sql(self.session.bind.emit_param, counter)
+            params.update(response.parameters)
+            c_sql.append(response.sql)
 
         # append joins
         fmt += " ".join(joins)
@@ -287,8 +279,8 @@ class SelectQuery(BaseQuery):
             fmt += " WHERE {}".format(" AND ".join(c_sql))
 
         if self.orderer is not None:
-            fmt += " ORDER BY {}".format(self.orderer.generate_sql(self.session.bind.emit_param,
-                                                                   counter))
+            res = self.orderer.generate_sql(self.session.bind.emit_param, counter)
+            fmt += " ORDER BY {}".format(res.sql)
         if self.row_limit is not None:
             fmt += " LIMIT {}".format(self.row_limit)
 
@@ -601,25 +593,18 @@ class BulkUpdateQuery(BaseQuery):
         params = {}
 
         # get the sql and params from the generate_sql call
-        sql, name, val = self.setting.generate_sql(self.session.bind.emit_param, counter)
+        response = self.setting.generate_sql(self.session.bind.emit_param, counter)
         # update params
-        params[name] = val
-        query += sql
+        params.update(response.parameters)
+        query += response.sql
 
         # format conditions
         c_sql = []
         for condition in self.conditions:
             # pass the condition offset
-            condition_sql, name, val = condition.generate_sql(self.session.bind.emit_param, counter)
-            if val is not None:
-                # special-case
-                # this means it's a coalescing token
-                if isinstance(val, dict) and name is None:
-                    params.update(val)
-                else:
-                    params[name] = val
-
-            c_sql.append(condition_sql)
+            res = condition.generate_sql(self.session.bind.emit_param, counter)
+            params.update(res.parameters)
+            c_sql.append(res.sql)
 
         query += ' WHERE ' + ' AND '.join(c_sql)
 

@@ -9,6 +9,23 @@ import typing
 from asyncqlio.orm.schema import column as md_column
 
 
+class OperatorResponse:
+    """
+    A storage class for the generated SQL from an operator.
+    """
+    __slots__ = ("sql", "parameters")
+
+    def __init__(self, sql: str, parameters: dict):
+        """
+        :param sql: The generated SQL for this operator.
+        :param parameters: A dict of parameters to use for this response.
+        """
+        self.sql = sql
+        self.parameters = parameters
+        if self.parameters is None:
+            self.parameters = {}
+
+
 def requires_bop(func) -> 'typing.Callable[[BaseOperator, BaseOperator], typing.Any]':
     """
     A decorator that marks a magic method as requiring another BaseOperator.
@@ -32,13 +49,20 @@ class BaseOperator(abc.ABC):
     The base operator class.
     """
 
-    def get_param(self, emitter, counter: itertools.count):
+    def get_param(self, emitter: typing.Callable[[str], str], counter: itertools.count) \
+            -> typing.Tuple[str, str]:
+        """
+        Gets the next parameter.
+
+        :param emitter: A function that emits a parameter name that can be formatted in a SQL query.
+        :param counter: The counter for parameters.
+        """
         name = "param_{}".format(next(counter))
         return emitter(name), name
 
     @abc.abstractmethod
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count) \
-            -> typing.Tuple[str, str, typing.Any]:
+            -> OperatorResponse:
         """
         Generates the SQL for an operator.
         
@@ -46,8 +70,7 @@ class BaseOperator(abc.ABC):
         
         :param emitter: A callable that can be used to generate param placeholders in a query.
         :param counter: The current "parameter number".
-        :return: A str representing the SQL, a str representing the param name, \
-            and an any representing the param.
+        :return: A :class:`.OperatorResponse` representing the result.
             
         .. warning::
             The param name and the param can be empty if none is to be returned.
@@ -100,7 +123,8 @@ class And(BaseOperator):
                 vals[name] = val
 
         fmt = "({})".format(" AND ".join(final))
-        return fmt, None, vals
+        res = OperatorResponse(fmt, vals)
+        return res
 
 
 class Or(BaseOperator):
@@ -123,10 +147,10 @@ class Or(BaseOperator):
                 vals[name] = val
 
         fmt = "({})".format(" OR ".join(final))
-        return fmt, None, vals
+        return OperatorResponse(fmt, vals)
 
 
-class Sorter(BaseOperator):
+class Sorter(BaseOperator, metaclass=abc.ABCMeta):
     """
     A generic sorter operator, for use in ORDER BY.
     """
@@ -143,8 +167,10 @@ class Sorter(BaseOperator):
         pass
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
-        return "{} {}".format(', '.join(col.alias_name(quoted=True) for col in self.cols),
-                              self.sort_order)
+        names = ", ".join(col.alias_name(quoted=True) for col in self.cols)
+        sql = "{} {}".format(names, self.sort_order)
+
+        return OperatorResponse(sql, {})
 
 
 class AscSorter(Sorter):
@@ -171,6 +197,41 @@ class ColumnValueMixin(object):
         self.value = value
 
 
+class BasicSetter(BaseOperator, ColumnValueMixin, metaclass=abc.ABCMeta):
+    """
+    Represents a basic setting operation. Used for bulk queries.
+    """
+
+    @property
+    @abc.abstractmethod
+    def set_operator(self) -> str:
+        """
+        :return: The "setting" operator to use when generating the SQL.
+        """
+        pass
+
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        param_name, name = self.get_param(emitter, counter)
+        params = {name: self.value}
+
+        sql = "{} {} {}".format(self.column.quoted_fullname, self.set_operator, param_name)
+        return OperatorResponse(sql, params)
+
+
+class ValueSetter(BasicSetter):
+    """
+    Represents a value setter (``col = 1``).
+    """
+    set_operator = "="
+
+
+class IncrementSetter(BasicSetter):
+    """
+    Represents an increment setter.
+    """
+    set_operator = "+="
+
+
 class In(BaseOperator, ColumnValueMixin):
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
         # generate a dict of params
@@ -181,8 +242,8 @@ class In(BaseOperator, ColumnValueMixin):
             params[name] = item
             l.append(emitted)
 
-        return "{} IN ({})".format(self.column.quoted_fullname, ", ".join(l)), \
-               None, params
+        sql = "{} IN ({})".format(self.column.quoted_fullname, ", ".join(l))
+        return OperatorResponse(sql, params)
 
 
 class ComparisonOp(ColumnValueMixin, BaseOperator):
@@ -194,15 +255,17 @@ class ComparisonOp(ColumnValueMixin, BaseOperator):
     operator = None
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        params = {}
         if isinstance(self.value, md_column.Column):
-            # special-case columns
-            return "{} {} {}".format(self.column.quoted_fullname, self.operator,
-                                     self.value.quoted_fullname), None, None
+            sql = "{} {} {}".format(self.column.quoted_fullname, self.operator,
+                                    self.value.quoted_fullname)
+        else:
+            param_name, name = self.get_param(emitter, counter)
+            sql = "{} {} {}".format(self.column.quoted_fullname, self.operator, param_name)
+            params[name] = self.value
 
-        param_name, name = self.get_param(emitter, counter)
-        return "{} {} {}".format(self.column.quoted_fullname, self.operator,
-                                 param_name), \
-               name, self.value
+        res = OperatorResponse(sql, params)
+        return res
 
 
 class Eq(ComparisonOp):
@@ -259,7 +322,8 @@ class ILike(ComparisonOp):
     Represents an ILIKE operator.
     
     .. warning::
-        This operator is not available on all dialects.
+        This operator is not natively supported on all dialects. If used on a dialect that
+        doesn't support it, it will fallback to a lowercase LIKE.
     """
     operator = "ILIKE"
 
@@ -270,7 +334,17 @@ class HackyILike(BaseOperator, ColumnValueMixin):
     """
 
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
-        # lower(column) like pattern
-        # this does not lower the pattern, however!
-        param_name, name = self.get_param(emitter, counter)
-        return "LOWER({}) LIKE {}".format(self.column.quoted_fullname, param_name), name, self.value
+        # lower(column) like (pattern|column)
+        # this will lower the column
+        params = {}
+
+        # special-case columns again
+        if isinstance(self.value, md_column.Column):
+            param_name = "LOWER({})".format(self.value.quoted_fullname)
+        else:
+            param_name, name = self.get_param(emitter, counter)
+            params[name] = self.value
+
+        sql = "LOWER({}) LIKE {}".format(self.column.quoted_fullname, param_name)
+        res = OperatorResponse(sql, params)
+        return res
