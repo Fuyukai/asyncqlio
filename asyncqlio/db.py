@@ -1,6 +1,7 @@
 """
 The main Database object. This is the "database interface" to the actual DB server.
 """
+import asyncio
 import importlib
 import logging
 from urllib.parse import ParseResult, urlparse
@@ -32,13 +33,14 @@ class DatabaseInterface(object):
             
     """
 
-    def __init__(self, dsn: str = None):
+    def __init__(self, dsn: str = None, *, loop: asyncio.AbstractEventLoop = None):
         """
         :param dsn: 
             The `Data Source Name <http://whatis.techtarget.com/definition/data-source-name-DSN>_`
             to connect to the database on.
         """
         self._dsn = dsn
+        self.loop = loop or asyncio.get_event_loop()
 
         #: The current connector instance.
         self.connector = None  # type: BaseConnector
@@ -110,7 +112,9 @@ class DatabaseInterface(object):
         logger.debug("Loading connector {}".format(mod_path))
 
         connector_mod = importlib.import_module(mod_path)
-        connector_ins = connector_mod.CONNECTOR_TYPE(parsed_dsn)  # type: BaseConnector
+        connector_ins = connector_mod.CONNECTOR_TYPE(
+            parsed_dsn, loop=self.loop
+        )  # type: BaseConnector
         self.connector = connector_ins
         try:
             await self.connector.connect(**kwargs)
