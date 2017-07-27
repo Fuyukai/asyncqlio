@@ -445,10 +445,10 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
     def __iter__(self):
         return iter(self._row_storage)
 
-    def _add_row(self, row: 'md_table.Table'):
+    async def _add_row(self, row: 'md_table.Table'):
         self._row_storage.append(row)
 
-    def _remove_row(self, row: 'md_table.Table'):
+    async def _remove_row(self, row: 'md_table.Table'):
         self._row_storage.remove(row)
 
     def set_rows(self, rows: 'typing.List[md_table.Table]'):
