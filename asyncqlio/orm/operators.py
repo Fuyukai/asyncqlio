@@ -232,6 +232,13 @@ class IncrementSetter(BasicSetter):
     set_operator = "+="
 
 
+class DecrementSetter(BasicSetter):
+    """
+    Represents a decrement setter.
+    """
+    set_operator = "-="
+
+
 class In(BaseOperator, ColumnValueMixin):
     def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
         # generate a dict of params

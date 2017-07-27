@@ -233,6 +233,24 @@ class Column(object):
         """
         return md_operators.DescSorter(self)
 
+    def set(self, value: typing.Any) -> 'md_operators.ValueSetter':
+        """
+        Sets this column in a bulk update.
+        """
+        return md_operators.ValueSetter(self, value)
+
+    def incr(self, value: typing.Any) -> 'md_operators.IncrementSetter':
+        """
+        Increments this column in a bulk update.
+        """
+        return md_operators.IncrementSetter(self, value)
+
+    def decr(self, value: typing.Any) -> 'md_operators.DecrementSetter':
+        """
+        Decrements this column in a bulk update.
+        """
+        return md_operators.DecrementSetter(self, value)
+
     def quoted_fullname_with_table(self, table: 'md_table.TableMeta') -> str:
         """
         Gets the quoted fullname with a table.
