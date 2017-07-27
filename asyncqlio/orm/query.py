@@ -33,6 +33,12 @@ class BaseQuery(AsyncABC):
         :return: A two item tuple, the SQL to use and a mapping of params to pass.
         """
 
+    @abc.abstractmethod
+    async def run(self):
+        """
+        Runs this query.
+        """
+
 
 class _ResultGenerator(collections.AsyncIterator):
     """
@@ -310,6 +316,9 @@ class SelectQuery(BaseQuery):
         """
         return await self.session.run_select_query(self)
 
+    async def run(self):
+        return await self.all()
+
     # ORM methods
     def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_table.Table':
         """
@@ -562,6 +571,28 @@ class BulkUpdateQuery(BaseQuery):
         #: The thing to set on the updated rows.
         self.setting = None
 
+    # Builder methods
+    def table(self, table: 'typing.Type[md_table.Table]'):
+        """
+        Sets the table for this query.
+        """
+        self.table = table
+
+    def where(self, *conditions: 'md_operators.ComparisonOp'):
+        """
+        Sets the conditions for this query.
+        """
+        self.conditions.extend(conditions)
+
+    def set(self, setter, value: typing.Any = None):
+        """
+        Sets a column in this query.
+        """
+        if value is not None:
+            setter = md_operators.ValueSetter(setter, value)
+
+        self.setting = setter
+
     # Manual-style methods
     def set_table(self, table: 'typing.Type[md_table.Table]'):
         """
@@ -610,6 +641,9 @@ class BulkUpdateQuery(BaseQuery):
 
         # all generated
         return query, params
+
+    async def run(self):
+        return await self.session.run_update_query(self)
 
 
 class RowUpdateQuery(BaseQuery):
@@ -726,3 +760,6 @@ class RowDeleteQuery(BaseQuery):
             queries.append(row._get_delete_sql(emit, self.session))
 
         return queries
+
+    async def run(self):
+        return await self.session.run_delete_query(self)
