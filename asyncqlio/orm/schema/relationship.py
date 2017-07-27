@@ -340,9 +340,8 @@ class BaseLoadedRelationship(object):
 
     def set_rows(self, rows: 'typing.List[md_table.Table]'):
         """
-        Sets the rows for this relationship, if applicable.
-        
-        By default, this does nothing.
+        Sets the rows for this relationship.
+        This is an internal method, and not to be used in user code.
         """
         pass
 
