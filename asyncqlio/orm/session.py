@@ -141,6 +141,7 @@ class Session(object):
         
         :param checkpoint: The checkpoint to roll back to, if applicable. 
         """
+        logger.debug("Rolling back session to checkpoint {}".format(checkpoint))
         await self.transaction.rollback(checkpoint=checkpoint)
         return self
 
