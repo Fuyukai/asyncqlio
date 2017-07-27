@@ -656,6 +656,45 @@ class BulkUpdateQuery(BulkQuery):
         return await self.session.run_update_query(self)
 
 
+class BulkDeleteQuery(BulkQuery):
+    """
+        Represents a **bulk delete query**. This deletes many roles based on criteria.
+
+    .. code-block:: python3
+        query = BulkDeleteQuery(session)
+
+        # style 1: manual
+        query.set_table(User)
+        query.add_condition(User.xp < 300)
+        await query.run()
+
+        # style 2: builder
+        await query.table(User).where(User.xp < 300).run()
+        await query.table(User).where(User.xp < 300).run()
+    """
+
+    async def generate_sql(self):
+        query = "DELETE FROM {} ".format(self.table.__quoted_name__)
+
+        # define counter and params used in generating sql
+        counter = itertools.count()
+        params = {}
+
+        # format conditions
+        c_sql = []
+        for condition in self.conditions:
+            # pass the condition offset
+            res = condition.generate_sql(self.session.bind.emit_param, counter)
+            params.update(res.parameters)
+            c_sql.append(res.sql)
+
+        query += ' WHERE ' + ' AND '.join(c_sql)
+        return query, params
+
+    async def run(self):
+        return await self.session.run_delete_query(self)
+
+
 class RowUpdateQuery(BaseQuery):
     """
     Represents a **row update query**. This is **NOT** a bulk update query - it is used for updating
