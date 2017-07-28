@@ -67,7 +67,6 @@ class AiomysqlTransaction(BaseTransaction):
         """
         Closes the current connection.
         """
-        await self.connection.ensure_closed()
         # release it back to the pool so we don't eat all the connections
         self.connector.pool.release(self.connection)
 
