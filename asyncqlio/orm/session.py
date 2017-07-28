@@ -6,6 +6,7 @@ import warnings
 
 from asyncqlio import db as md_db
 from asyncqlio.backends.base import BaseTransaction
+from asyncqlio.exc import DatabaseException
 from asyncqlio.orm import inspection as md_inspection, query as md_query
 from asyncqlio.orm.schema import table as md_table
 from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
@@ -67,11 +68,8 @@ class Session(object):
             if exc_type is None:
                 await self.commit()
             else:
-                await self.rollback()
-        except Exception:
-            # error in committing, etc
-            await self.rollback()
-            raise
+                if exc_type != DatabaseException:
+                    await self.rollback()
         finally:
             await self.close()
 
