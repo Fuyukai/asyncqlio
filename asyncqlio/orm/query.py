@@ -682,7 +682,7 @@ class BulkDeleteQuery(BulkQuery):
         await query.table(User).where(User.xp < 300).run()
     """
 
-    async def generate_sql(self):
+    def generate_sql(self):
         query = "DELETE FROM {} ".format(self._table.__quoted_name__)
 
         # define counter and params used in generating sql
