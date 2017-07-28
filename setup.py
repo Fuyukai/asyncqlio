@@ -21,7 +21,10 @@ setup(
         'asyncqlio.backends',
         # postgres backend
         'asyncqlio.backends.postgresql',
-        'asyncqlio.backends.postgresql.asyncpg'
+        'asyncqlio.backends.postgresql.asyncpg',
+        # mysql backend
+        'asyncqlio.backends.mysql',
+        'asyncqlio.backends.mysql.aiomysql'
     ],
     url='https://github.com/SunDwarf/asyncqlio',
     license='MIT',

@@ -39,7 +39,8 @@ class Session(object):
     Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction 
     and execute queries in.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         # get a session from our db interface
         sess = db.get_session()
     """
@@ -123,7 +124,8 @@ class Session(object):
         Starts the session, acquiring a transaction connection which will be used to modify the DB.
         This **must** be called before using the session.  
         
-        .. code-block:: python
+        .. code-block:: python3
+
             sess = db.get_session()
             await sess.start()
         

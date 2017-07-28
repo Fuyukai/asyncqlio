@@ -22,8 +22,7 @@ import sys
 
 import guzzle_sphinx_theme
 
-sys.path.insert(0, os.path.abspath('.'))
-print(sys.path)
+sys.path.insert(0, os.path.abspath('../..'))
 
 import asyncqlio
 
@@ -42,20 +41,24 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
-              'sphinxcontrib.asyncio']
+              'sphinx.ext.autosummary',
+              'sphinxcontrib.asyncio',
+              # 'sphinx_autodoc_typehints'
+              ]
 
-
-# autodoc
+# Autodoc config
 autoclass_content = 'both'  # include both class docstring and __init__
 autodoc_default_flags = [
     # Make sure that any autodoc declarations show the right members
     'members',
     'inherited-members',
-    'private-members',
     'show-inheritance',
 ]
 # make autodoc look less... bad
 autodoc_member_order = "bysource"
+
+# auto-generate autosummary pages.
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -107,7 +110,6 @@ html_theme = 'guzzle_sphinx_theme'
 
 html_static_path = ['_static']
 
-
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'asyncqlio_doc'
 
@@ -130,7 +132,6 @@ texinfo_documents = [
      author, 'asyncqlio', 'One line description of project.',
      'Miscellaneous'),
 ]
-
 
 # Bibliographic Dublin Core info.
 epub_title = project

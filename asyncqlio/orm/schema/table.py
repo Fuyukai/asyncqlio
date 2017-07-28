@@ -266,7 +266,7 @@ class TableMeta(type):
 
     def __getattr__(self, item):
         if item.startswith("_"):
-            raise AttributeError("'{}' object has no attribute {}".format(self, item))
+            raise AttributeError("'{}' object has no attribute {}".format(self.__name__, item))
 
         col = self.get_column(item)
         if col is None:
@@ -827,8 +827,9 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     
     To use this object, you call this function to create the new object, and subclass it in your 
     table classes:
-    
-    .. code-block:: python
+
+    .. code-block:: python3
+
         Table = table_base()
         
         class User(Table):
@@ -836,7 +837,8 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
             
     Binding the base object to the database object is essential for querying:
     
-    .. code-block:: python
+    .. code-block:: python3
+
         # ensure the table is bound to that database
         db.bind_tables(Table)
         
@@ -847,7 +849,8 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     Each Table object is associated with a database interface, which it uses for special querying
     inside the object, such as :meth:`.Table.get`.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         class User(Table):
             id = Column(Integer, primary_key=True)
             ...
@@ -941,7 +944,8 @@ class PrimaryKey(object):
     
     A primary key can be on any 1 to N columns in a table.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         class Something(Table):
             first_id = Column(Integer)
             second_id = Column(Integer)
@@ -952,11 +956,13 @@ class PrimaryKey(object):
     Alternatively, the primary key can be automatically calculated by passing ``primary_key=True`` 
     to columns in their constructor:
     
-    .. code-block:: python
+    .. code-block:: python3
+
         class Something(Table):
             id = Column(Integer, primary_key=True)
             
         print(Something.primary_key)
+
     """
 
     def __init__(self, *cols: 'md_column.Column'):

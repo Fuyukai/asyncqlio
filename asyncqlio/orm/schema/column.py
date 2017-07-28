@@ -68,14 +68,16 @@ class Column(object):
     """
     Represents a column in a table in a database.
 
-    .. code-block:: python
+    .. code-block:: python3
+
         class MyTable(Table):
             id = Column(Integer, primary_key=True)
             
     The ``id`` column will mirror the ID of records in the table when fetching, etc. and can be set 
     on a record when storing in a table.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         sess = db.get_session()
         user = await sess.select(User).where(User.id == 2).first()
         

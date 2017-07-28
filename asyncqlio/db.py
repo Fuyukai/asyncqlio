@@ -23,7 +23,7 @@ class DatabaseInterface(object):
     
     Creating a new database object is simple:
     
-    .. code-block:: python
+    .. code-block:: python3
     
         # pass the DSN in the constructor
         dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/mydb"
@@ -138,7 +138,8 @@ class DatabaseInterface(object):
         """
         Gets a low-level :class:`.BaseTransaction`.
          
-        .. code-block:: python
+        .. code-block:: python3
+
             async with db.get_transaction() as transaction:
                 results = await transaction.cursor("SELECT 1;")
         """

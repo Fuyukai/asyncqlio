@@ -1,5 +1,17 @@
 """
 Main package for asyncqlio - a Python 3.5+ async ORM built on top of asyncio.
+
+.. currentmodule:: asyncqlio
+
+.. autosummary::
+    :toctree:
+
+    db
+    orm
+    backends
+
+    exc
+    meta
 """
 
 __author__ = "Laura Dickinson"

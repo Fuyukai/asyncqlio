@@ -16,7 +16,7 @@ class ForeignKey(object):
     Represents a foreign key object in a column. This allows linking multiple tables together
     relationally.
     
-    .. code-block:: python
+    .. code-block:: python3
         
         class Server(Table):
             id = Column(Integer, primary_key=True, autoincrement=True)
@@ -60,7 +60,7 @@ class Relationship(object):
     To create a relationship, there must be a column in the child table that represents the primary
     key of a parent table; this is the foreign key column, and will be used to load the other table.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         class User(Table):
             # id is the primary key of the parent table
@@ -80,7 +80,7 @@ class Relationship(object):
     Once created, the new relationship object can be used to iterate over the child objects, using
     ``async for``:
     
-    .. code-block:: python
+    .. code-block:: python3
     
         user = await sess.select.from_(User).where(User.id == 1).first()
         async for item in user.inventory:

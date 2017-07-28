@@ -183,7 +183,8 @@ class ColumnValueMixin(object):
     """
     A mixin that specifies that an operator takes both a Column and a Value as arguments.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         class MyOp(BaseOperator, ColumnValueMixin):
             ...
             

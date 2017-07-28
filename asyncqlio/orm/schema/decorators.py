@@ -5,16 +5,14 @@ import functools
 
 from asyncqlio.orm.schema import table as md_table
 
-# the generic signature for most decorators
-sig = 'typing.Callable[[md_table.Table], typing.Any]'
 
-
-def row_attr(func: sig) -> sig:
+def row_attr(func):
     """
     Marks a function as a "row attribute" - something that resolves on a :class:`.TableRow` as well
     as the :class:`.Table` it is a member of.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         class User(Table):
             ...
             

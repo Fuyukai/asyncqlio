@@ -1,3 +1,7 @@
+"""
+Useful metamagic classes, such as async ABCs.
+"""
+
 import inspect
 from abc import ABCMeta
 

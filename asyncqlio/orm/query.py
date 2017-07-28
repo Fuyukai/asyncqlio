@@ -140,7 +140,8 @@ class SelectQuery(BaseQuery):
     This is not normally created by user code directly, but rather as a result of a 
     :meth:`.Session.select` call.
     
-    .. code-block:: python
+    .. code-block:: python3
+
         sess = db.get_session()
         async with sess:
             query = sess.select.from_(User)  # query is instance of SelectQuery
@@ -149,7 +150,8 @@ class SelectQuery(BaseQuery):
             
     However, it is possible to create this class manually:
     
-    .. code-block:: python
+    .. code-block:: python3
+
         query = SelectQuery(db.get_session()
         query.set_table(User)
         query.add_condition(User.id == 2)
@@ -396,7 +398,8 @@ class SelectQuery(BaseQuery):
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
         
-        .. code-block:: python
+        .. code-block:: python3
+
             sess.select.from_(User).where(User.id == 1)
         
         :param conditions: The conditions to use for this WHERE clause.
@@ -593,6 +596,7 @@ class BulkUpdateQuery(BulkQuery):
     Represents a **bulk update query**. This updates many rows based on certain criteria.
 
     .. code-block:: python3
+
         query = BulkUpdateQuery(session)
 
         # style 1: manual
@@ -670,6 +674,7 @@ class BulkDeleteQuery(BulkQuery):
     Represents a **bulk delete query**. This deletes many rows based on criteria.
 
     .. code-block:: python3
+
         query = BulkDeleteQuery(session)
 
         # style 1: manual

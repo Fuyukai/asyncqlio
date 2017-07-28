@@ -25,7 +25,7 @@ class ColumnType(abc.ABC):
     The ColumnType is responsible for actually loading the data from the row's internal storage
     and to the user code.
 
-    .. code-block:: python
+    .. code-block:: python3
 
         # we hate fun
         def on_get(self, row, column):
@@ -40,7 +40,7 @@ class ColumnType(abc.ABC):
 
     Accordingly, it is also responsible for storing the data into the row's internal storage.
 
-    .. code-block:: python
+    .. code-block:: python3
 
         def on_set(*args, **kwargs):
             return None
@@ -56,7 +56,7 @@ class ColumnType(abc.ABC):
     Columns will proxy bad attribute accesses from the Column object to this type object - meaning
     types can implement custom operators, if applicable.
 
-    .. code-block:: python
+    .. code-block:: python3
 
         class User(Table):
             id = Column(MyWeirdType())
