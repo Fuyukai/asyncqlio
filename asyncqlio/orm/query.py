@@ -548,7 +548,7 @@ class BulkQuery(BaseQuery, metaclass=abc.ABCMeta):
         super().__init__(sess)
 
         #: The table to update.
-        self.table = None  # type: md_table.TableMeta
+        self._table = None  # type: md_table.TableMeta
 
         #: The list of conditions to query by.
         self.conditions = []
@@ -564,7 +564,7 @@ class BulkQuery(BaseQuery, metaclass=abc.ABCMeta):
         """
         Sets the table for this query.
         """
-        self.table = table
+        self._table = table
         return self
 
     def where(self, *conditions: 'md_operators.ComparisonOp'):
@@ -579,7 +579,7 @@ class BulkQuery(BaseQuery, metaclass=abc.ABCMeta):
         """
         Sets a table on this query.
         """
-        self.table = table
+        self._table = table
 
     def add_condition(self, condition: 'md_operators.BaseOperator'):
         """
@@ -636,7 +636,7 @@ class BulkUpdateQuery(BulkQuery):
         Generates the SQL for this query.
         """
         # base query is update table
-        query = 'UPDATE {} SET '.format(self.table.__quoted_name__)
+        query = 'UPDATE {} SET '.format(self._table.__quoted_name__)
 
         # define counter and params used in generating sql
         counter = itertools.count()
@@ -683,7 +683,7 @@ class BulkDeleteQuery(BulkQuery):
     """
 
     async def generate_sql(self):
-        query = "DELETE FROM {} ".format(self.table.__quoted_name__)
+        query = "DELETE FROM {} ".format(self._table.__quoted_name__)
 
         # define counter and params used in generating sql
         counter = itertools.count()
