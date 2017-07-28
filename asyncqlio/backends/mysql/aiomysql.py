@@ -164,3 +164,6 @@ class AiomysqlConnector(BaseConnector):
 
     def get_db_server_info(self):
         pass
+
+
+CONNECTOR_TYPE = AiomysqlConnector

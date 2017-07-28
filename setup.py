@@ -21,10 +21,10 @@ setup(
         'asyncqlio.backends',
         # postgres backend
         'asyncqlio.backends.postgresql',
-        'asyncqlio.backends.postgresql.asyncpg',
         # mysql backend
         'asyncqlio.backends.mysql',
-        'asyncqlio.backends.mysql.aiomysql'
+        # sqlite3 backend
+        'asyncqlio.backends.sqlite3'
     ],
     url='https://github.com/SunDwarf/asyncqlio',
     license='MIT',
@@ -34,7 +34,8 @@ setup(
     long_description=Path(__file__).with_name("README.rst").read_text(encoding="utf-8"),
     install_requires=[
         "setuptools",
-        "cached_property==1.3.0"
+        "cached_property==1.3.0",
+        "asyncio_extras==1.3.0"
     ],
     python_requires=">=3.5.2",
     entry_points={
