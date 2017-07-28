@@ -177,7 +177,8 @@ class AsyncpgConnector(BaseConnector):
     def __del__(self):
         if self.pool is not None and not self.pool._closed:
             warnings.warn("Unclosed asyncpg pool {}".format(self.pool))
-            self.loop.create_task(self.close())
+            if not self.loop.is_closed():
+                self.loop.create_task(self.close())
 
     async def close(self):
         await self.pool.close()
