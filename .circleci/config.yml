@@ -1,0 +1,49 @@
+# asyncqlio CircleCI configuration.
+version: 2
+jobs:
+  "postgres-asyncpg":
+    docker:
+      # this image has python 3.4/3.5/3.6 etc all installed
+      - image: themattrix/tox
+        environment:
+          ASQL_DSN: "postgresql+asyncpg://asql@127.0.0.1/asqltest"
+
+      # this config uses postgres for configuration
+      - image: circleci/postgres:latest
+        environment:
+          POSTGRES_USER: asql
+          POSTGRES_DB: asqltest
+          POSTGRES_PASSWORD: ""
+
+    working_directory: ~/asyncqlio
+    steps:
+      - checkout
+
+      - run:
+          name: Install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.3.0
+
+      - run:
+          name: Install library
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install .[postgresql] tox
+
+      - run:
+          name: Wait for Postgres to be ready
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            tox
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "postgres-asyncpg"
