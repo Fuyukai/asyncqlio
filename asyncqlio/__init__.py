@@ -20,7 +20,13 @@ __copyright__ = "Copyright (C) 2017 Laura Dickinson"
 __licence__ = "MIT"
 __status__ = "Development"
 
-__version__ = "0.1.0"
+from pkg_resources import DistributionNotFound, get_distribution
+
+try:
+    __version__ = get_distribution(__name__).version
+except DistributionNotFound:
+    # package is not installed
+    pass
 
 from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseResultSet, BaseTransaction
 # import helpers
