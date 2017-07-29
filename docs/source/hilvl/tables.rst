@@ -37,7 +37,7 @@ Table classes themselves are technically instances of :class:`.TableMeta`, and a
 methods of a TableMeta object are available on a table object.
 
 .. autoclass:: asyncqlio.orm.schema.table.TableMeta
-:noindex:
+    :noindex:
 
 Adding Columns
 --------------
@@ -59,9 +59,9 @@ and is set to be a primary key and unique. Of course, you can name it anything a
 different type; all that matters is that the object is a :class:`.Column`.
 
 .. autoclass:: asyncqlio.orm.schema.column.Column
-:noindex:
-        :members:
-        :special-members:
+    :noindex:
+    :members:
+    :special-members:
 
 
 Primary Keys
@@ -72,8 +72,8 @@ to N columns in the table. Typically keys with multiple columns are known as
 **compound primary keys**. For convenience, an object provides primary keys on table classes.
 
 .. autoclass:: asyncqlio.orm.schema.table.PrimaryKey
-:noindex:
-        :members:
+    :noindex:
+    :members:
 
     Primary keys will be automatically generated on a table when multiple columns are marked as
 ``primary_key`` in the constructor, but a :class:`.PrimaryKey` object can be constructed manually
@@ -90,8 +90,8 @@ both from the user and the database.
 For implementing your own types, see :ref:`creating-col-types`.
 
 .. automodule:: asyncqlio.orm.schema.types
-:noindex:
-        :members:
+    :noindex:
+    :members:
 
 Row Objects
 -----------

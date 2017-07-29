@@ -80,7 +80,7 @@ class AsyncpgResultSet(BaseResultSet):
 
 class AsyncpgTransaction(BaseTransaction):
     """
-    A transaction that uses the `asyncpg <https://github.com/MagicStack/asyncpg`_ library.
+    A transaction that uses the `asyncpg <https://github.com/MagicStack/asyncpg>`_ library.
     """
 
     def __init__(self, conn: 'AsyncpgConnector'):
