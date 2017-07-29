@@ -70,7 +70,7 @@ result, you can use :meth:`.BaseResultSet.fetch_row`:
 Inserting Rows
 --------------
 
-The session is the one-stop gateway to inserting, updating, or even deleting :ref:`Row Objects` .
+The session is the one-stop gateway to inserting, updating, or even deleting :ref:`Row Object`s.
 There are several methods used: :meth:`.Session.add`, :meth:`.Session.merge`, and
 :meth:`.Session.remove` are the high level methods.
 
@@ -103,6 +103,6 @@ See :ref:`querying` for an explanation of how to query using the session object.
 
 
 .. autoclass:: asyncqlio.orm.session.Session
-    :noindex:
-    :members:
+:noindex:
+        :members:
 
