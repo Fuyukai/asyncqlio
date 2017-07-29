@@ -39,6 +39,18 @@ setup(
         "cached_property==1.3.0",
         "asyncio_extras==1.3.0"
     ],
+    extras_require={
+        "docs": [
+            "sphinx>=1.5.0",
+            "sphinxcontrib-asyncio"
+        ],
+        "postgres+asyncpg": [
+            "asyncpg>=0.12.0"
+        ],
+        "mysql+aiomysql": [
+            "aiomysql>=0.0.9",
+        ]
+    },
     python_requires=">=3.5.2",
     entry_points={
         "console_scripts": ["asql-migrate=asyncqlio.orm.ddl.migration_tool:cli"]
