@@ -33,7 +33,8 @@ setup(
     description="An asyncio ORM for Python 3.5+",
     long_description=Path(__file__).with_name("README.rst").read_text(encoding="utf-8"),
     setup_requires=[
-        "setuptools_scm"
+        "setuptools_scm",
+        "pytest-runner"
     ],
     install_requires=[
         "cached_property==1.3.0",
@@ -52,6 +53,11 @@ setup(
             "aiomysql>=0.0.9",
         ]
     },
+    test_requires=[
+        "pytest",
+        "pytest-asyncio",
+        "pytest-cov"
+    ],
     python_requires=">=3.5.2",
     entry_points={
         "console_scripts": ["asql-migrate=asyncqlio.orm.ddl.migration_tool:cli"]
