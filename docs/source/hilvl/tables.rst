@@ -90,8 +90,8 @@ both from the user and the database.
 For implementing your own types, see :ref:`creating-col-types`.
 
 .. automodule:: asyncqlio.orm.schema.types
-:noindex:
-        :members:
+    :noindex:
+    :members:
 
 Row Objects
 -----------
