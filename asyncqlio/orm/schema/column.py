@@ -72,15 +72,15 @@ class Column(object):
 
         class MyTable(Table):
             id = Column(Integer, primary_key=True)
-            
-    The ``id`` column will mirror the ID of records in the table when fetching, etc. and can be set 
+
+    The ``id`` column will mirror the ID of records in the table when fetching, etc. and can be set
     on a record when storing in a table.
-    
+
     .. code-block:: python3
 
         sess = db.get_session()
         user = await sess.select(User).where(User.id == 2).first()
-        
+
         print(user.id)  # 2
 
     """
@@ -97,27 +97,27 @@ class Column(object):
         """
         :param type_:
             The :class:`.ColumnType` that represents the type of this column.
-         
-        :param primary_key: 
+
+        :param primary_key:
             Is this column the table's Primary Key (the unique identifier that identifies each row)?
-            
-        :param nullable: 
+
+        :param nullable:
             Can this column be NULL?
-            
+
         :param default:
-            The client-side default for this column. If no value is provided when inserting, this 
+            The client-side default for this column. If no value is provided when inserting, this
             value will automatically be added to the insert query.
-         
-        :param autoincrement: 
+
+        :param autoincrement:
             Should this column auto-increment? This will create a serial sequence.
-        
-        :param index: 
+
+        :param index:
             Should this column be indexed?
-        
-        :param unique: 
+
+        :param unique:
             Is this column unique?
-            
-        :param foreign_key: 
+
+        :param foreign_key:
             The :class:`.ForeignKey` associated with this column.
         """
         #: The name of the column.
@@ -167,8 +167,8 @@ class Column(object):
     def __set_name__(self, owner, name):
         """
         Called to update the table and the name of this Column.
-        
-        :param owner: The :class:`.Table` this Column is on. 
+
+        :param owner: The :class:`.Table` this Column is on.
         :param name: The str name of this table.
         """
         logger.debug("Column created with name {} on {}".format(name, owner))
@@ -279,7 +279,7 @@ class Column(object):
     def quoted_name(self) -> str:
         """
         Gets the quoted name for this column.
-         
+
         This returns the column name in "column" format.
         """
         return r'"{}"'.format(self.name)
@@ -288,7 +288,7 @@ class Column(object):
     def quoted_fullname(self) -> str:
         """
         Gets the full quoted name for this column.
-         
+
         This returns the column name in "table"."column" format.
         """
         return r'"{}"."{}"'.format(self.table.__tablename__, self.name)
@@ -296,7 +296,7 @@ class Column(object):
     @property
     def foreign_column(self) -> 'Column':
         """
-        :return: The foreign :class:`.Column` this is associated with, or None otherwise. 
+        :return: The foreign :class:`.Column` this is associated with, or None otherwise.
         """
         if self.foreign_key is None:
             return None
@@ -306,9 +306,9 @@ class Column(object):
     def alias_name(self, table=None, quoted: bool = False) -> str:
         """
         Gets the alias name for a column, given the table.
-        
+
         This is in the format of `t_<table name>_<column_name>`.
-         
+
         :param table: The :class:`.Table` to use to generate the alias name. \
             This is useful for aliased tables.
         :param quoted: Should the name be quoted?

@@ -13,18 +13,18 @@ from asyncqlio.meta import AsyncABC
 class BaseDialect:
     """
     The base class for a SQL dialect describer.
-    
+
     This class signifies what features the SQL dialect can use, and as such can be used to customize
     query creation for faster results on certain servers, or new features on certain servers, etc.
-    
-    By default, all ``has_`` properties will default to False, so that none of them need be 
+
+    By default, all ``has_`` properties will default to False, so that none of them need be
     implemented. Regular methods will raise NotImplementedError, however.
     """
 
     @property
     def has_checkpoints(self) -> bool:
         """
-        Returns True if this dialect can use transaction checkpoints. 
+        Returns True if this dialect can use transaction checkpoints.
         """
         return False
 
@@ -59,11 +59,11 @@ class BaseDialect:
 
 class BaseResultSet(collections.AsyncIterator, AsyncABC):
     """
-    The base class for a result set. This represents the results from a database query, as an async 
+    The base class for a result set. This represents the results from a database query, as an async
     iterable.
-    
+
     Children classes must implement:
-    
+
         - :attr:`.BaseResultSet.keys`
         - :attr:`.BaseResultSet.fetch_row`
         - :attr:`.BaseResultSet.fetch_many`
@@ -79,8 +79,8 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
     @abstractmethod
     async def fetch_row(self) -> typing.Mapping[str, typing.Any]:
         """
-        Fetches the **next row** in this query. 
-        
+        Fetches the **next row** in this query.
+
         This should return None if the row could not be fetched.
         """
 
@@ -88,8 +88,8 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
     async def fetch_many(self, n: int) -> typing.List[typing.Mapping[str, typing.Any]]:
         """
         Fetches the **next N rows** in this query.
-        
-        :param n: The number of rows to fetch. 
+
+        :param n: The number of rows to fetch.
         """
 
     @abstractmethod
@@ -115,26 +115,26 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
 
 class BaseTransaction(AsyncABC):
     """
-    The base class for a transaction. This represents a database transaction (i.e SQL statements 
+    The base class for a transaction. This represents a database transaction (i.e SQL statements
     guarded with a BEGIN and a COMMIT/ROLLBACK).
-    
+
     Children classes must implement:
-    
+
         - :meth:`.BaseTransaction.begin`
         - :meth:`.BaseTransaction.rollback`
         - :meth:`.BaseTransaction.commit`
         - :meth:`.BaseTransaction.execute`
         - :meth:`.BaseTransaction.cursor`
         - :meth:`.BaseTransaction.close`
-    
+
     Additionally, some extra methods can be implemented:
-    
+
         - :meth:`.BaseTransaction.create_savepoint`
         - :meth:`.BaseTransaction.release_savepoint`
-        
+
     These methods are not required to be implemented, but will raise :class:`NotImplementedError` if
     they are not.
-    
+
     This class takes one parameter in the constructor: the :class:`.BaseConnector` used to connect
     to the DB server.
     """
@@ -167,8 +167,8 @@ class BaseTransaction(AsyncABC):
     async def rollback(self, checkpoint: str = None):
         """
         Rolls back the transaction.
-        
-        :param checkpoint: If provided, the checkpoint to rollback to. Otherwise, the entire \ 
+
+        :param checkpoint: If provided, the checkpoint to rollback to. Otherwise, the entire \
             transaction will be rolled back.
         """
 
@@ -182,8 +182,8 @@ class BaseTransaction(AsyncABC):
     async def execute(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None):
         """
         Executes SQL in the current transaction.
-        
-        :param sql: The SQL statement to execute. 
+
+        :param sql: The SQL statement to execute.
         :param params: Any parameters to pass to the query.
         """
 
@@ -198,40 +198,40 @@ class BaseTransaction(AsyncABC):
             -> 'BaseResultSet':
         """
         Executes SQL and returns a database cursor for the rows.
-        
-        :param sql: The SQL statement to execute. 
+
+        :param sql: The SQL statement to execute.
         :param params: Any parameters to pass to the query.
-        :return: The :class:`.BaseResultSet` returned from the query, if applicable. 
+        :return: The :class:`.BaseResultSet` returned from the query, if applicable.
         """
 
     def create_savepoint(self, name: str):
         """
         Creates a savepoint in the current transaction.
-        
+
         .. warning::
-            This is not supported in all DB engines. If so, this will raise 
+            This is not supported in all DB engines. If so, this will raise
             :class:`NotImplementedError`.
-        
-        :param name: The name of the savepoint to create. 
+
+        :param name: The name of the savepoint to create.
         """
         raise NotImplementedError
 
     def release_savepoint(self, name: str):
         """
         Releases a savepoint in the current transaction.
-        
-        :param name: The name of the savepoint to release. 
+
+        :param name: The name of the savepoint to release.
         """
         raise NotImplementedError
 
 
 class BaseConnector(AsyncABC):
     """
-    The base class for a connector. This should be used for all connector classes as the parent 
+    The base class for a connector. This should be used for all connector classes as the parent
     class.
-    
+
     Children classes must implement:
-    
+
         - :meth:`.BaseConnector.connect`
         - :meth:`.BaseConnector.close`
         - :meth:`.BaseConnector.emit_param`
@@ -241,7 +241,7 @@ class BaseConnector(AsyncABC):
 
     def __init__(self, dsn: ParseResult, *, loop: asyncio.AbstractEventLoop = None):
         """
-        :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN. 
+        :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN.
         """
         self.loop = loop or asyncio.get_event_loop()
 
@@ -257,9 +257,9 @@ class BaseConnector(AsyncABC):
     @abstractmethod
     async def connect(self) -> 'BaseConnector':
         """
-        Connects the current connector to the database server. This is called automatically by the 
+        Connects the current connector to the database server. This is called automatically by the
         :class:`.DatabaseInterface
-        
+
         :return: The original BaseConnector instance.
         """
 
@@ -272,8 +272,8 @@ class BaseConnector(AsyncABC):
     @abstractmethod
     def get_transaction(self) -> BaseTransaction:
         """
-        Gets a new transaction object for this connection.  
-        
+        Gets a new transaction object for this connection.
+
         :return: A new :class:`~.BaseTransaction` object attached to this connection.
         """
 
@@ -281,13 +281,13 @@ class BaseConnector(AsyncABC):
     def emit_param(self, name: str) -> str:
         """
         Emits a parameter that can be used as a substitute during a query.
-        
-        :param name: The name of the parameter. 
-        :return: A string that represents the substitute to be placed in the query. 
+
+        :param name: The name of the parameter.
+        :return: A string that represents the substitute to be placed in the query.
         """
 
     @abstractmethod
     async def get_db_server_info(self):
         """
-        :return: A :class:`.DBInfo` instance that contains information about the server.  
+        :return: A :class:`.DBInfo` instance that contains information about the server.
         """

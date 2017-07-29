@@ -20,22 +20,22 @@ class DatabaseInterface(object):
     """
     The "database interface" to your database. This provides the actual connection to the DB server,
     including things such as querying, inserting, updating, et cetera.
-    
+
     Creating a new database object is simple:
-    
+
     .. code-block:: python3
-    
+
         # pass the DSN in the constructor
         dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/mydb"
         my_database = DatabaseInterface(dsn)
         # or provide it in the `.connect()` call
         await my_database.connect(dsn)
-            
+
     """
 
     def __init__(self, dsn: str = None, *, loop: asyncio.AbstractEventLoop = None):
         """
-        :param dsn: 
+        :param dsn:
             The `Data Source Name <http://whatis.techtarget.com/definition/data-source-name-DSN>_`
             to connect to the database on.
         """
@@ -60,13 +60,13 @@ class DatabaseInterface(object):
     @property
     def connected(self):
         """
-        Checks if this DB is connected. 
+        Checks if this DB is connected.
         """
         return self.connector is not None
 
     def bind_tables(self, md: 'md_table.TableMetadata'):
         """
-        Binds tables to this DB instance. 
+        Binds tables to this DB instance.
         """
         if isinstance(md, md_table.TableMeta):
             md = md.metadata
@@ -79,10 +79,10 @@ class DatabaseInterface(object):
     async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
         """
         Connects the interface to the database server.
-        
+
         .. note::
             For SQLite3 connections, this will just open the database for reading.
-        
+
         :param dsn: The Data Source Name to connect to, if it was not specified in the constructor.
         :return: The :class:`~.BaseConnector` established.
         """
@@ -128,8 +128,8 @@ class DatabaseInterface(object):
     def emit_param(self, name: str) -> str:
         """
         Emits a param in the format that the DB driver specifies.
-        
-        :param name: The name of the parameter to emit. 
+
+        :param name: The name of the parameter to emit.
         :return: A str representing the emitted param.
         """
         return self.connector.emit_param(name)
@@ -137,7 +137,7 @@ class DatabaseInterface(object):
     def get_transaction(self, **kwargs) -> BaseTransaction:
         """
         Gets a low-level :class:`.BaseTransaction`.
-         
+
         .. code-block:: python3
 
             async with db.get_transaction() as transaction:
@@ -161,8 +161,8 @@ class DatabaseInterface(object):
     async def get_db_server_info(self):
         """
         Gets DB server info.
-        
+
         .. warning::
-            This is **not** supported on SQLite3 connections. 
+            This is **not** supported on SQLite3 connections.
         """
         # todo: make this do something

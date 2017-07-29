@@ -21,9 +21,9 @@ def make_proxy(name: str):
 def proxy_to_getattr(*magic_methods: str):
     """
     Proxies a method to to ``__getattr__`` when it would not be normally proxied.
-    
+
     This is used for magic methods that are slot loaded (``__setattr__`` etc.)
-    
+
     :param magic_methods: The magic methods to proxy to getattr.
     """
 

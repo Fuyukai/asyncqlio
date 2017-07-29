@@ -20,7 +20,7 @@ def get_row_history(row: 'md_table.Table') \
         -> 'typing.Dict[md_column.Column, typing.Dict[str, typing.Any]]':
     """
     Gets the history for the specified row.
-    
+
     This returns a dict, indexed by Column, with values being another dict with `old` and `new` keys
     that represent the old and new values of the item.
     """
@@ -37,7 +37,7 @@ def get_row_history(row: 'md_table.Table') \
 def get_pk(row: 'md_table.Table', as_tuple: bool = True):
     """
     Gets the primary key for a Table row.
-    
+
     :param row: The :class:`.Table` instance to extract the PK from.
     :param as_tuple: Should this PK always be returned as a tuple?
     """

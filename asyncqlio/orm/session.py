@@ -36,10 +36,10 @@ class Session(object):
     """
     Sessions act as a temporary window into the database. They are responsible for creating queries,
     inserting and updating rows, etc.
-    
-    Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction 
+
+    Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction
     and execute queries in.
-    
+
     .. code-block:: python3
 
         # get a session from our db interface
@@ -48,7 +48,7 @@ class Session(object):
 
     def __init__(self, bind: 'md_db.DatabaseInterface'):
         """
-        :param bind: The :class:`.DatabaseInterface` instance we are bound to. 
+        :param bind: The :class:`.DatabaseInterface` instance we are bound to.
         """
         self.bind = bind
 
@@ -84,7 +84,7 @@ class Session(object):
     def select(self) -> 'md_query.SelectQuery':
         """
         Creates a new SELECT query that can be built upon.
-        
+
         :return: A new :class:`.SelectQuery`.
         """
         q = md_query.SelectQuery(self)
@@ -94,8 +94,8 @@ class Session(object):
     def insert(self) -> 'md_query.InsertQuery':
         """
         Creates a new INSERT INTO query that can be built upon.
-        
-        :return: A new :class:`.InsertQuery`. 
+
+        :return: A new :class:`.InsertQuery`.
         """
         return md_query.InsertQuery(self)
 
@@ -120,13 +120,13 @@ class Session(object):
     async def start(self) -> 'Session':
         """
         Starts the session, acquiring a transaction connection which will be used to modify the DB.
-        This **must** be called before using the session.  
-        
+        This **must** be called before using the session.
+
         .. code-block:: python3
 
             sess = db.get_session()
             await sess.start()
-        
+
         .. note::
             When using ``async with``, this is automatically called.
         """
@@ -170,7 +170,7 @@ class Session(object):
     async def commit(self):
         """
         Commits the current session, running inserts/updates/deletes.
-         
+
         This will **not** close the session; it can be re-used after a commit.
         """
         logger.debug("Committing transaction")
@@ -180,10 +180,10 @@ class Session(object):
     @enforce_open
     async def rollback(self, checkpoint: str = None):
         """
-        Rolls the current session back.  
+        Rolls the current session back.
         This is useful if an error occurs inside your code.
-        
-        :param checkpoint: The checkpoint to roll back to, if applicable. 
+
+        :param checkpoint: The checkpoint to roll back to, if applicable.
         """
         logger.debug("Rolling back session to checkpoint {}".format(checkpoint))
         await self.transaction.rollback(checkpoint=checkpoint)
@@ -193,7 +193,7 @@ class Session(object):
     async def close(self):
         """
         Closes the current session.
-        
+
         .. warning::
             This will **NOT COMMIT ANY DATA**. Old data will die.
         """
@@ -216,9 +216,9 @@ class Session(object):
                                                            typing.Iterable[typing.Any]] = None):
         """
         Executes SQL inside the current session.
-        
+
         This is part of the **low-level API.**
-        
+
         :param sql: The SQL to execute.
         :param params: The parameters to use inside the query.
         """
@@ -229,7 +229,7 @@ class Session(object):
                                                           typing.Iterable[typing.Any]] = None):
         """
         Executes SQL inside the current session, and returns a new :class:`.BaseResultSet.`
-        
+
         :param sql: The SQL to execute.
         :param params: The parameters to use inside the query.
         """
@@ -238,15 +238,15 @@ class Session(object):
     @enforce_open
     async def insert_now(self, row: 'md_table.Table') -> typing.Any:
         """
-        Inserts a row NOW. 
-        
+        Inserts a row NOW.
+
         .. warning::
             This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
-            
+
             Also, tables with auto-incrementing fields will only have their first field filled in
             outside of Postgres databases.
-        
+
         :param row: The :class:`.Table` instance to insert.
         :return: The row, with primary key included.
         """
@@ -264,7 +264,7 @@ class Session(object):
     @enforce_open
     async def update_now(self, row: 'md_table.Table') -> 'md_table.Table':
         """
-        Updates a row NOW. 
+        Updates a row NOW.
 
         .. warning::
             This will only generate the UPDATE statement for the row now. Only :meth:`.commit` will
@@ -293,13 +293,13 @@ class Session(object):
     async def run_select_query(self, query: 'md_query.SelectQuery'):
         """
         Executes a select query.
-        
+
         .. warning::
             Unlike the other `run_*_query` methods, this method should not be used without a good
             reason; it creates a special class that is used for the query.
-            
+
             Use :class:`.SelectQuery.first` or :class:`.SelectQuery.all`.
-        
+
         :param query: The :class:`.SelectQuery` to use.
         :return: A :class:`._ResultGenerator` for this query.
         """
@@ -313,7 +313,7 @@ class Session(object):
     async def run_insert_query(self, query: 'md_query.InsertQuery'):
         """
         Executes an insert query.
-        
+
         :param query: The :class:`.InsertQuery` to use.
         :return: The list of rows that were inserted.
         """
@@ -372,8 +372,8 @@ class Session(object):
     async def run_update_query(self, query: 'md_query.BaseQuery'):
         """
         Executes an update query.
-        
-        :param query: The :class:`.RowUpdateQuery` or :class:`.BulkUpdateQuery` to execute. 
+
+        :param query: The :class:`.RowUpdateQuery` or :class:`.BulkUpdateQuery` to execute.
         """
         if isinstance(query, md_query.RowUpdateQuery):
             for row, (sql, params) in zip(query.rows_to_update, query.generate_sql()):
@@ -397,8 +397,8 @@ class Session(object):
     async def run_delete_query(self, query: 'md_query.RowDeleteQuery'):
         """
         Executes a delete query.
-        
-        :param query: The :class:`.RowDeleteQuery` or :class:`.BulkDeleteQuery` to execute.  
+
+        :param query: The :class:`.RowDeleteQuery` or :class:`.BulkDeleteQuery` to execute.
         """
         if isinstance(query, md_query.RowDeleteQuery):
             for row, (sql, params) in zip(query.rows_to_delete, query.generate_sql()):
@@ -420,13 +420,13 @@ class Session(object):
 
     async def add(self, row: 'md_table.Table') -> 'md_table.Table':
         """
-        Adds a row to the current transaction. This will emit SQL that will generate an INSERT or 
+        Adds a row to the current transaction. This will emit SQL that will generate an INSERT or
         UPDATE statement, and then update the primary key of this row.
-        
+
         .. warning::
             This will only generate the INSERT statement for the row now. Only :meth:`.commit` will
             actually commit the row to storage.
-    
+
         :param row: The :class:`.Table` instance object to add to the transaction.
         :return: The :class:`.Table` instance with primary key filled in, if applicable.
         """
@@ -440,11 +440,11 @@ class Session(object):
     async def merge(self, row: 'md_table.Table') -> 'md_table.Table':
         """
         Merges a row with a row that already exists in the database.
-        
-        This should be used for rows that have a primary key, but were not returned from 
+
+        This should be used for rows that have a primary key, but were not returned from
         :meth:`.select`.
-        
-        :param row: The :class:`.Table` instance to merge. 
+
+        :param row: The :class:`.Table` instance to merge.
         :return: The :class:`.Table` instance once updated.
         """
         return await self.update_now(row)

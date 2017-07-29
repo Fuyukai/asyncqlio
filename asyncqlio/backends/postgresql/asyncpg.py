@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def get_param_query(sql: str, params: dict) -> typing.Tuple[str, tuple]:
     """
     Re-does a SQL query so that it uses asyncpg's special query format.
-    
+
     :param sql: The SQL statement to use.
     :param params: The dict of parameters to use.
     :return: A two-item tuple of (new_query, arguments)
@@ -124,8 +124,8 @@ class AsyncpgTransaction(BaseTransaction):
     async def execute(self, sql: str, params: typing.Mapping[str, typing.Any] = None):
         """
         Executes SQL inside the transaction.
-        
-        :param sql: The SQL to execute. 
+
+        :param sql: The SQL to execute.
         :param params: The parameters to excuse with.
         """
         # re-paramatarize the query

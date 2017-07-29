@@ -15,13 +15,13 @@ class ForeignKey(object):
     """
     Represents a foreign key object in a column. This allows linking multiple tables together
     relationally.
-    
+
     .. code-block:: python3
-        
+
         class Server(Table):
             id = Column(Integer, primary_key=True, autoincrement=True)
             name = Column(String)
-            
+
             owner_id = Column(Integer, foreign_key=ForeignKey("User.id")
     """
 
@@ -52,49 +52,49 @@ class Relationship(object):
     """
     Represents a relationship to another table object.
 
-    This object provides an easy, object-oriented interface to a foreign key relationship between 
-    two tables, the left table and the right table.   
+    This object provides an easy, object-oriented interface to a foreign key relationship between
+    two tables, the left table and the right table.
     The left table is the "parent" table, and the right table is the "child" table; effectively
     creating a one to many/many to one relationship between the two tables.
-    
+
     To create a relationship, there must be a column in the child table that represents the primary
     key of a parent table; this is the foreign key column, and will be used to load the other table.
-    
+
     .. code-block:: python3
-    
+
         class User(Table):
             # id is the primary key of the parent table
             id = Column(Integer, auto_increment=True)
             name = Column(String)
-            
+
             # this is the relationship joiner; it uses id as the left key, and user_id as the right
             # this will create a join between the two tables
             inventory = Relationship(left=id, right="InventoryItem.user_id")
-            
+
         class InventoryItem(Table):
             id = Column(BigInteger, auto_increment=True)
-            
+
             # user_id is the "foreign key" - it references the column User.id
             user_id = Column(Integer, foreign_key=ForeignKey(User.id)
-            
+
     Once created, the new relationship object can be used to iterate over the child objects, using
     ``async for``:
-    
+
     .. code-block:: python3
-    
+
         user = await sess.select.from_(User).where(User.id == 1).first()
         async for item in user.inventory:
             ...
-    
+
     By default, the relationship will use a SELECT query to load the items; this can be changed to
-    a joined query when loading any table rows, by changing the ``load`` param.  
+    a joined query when loading any table rows, by changing the ``load`` param.
     The possible values of this param are:
-    
+
         - ``select`` - Emits a SELECT query to load child items.
         - ``joined`` - Emits a join query to load child items.
-        
+
     For all possible options, see :ref:`Relationship Loading`.
-    
+
     """
 
     def __init__(self,
@@ -105,16 +105,16 @@ class Relationship(object):
                  table_alias: str = None):
         """
         :param left: The left-hand column (the Column on this table) in this relationship.
-        
+
         :param right: The right-hand column (the Column on the foreign table) in this relationship.
-        
+
         :param load: The way to load this relationship.
 
             The default is "select" - this means that a separate select statement will be issued
             to iterate over the rows of the relationship.
-            
+
             For all possible options, see :ref:`Relationship Loading`.
-            
+
         :param use_iter: Should this relationship use the iterable format?
 
             This controls if this relationship is created as one to many, or as a many to one/one to
@@ -269,7 +269,7 @@ class BaseLoadedRelationship(object):
 
     def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
-        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param rel: The :class:`.Relationship` that lies underneath this object.
         :param row: The :class:`.TableRow` this is being loaded from.
         :param session: The :class:`.Session` this object is attached to.
         """
@@ -290,7 +290,7 @@ class BaseLoadedRelationship(object):
         Adds a row to this relationship.
 
         .. warning::
-            This will run an immediate insert/update of this row; if the parent row for this 
+            This will run an immediate insert/update of this row; if the parent row for this
             relationship is not inserted it will run an immediate insert on the parent.
 
         :param row: The :class:`.TableRow` object to add to this relationship.
@@ -314,17 +314,17 @@ class BaseLoadedRelationship(object):
 
     async def _remove_row(self, row: 'md_table.Table'):
         """
-        An overridable method called when a row is removed. 
+        An overridable method called when a row is removed.
         """
 
     async def remove(self, row: 'md_table.Table'):
         """
         Removes a row from this query.
-         
+
         .. warning::
             This will run an immediate UPDATE of this row to remove the foreign key.
-        
-        :param row: The :class:`.TableRow` object to remove from this relationship. 
+
+        :param row: The :class:`.TableRow` object to remove from this relationship.
         """
         f_column = self.relationship.foreign_column
 
@@ -388,11 +388,11 @@ class SelectLoadedRelationship(BaseLoadedRelationship):
     @property
     def query(self) -> 'md_query.SelectQuery':
         """
-        Gets the query for this relationship, allowing further customization.  
+        Gets the query for this relationship, allowing further customization.
         For example, to change the order of the rows returned:
-        
+
         .. code-block:: python3
-        
+
             async for child in parent.children.query.order_by(Child.age):
                 ...
         """
@@ -428,7 +428,7 @@ class JoinLoadedOTMRelationship(BaseLoadedRelationship):
 
     def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
-        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param rel: The :class:`.Relationship` that lies underneath this object.
         :param row: The :class:`.TableRow` this is being loaded from.
         :param session: The :class:`.Session` this object is attached to.
         """
@@ -462,7 +462,7 @@ class JoinLoadedOTORelationship(BaseLoadedRelationship):
 
     def __init__(self, rel: 'Relationship', row: 'md_table.Table', session):
         """
-        :param rel: The :class:`.Relationship` that lies underneath this object. 
+        :param rel: The :class:`.Relationship` that lies underneath this object.
         :param row: The :class:`.TableRow` this is being loaded from.
         :param session: The :class:`.Session` this object is attached to.
         """

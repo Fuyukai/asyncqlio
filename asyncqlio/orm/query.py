@@ -47,7 +47,7 @@ class _ResultGenerator(collections.AsyncIterator):
 
     def __init__(self, q: 'SelectQuery'):
         """
-        :param q: The :class:`.SelectQuery` to use. 
+        :param q: The :class:`.SelectQuery` to use.
         """
         self.query = q
         self._results = None  # type: BaseResultSet
@@ -136,10 +136,10 @@ class _ResultGenerator(collections.AsyncIterator):
 class SelectQuery(BaseQuery):
     """
     Represents a SELECT query, which fetches data from the database.
-    
-    This is not normally created by user code directly, but rather as a result of a 
+
+    This is not normally created by user code directly, but rather as a result of a
     :meth:`.Session.select` call.
-    
+
     .. code-block:: python3
 
         sess = db.get_session()
@@ -147,16 +147,16 @@ class SelectQuery(BaseQuery):
             query = sess.select.from_(User)  # query is instance of SelectQuery
             # alternatively, but not recommended
             query = sess.select(User)
-            
+
     However, it is possible to create this class manually:
-    
+
     .. code-block:: python3
 
         query = SelectQuery(db.get_session()
         query.set_table(User)
         query.add_condition(User.id == 2)
         user = await query.first()
-        
+
     """
 
     def __init__(self, session: 'md_session.Session'):
@@ -251,7 +251,7 @@ class SelectQuery(BaseQuery):
 
     def generate_sql(self) -> typing.Tuple[str, dict]:
         """
-        Generates the SQL for this query. 
+        Generates the SQL for this query.
         """
         counter = itertools.count()
 
@@ -301,7 +301,7 @@ class SelectQuery(BaseQuery):
     async def first(self) -> 'md_table.Table':
         """
         Gets the first result that matches from this query.
-        
+
         :return: A :class:`.Table` instance representing the first item, or None if no item matched.
         """
         gen = await self.session.run_select_query(self)
@@ -313,7 +313,7 @@ class SelectQuery(BaseQuery):
     async def all(self) -> '_ResultGenerator':
         """
         Gets all results that match from this query.
-        
+
         :return: A :class:`._ResultGenerator` that can be iterated over.
         """
         return await self.session.run_select_query(self)
@@ -325,7 +325,7 @@ class SelectQuery(BaseQuery):
     def map_columns(self, results: typing.Mapping[str, typing.Any]) -> 'md_table.Table':
         """
         Maps columns in a result row to a :class:`.Table` instance object.
-        
+
         :param results: A single row of results from the query cursor.
         :return: A new :class:`.Table` instance that represents the row returned.
         """
@@ -364,7 +364,7 @@ class SelectQuery(BaseQuery):
     def map_many(self, *rows: typing.Mapping[str, typing.Any]):
         """
         Maps many records to one row.
-        
+
         This will group the records by the primary key of the main query table, then add additional
         columns as appropriate.
         """
@@ -387,8 +387,8 @@ class SelectQuery(BaseQuery):
     def from_(self, tbl) -> 'SelectQuery':
         """
         Sets the table this query is selecting from.
-        
-        :param tbl: The :class:`.Table` object to select. 
+
+        :param tbl: The :class:`.Table` object to select.
         :return: This query.
         """
         self.set_table(tbl)
@@ -397,11 +397,11 @@ class SelectQuery(BaseQuery):
     def where(self, *conditions: 'md_operators.BaseOperator') -> 'SelectQuery':
         """
         Adds a WHERE clause to the query. This is a shortcut for :meth:`.add_condition`.
-        
+
         .. code-block:: python3
 
             sess.select.from_(User).where(User.id == 1)
-        
+
         :param conditions: The conditions to use for this WHERE clause.
         :return: This query.
         """
@@ -413,8 +413,8 @@ class SelectQuery(BaseQuery):
     def limit(self, row_limit: int) -> 'SelectQuery':
         """
         Sets a limit of the number of rows that can be returned from this query.
-        
-        :param row_limit: The maximum number of rows to return. 
+
+        :param row_limit: The maximum number of rows to return.
         :return: This query.
         """
         self.row_limit = row_limit
@@ -423,8 +423,8 @@ class SelectQuery(BaseQuery):
     def offset(self, offset: int) -> 'SelectQuery':
         """
         Sets the offset of rows to start returning results from/
-        
-        :param offset: The row offset. 
+
+        :param offset: The row offset.
         :return: This query.
         """
         self.row_offset = offset
@@ -434,10 +434,10 @@ class SelectQuery(BaseQuery):
                  sort_order: str = "asc"):
         """
         Sets the order by clause for this query.
-        
-        The argument provided can either be a :class:`.Column`, or a :class:`.Sorter` which is 
+
+        The argument provided can either be a :class:`.Column`, or a :class:`.Sorter` which is
         provided by :meth:`.Column.asc` / :meth:`.Column.desc`. By default, ``asc`` is used when
-        passing a column. 
+        passing a column.
         """
         if not col:
             raise TypeError("Must provide at least one item to order with")
@@ -458,8 +458,8 @@ class SelectQuery(BaseQuery):
     def set_table(self, tbl) -> 'SelectQuery':
         """
         Sets the table to query on.
-        
-        :param tbl: The :class:`.Table` object to set. 
+
+        :param tbl: The :class:`.Table` object to set.
         :return: This query.
         """
         self.table = tbl
@@ -468,7 +468,7 @@ class SelectQuery(BaseQuery):
     def add_condition(self, condition: 'md_operators.BaseOperator') -> 'SelectQuery':
         """
         Adds a condition to the query/
-        
+
         :param condition: The :class:`.BaseOperator` to add.
         :return: This query.
         """
@@ -493,7 +493,7 @@ class InsertQuery(BaseQuery):
     async def run(self) -> 'typing.List[md_table.Table]':
         """
         Runs this query.
-        
+
         :return: A list of inserted :class:`.md_table.Table`.
         """
         return await self.session.run_insert_query(self)
@@ -501,8 +501,8 @@ class InsertQuery(BaseQuery):
     def rows(self, *rows: 'md_table.Table') -> 'InsertQuery':
         """
         Adds a set of rows to the query.
-        
-        :param rows: The rows to insert. 
+
+        :param rows: The rows to insert.
         :return: This query.
         """
         for row in rows:
@@ -513,7 +513,7 @@ class InsertQuery(BaseQuery):
     def add_row(self, row: 'md_table.Table') -> 'InsertQuery':
         """
         Adds a row to this query, allowing it to be executed later.
-        
+
         :param row: The :class:`.Table` instance to use for this query.
         :return: This query.
         """
@@ -523,8 +523,8 @@ class InsertQuery(BaseQuery):
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
         Generates the SQL statements for this insert query.
-        
-        This will return a list of two-item tuples to execute: 
+
+        This will return a list of two-item tuples to execute:
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
@@ -734,7 +734,7 @@ class RowUpdateQuery(BaseQuery):
         """
         Adds a set of rows to the query.
 
-        :param rows: The rows to insert. 
+        :param rows: The rows to insert.
         :return: This query.
         """
         for row in rows:
@@ -755,9 +755,9 @@ class RowUpdateQuery(BaseQuery):
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
         Generates the SQL statements for this row update query.
-        
-        This will return a list of two-item tuples to execute: 
-        
+
+        This will return a list of two-item tuples to execute:
+
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
@@ -788,7 +788,7 @@ class RowDeleteQuery(BaseQuery):
         """
         Adds a set of rows to the query.
 
-        :param rows: The rows to insert. 
+        :param rows: The rows to insert.
         :return: This query.
         """
         for row in rows:
@@ -799,9 +799,9 @@ class RowDeleteQuery(BaseQuery):
     def add_row(self, row: 'md_table.Table'):
         """
         Adds a row to this query.
-        
-        :param row: The :class:`.Table` instance  
-        :return: 
+
+        :param row: The :class:`.Table` instance
+        :return:
         """
         self.rows_to_delete.append(row)
 
@@ -809,8 +809,8 @@ class RowDeleteQuery(BaseQuery):
         """
         Generates the SQL statements for this row delete query.
 
-        This will return a list of two-item tuples to execute: 
-        
+        This will return a list of two-item tuples to execute:
+
             - The SQL query+params to emit to actually insert the row
         """
         queries = []

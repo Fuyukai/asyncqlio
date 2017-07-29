@@ -29,8 +29,8 @@ class OperatorResponse:
 def requires_bop(func) -> 'typing.Callable[[BaseOperator, BaseOperator], typing.Any]':
     """
     A decorator that marks a magic method as requiring another BaseOperator.
-    
-    :param func: The function to decorate. 
+
+    :param func: The function to decorate.
     :return: A function that returns NotImplemented when the class required isn't specified.
     """
 
@@ -65,13 +65,13 @@ class BaseOperator(abc.ABC):
             -> OperatorResponse:
         """
         Generates the SQL for an operator.
-        
+
         Parameters must be generated using the emitter callable.
-        
+
         :param emitter: A callable that can be used to generate param placeholders in a query.
         :param counter: The current "parameter number".
         :return: A :class:`.OperatorResponse` representing the result.
-            
+
         .. warning::
             The param name and the param can be empty if none is to be returned.
         """
@@ -106,7 +106,7 @@ class BaseOperator(abc.ABC):
 class And(BaseOperator):
     """
     Represents an AND operator in a query.
-    
+
     This will join multiple other :class:`.BaseOperator` objects together.
     """
 
@@ -129,7 +129,7 @@ class And(BaseOperator):
 class Or(BaseOperator):
     """
     Represents an OR operator in a query.
-    
+
     This will join multiple other :class:`.BaseOperator` objects together.
     """
 
@@ -182,12 +182,12 @@ class DescSorter(Sorter):
 class ColumnValueMixin(object):
     """
     A mixin that specifies that an operator takes both a Column and a Value as arguments.
-    
+
     .. code-block:: python3
 
         class MyOp(BaseOperator, ColumnValueMixin):
             ...
-            
+
         # myop is constructed MyOp(col, value)
     """
 
@@ -263,7 +263,7 @@ class In(BaseOperator, ColumnValueMixin):
 class ComparisonOp(ColumnValueMixin, BaseOperator):
     """
     A helper class that implements easy generation of comparison-based operators.
-    
+
     To customize the operator provided, set the value of ``operator`` in the class body.
     """
     operator = None
@@ -334,7 +334,7 @@ class Like(ComparisonOp):
 class ILike(ComparisonOp):
     """
     Represents an ILIKE operator.
-    
+
     .. warning::
         This operator is not natively supported on all dialects. If used on a dialect that
         doesn't support it, it will fallback to a lowercase LIKE.

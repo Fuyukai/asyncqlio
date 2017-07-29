@@ -107,7 +107,7 @@ from asyncqlio.orm.session import Session
 # import my_package.Table
 
 # The DSN to connect to the server with.
-# You probably want to change this. 
+# You probably want to change this.
 dsn = {dsn}
 
 async def create_database_interface() -> DatabaseInterface:
@@ -117,28 +117,28 @@ async def create_database_interface() -> DatabaseInterface:
     # If you wish to override how the database interface is created, do so here.
     # This includes importing your Table object, and binding tables.
     if dsn is None:
-        raise RuntimeError("No DSN provided! Either edit it in env.py, or provide it on the " 
+        raise RuntimeError("No DSN provided! Either edit it in env.py, or provide it on the "
                            "command line.")
-    
+
     db = DatabaseInterface(dsn=dsn)
     await db.connect()
     return db
-    
+
 
 sig = typing.Callable[[Session], None]
 
 
 async def run_migration_online(sess: Session, upgrade: sig):
     """
-    Runs a migration file "online". This will acquire a session, call the upgrade function, 
+    Runs a migration file "online". This will acquire a session, call the upgrade function,
     and then commit the session.
     """
     await upgrade(sess)
 
-        
+
 async def run_migration_offline(sess: Session, upgrade: sig):
     """
-    Runs a migration file "offline". 
+    Runs a migration file "offline".
     """
 '''
 
@@ -158,7 +158,7 @@ async def upgrade(session: Session):
     """
     Performs an upgrade. Put your upgrading SQL here.
     """
-    
+
 
 async def downgrade(session: Session):
     """

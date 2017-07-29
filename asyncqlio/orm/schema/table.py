@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 class TableMetadata(object):
     """
-    The root class for table metadata.  
+    The root class for table metadata.
     This stores a registry of tables, and is responsible for calculating relationships etc.
-     
+
     .. code-block:: python3
-    
+
         meta = TableMetadata()
         Table = table_base(metadata=meta)
 
@@ -38,7 +38,7 @@ class TableMetadata(object):
                        autosetup_tables: bool = False) -> 'TableMeta':
         """
         Registers a new table object.
-        
+
         :param tbl: The table to register.
         :param autosetup_tables: Should tables be setup again?
         """
@@ -53,8 +53,8 @@ class TableMetadata(object):
     def get_table(self, table_name: str) -> 'typing.Type[Table]':
         """
         Gets a table from the current metadata.
-        
-        :param table_name: The name of the table to get. 
+
+        :param table_name: The name of the table to get.
         :return: A :class:`.Table` object.
         """
         try:
@@ -126,7 +126,7 @@ class TableMetadata(object):
 
     def resolve_floating_relationships(self):
         """
-        Resolves any "floating" relationships - i.e any relationship/foreign keys that don't 
+        Resolves any "floating" relationships - i.e any relationship/foreign keys that don't
         directly reference a column object.
         """
         for tbl in self.tables.values():
@@ -224,7 +224,7 @@ class TableMeta(type):
                  *args, **kwargs):
         """
         Creates a new Table instance.
-         
+
         :param register: Should this table be registered in the TableMetadata?
         :param table_name: The name for this table.
         """
@@ -288,7 +288,7 @@ class TableMeta(type):
     @property
     def columns(self) -> 'typing.List[md_column.Column]':
         """
-        :return: A list of :class:`.Column` this Table has. 
+        :return: A list of :class:`.Column` this Table has.
         """
         return list(self.iter_columns())
 
@@ -300,14 +300,14 @@ class TableMeta(type):
 
     def iter_relationships(self) -> 'typing.Generator[md_relationship.Relationship, None, None]':
         """
-        :return: A generator that yields :class:`.Relationship` objects for this table. 
+        :return: A generator that yields :class:`.Relationship` objects for this table.
         """
         for rel in self._relationships.values():
             yield rel
 
     def iter_columns(self) -> 'typing.Generator[md_column.Column, None, None]':
         """
-        :return: A generator that yields :class:`.Column` objects for this table. 
+        :return: A generator that yields :class:`.Column` objects for this table.
         """
         for col in self._columns.values():
             yield col
@@ -316,13 +316,13 @@ class TableMeta(type):
                    raise_si: bool = False) -> 'typing.Union[md_column.Column, None]':
         """
         Gets a column by name.
-        
+
         :param column_name: The column name to lookup.
-        
+
             This can be one of the following:
                 - The column's ``name``
                 - The column's ``alias_name()`` for this table
-            
+
         :return: The :class:`.Column` associated with that name, or None if no column was found.
         """
         try:
@@ -821,44 +821,44 @@ class Table(metaclass=TableMeta, register=False):
 
 def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     """
-    Gets a new base object to use for OO-style tables.  
-    This object is the parent of all tables created in the object-oriented style; it provides some 
+    Gets a new base object to use for OO-style tables.
+    This object is the parent of all tables created in the object-oriented style; it provides some
     key configuration to the relationship calculator and the DB object itself.
-    
-    To use this object, you call this function to create the new object, and subclass it in your 
+
+    To use this object, you call this function to create the new object, and subclass it in your
     table classes:
 
     .. code-block:: python3
 
         Table = table_base()
-        
+
         class User(Table):
             ...
-            
+
     Binding the base object to the database object is essential for querying:
-    
+
     .. code-block:: python3
 
         # ensure the table is bound to that database
         db.bind_tables(Table)
-        
+
         # now we can do queries
         sess = db.get_session()
         user = await sess.select(User).where(User.id == 2).first()
-    
+
     Each Table object is associated with a database interface, which it uses for special querying
     inside the object, such as :meth:`.Table.get`.
-    
+
     .. code-block:: python3
 
         class User(Table):
             id = Column(Integer, primary_key=True)
             ...
-        
-        db.bind_tables(Table)    
+
+        db.bind_tables(Table)
         # later on, in some worker code
         user = await User.get(1)
-    
+
     :param name: The name of the new class to produce. By default, it is ``Table``.
     :param meta: The :class:`.TableMetadata` to use as metadata.
     :return: A new Table class that can be used for OO tables.
@@ -941,26 +941,26 @@ class AliasedTable(object):
 class PrimaryKey(object):
     """
     Represents the primary key of a table.
-    
+
     A primary key can be on any 1 to N columns in a table.
-    
+
     .. code-block:: python3
 
         class Something(Table):
             first_id = Column(Integer)
             second_id = Column(Integer)
-            
+
         pkey = PrimaryKey(Something.first_id, Something.second_id)
         Something.primary_key = pkey
-        
-    Alternatively, the primary key can be automatically calculated by passing ``primary_key=True`` 
+
+    Alternatively, the primary key can be automatically calculated by passing ``primary_key=True``
     to columns in their constructor:
-    
+
     .. code-block:: python3
 
         class Something(Table):
             id = Column(Integer, primary_key=True)
-            
+
         print(Something.primary_key)
 
     """
