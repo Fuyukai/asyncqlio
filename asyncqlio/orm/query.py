@@ -3,6 +3,7 @@ Classes for query objects.
 """
 import abc
 import collections
+import io
 import itertools
 import typing
 
@@ -266,7 +267,8 @@ class SelectQuery(BaseQuery):
                 column_names.append(r'{} AS {}'.format(column.quoted_fullname_with_table(table), a))
 
         # BEGIN THE GENERATION
-        fmt = "SELECT {} FROM {} ".format(", ".join(column_names), self.table.__quoted_name__)
+        fmt = io.StringIO()
+        fmt.write("SELECT {} FROM {} ".format(", ".join(column_names), self.table.__quoted_name__))
         # cleanup after ourselves for a bit
         del selected_columns
 
@@ -279,23 +281,23 @@ class SelectQuery(BaseQuery):
             c_sql.append(response.sql)
 
         # append joins
-        fmt += " ".join(joins)
+        fmt.write(" ".join(joins))
 
         # append the fmt with the conditions
         # these are assumed to be And if there are multiple!
         if c_sql:
-            fmt += " WHERE {}".format(" AND ".join(c_sql))
+            fmt.write(" WHERE {}".format(" AND ".join(c_sql)))
 
         if self.orderer is not None:
             res = self.orderer.generate_sql(self.session.bind.emit_param, counter)
-            fmt += " ORDER BY {}".format(res.sql)
+            fmt.write(" ORDER BY {}".format(res.sql))
         if self.row_limit is not None:
-            fmt += " LIMIT {}".format(self.row_limit)
+            fmt.write(" LIMIT {}".format(self.row_limit))
 
         if self.row_offset is not None:
-            fmt += " OFFSET {}".format(self.row_offset)
+            fmt.write(" OFFSET {}".format(self.row_offset))
 
-        return fmt, params
+        return fmt.getvalue(), params
 
     # "fetch" methods
     async def first(self) -> 'md_table.Table':
@@ -640,7 +642,8 @@ class BulkUpdateQuery(BulkQuery):
         Generates the SQL for this query.
         """
         # base query is update table
-        query = 'UPDATE {} SET '.format(self._table.__quoted_name__)
+        query = io.StringIO()
+        query.write('UPDATE {} SET '.format(self._table.__quoted_name__))
 
         # define counter and params used in generating sql
         counter = itertools.count()
@@ -650,7 +653,7 @@ class BulkUpdateQuery(BulkQuery):
         response = self.setting.generate_sql(self.session.bind.emit_param, counter)
         # update params
         params.update(response.parameters)
-        query += response.sql
+        query.write(response.sql)
 
         # format conditions
         c_sql = []
@@ -660,10 +663,11 @@ class BulkUpdateQuery(BulkQuery):
             params.update(res.parameters)
             c_sql.append(res.sql)
 
-        query += ' WHERE ' + ' AND '.join(c_sql)
+        query.write(' WHERE ')
+        query.write(' AND '.join(c_sql))
 
         # all generated
-        return query, params
+        return query.getvalue(), params
 
     async def run(self):
         return await self.session.run_update_query(self)
@@ -688,7 +692,8 @@ class BulkDeleteQuery(BulkQuery):
     """
 
     def generate_sql(self):
-        query = "DELETE FROM {} ".format(self._table.__quoted_name__)
+        query = io.StringIO()
+        query.write("DELETE FROM {} ".format(self._table.__quoted_name__))
 
         # define counter and params used in generating sql
         counter = itertools.count()
@@ -702,8 +707,9 @@ class BulkDeleteQuery(BulkQuery):
             params.update(res.parameters)
             c_sql.append(res.sql)
 
-        query += ' WHERE ' + ' AND '.join(c_sql)
-        return query, params
+        query.write(' WHERE ')
+        query.write(' AND '.join(c_sql))
+        return query.getvalue(), params
 
     async def run(self):
         return await self.session.run_delete_query(self)
