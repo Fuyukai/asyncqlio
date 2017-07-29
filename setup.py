@@ -42,7 +42,8 @@ setup(
     extras_require={
         "docs": [
             "sphinx>=1.5.0",
-            "sphinxcontrib-asyncio"
+            "sphinxcontrib-asyncio",
+            "guzzle_sphinx_theme"
         ],
         "postgres+asyncpg": [
             "asyncpg>=0.12.0"
