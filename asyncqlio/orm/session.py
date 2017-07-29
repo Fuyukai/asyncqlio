@@ -343,7 +343,7 @@ class Session(object):
                     row.store_column_value(column, value, track_history=False)
                     await cur.close()
             else:
-                if sum(1 for x in row.table.iter_columns() if x.auto_increment) == 1:
+                if sum(1 for x in row.table.iter_columns() if x.autoincrement) == 1:
                     # we can load the last value easily
                     lquery = "SELECT {};".format(self.bind.dialect.lastval_method)
                     cursor = await self.cursor(lquery)
