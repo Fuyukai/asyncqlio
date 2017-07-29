@@ -9,7 +9,7 @@ if sys.version_info[0:2] < (3, 5):
 setup(
     name="asyncqlio",
     use_scm_version={
-        "version_scheme": "post-release",
+        "version_scheme": "guess-next-dev",
         "local_scheme": "dirty-tag"
     },
     packages=[

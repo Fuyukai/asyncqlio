@@ -17,14 +17,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
 
 import guzzle_sphinx_theme
+from pkg_resources import DistributionNotFound, get_distribution
 
-sys.path.insert(0, os.path.abspath('../..'))
-
-import asyncqlio
+try:
+    release = get_distribution('asyncqlio')
+except DistributionNotFound:
+    version = "0.0.0"
+else:
+    version = '.'.join(release.version.split(".")[:3])
 
 # -- General configuration ------------------------------------------------
 
@@ -81,8 +83,11 @@ author = 'Laura Dickinson'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
+
 # The short X.Y version.
-version = asyncqlio.__version__
+# defined above
+# version = asyncqlio.__version__
+
 # The full version, including alpha/beta/rc tags.
 release = asyncqlio.__version__
 
