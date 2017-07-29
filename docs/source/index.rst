@@ -50,9 +50,9 @@ Contents
    :caption: High-level API
 
    hilvl/connecting
-      hilvl/tables
-      hilvl/sessions
-      hilvl/querying
+   hilvl/tables
+   hilvl/sessions
+   hilvl/querying
 
 
 .. toctree::

@@ -103,6 +103,6 @@ See :ref:`querying` for an explanation of how to query using the session object.
 
 
 .. autoclass:: asyncqlio.orm.session.Session
-:noindex:
-        :members:
+    :noindex:
+    :members:
 
