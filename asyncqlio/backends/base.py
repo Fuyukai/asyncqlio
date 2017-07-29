@@ -294,6 +294,10 @@ class BaseConnector(AsyncABC):
         """
 
 
+# python 3.5 dicts are unordered
+# so we inherit from OrderedDict instead of dict
+# also, python 3.6+ dicts aren't technically ordered
+# it's just a side effect
 class DictRow(OrderedDict):
     """
     Represents a row returned from a base result set, in dict form.
@@ -311,7 +315,9 @@ class DictRow(OrderedDict):
 
     def __setitem__(self, key, value, **kwargs):
         if isinstance(key, int):
-            d_key = list(self.keys()).index(key)
+            # find the actual string key at position ``key``
+            # then set the item using said dict key
+            d_key = list(self.keys())[key]
             return super().__setitem__(d_key, value, **kwargs)
 
         return super().__setitem__(key, value, **kwargs)
