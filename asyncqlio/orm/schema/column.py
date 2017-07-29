@@ -200,6 +200,8 @@ class Column(object):
         # because default __bool__ is truthy, this returns True
         # so it assumes they ARE equal
         # an example of this is checking if a column is in a primary key
+
+        # if you need to compare two columns in a where() clause, use `Column.eq` etc.
         if isinstance(other, Column):
             return self.table == other.table and self.name == other.name
 
@@ -222,6 +224,28 @@ class Column(object):
 
     def __ge__(self, other) -> 'md_operators.Gte':
         return md_operators.Gte(self, other)
+
+    def eq(self, other) -> 'md_operators.Eq':
+        """
+        Checks if this column is equal to something else.
+
+        .. note::
+
+            This is the easy way to check if a column equals another column in a WHERE clause,
+            because the default __eq__ behaviour returns a bool rather than an operator.
+        """
+        return md_operators.Eq(self, other)
+
+    def ne(self, other) -> 'md_operators.NEq':
+        """
+        Checks if this column is not equal to something else.
+
+        .. note::
+
+            This is the easy way to check if a column doesn't equal another column in a WHERE
+            clause, because the default __ne__ behaviour returns a bool rather than an operator.
+        """
+        return md_operators.NEq(self, other)
 
     def asc(self) -> 'md_operators.AscSorter':
         """
