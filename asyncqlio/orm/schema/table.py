@@ -866,12 +866,9 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     if meta is None:
         meta = TableMetadata()
 
-    # python 3.5 doesn't like this type of cloning
-    if PY36:
-        clone = type(name, (Table,), {"metadata": meta}, metaclass=TableMeta,
-                     register=False)
-    else:
-        clone = TableMeta.__new__(TableMeta, name, (Table,), {"metadata": meta}, register=False)
+    # This is the best way of cloning the Table object, instead of using `type()`.
+    # It works on all Python versions, and is directly calling the metaclass.
+    clone = TableMeta.__new__(TableMeta, name, (Table,), {"metadata": meta}, register=False)
     return clone
 
 
