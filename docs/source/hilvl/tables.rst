@@ -92,3 +92,22 @@ For implementing your own types, see :ref:`creating-col-types`.
 .. automodule:: asyncqlio.orm.schema.types
 :noindex:
         :members:
+
+Row Objects
+-----------
+
+In asyncqlio, a row object is simply an instance of a :class:`.Table`. To create one, you can
+call the table object (much like creating a normal instance of a class):
+
+.. code-block:: python3
+
+    row = User()
+
+To provide values for the columns, you can pass keyword arguments to the constructor
+corresponding with the names of the columns, like so:
+
+.. code-block:: python3
+
+    row = User(id=1, name="heck")
+
+

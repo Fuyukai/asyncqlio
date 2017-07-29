@@ -41,6 +41,9 @@ Contents
 
    hilvl/connecting
       hilvl/tables
+      hilvl/sessions
+      hilvl/querying
+
 
 .. toctree::
    :maxdepth: 2
