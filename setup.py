@@ -45,10 +45,10 @@ setup(
             "sphinxcontrib-asyncio",
             "guzzle_sphinx_theme"
         ],
-        "postgres+asyncpg": [
+        "postgresql": [
             "asyncpg>=0.12.0"
         ],
-        "mysql+aiomysql": [
+        "mysql": [
             "aiomysql>=0.0.9",
         ]
     },

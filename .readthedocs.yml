@@ -9,5 +9,5 @@ python:
   extra_requirements:
     - docs
     # install all backends for autodoc
-    - postgres+asyncpg
-    - mysql+aiomysql
+    - postgres
+    - mysql
