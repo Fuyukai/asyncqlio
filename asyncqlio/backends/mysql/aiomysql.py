@@ -7,9 +7,12 @@ import typing
 import aiomysql
 import pymysql
 
-from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction
+from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
 
 logger = logging.getLogger(__name__)
+
+# hijack aiomysql a bit
+aiomysql.DictCursor.dict_type = DictRow
 
 
 class AiomysqlResultSet(BaseResultSet):
@@ -82,8 +85,9 @@ class AiomysqlTransaction(BaseTransaction):
         """
         Executes some SQL in the current transaction.
         """
-        # lol
-        cursor = await self.connection.cursor()  # type: aiomysql.DictCursor
+        # parse DictCursor in order to get a dict-like cursor back
+        # this will use the custom DictRow class passed from before
+        cursor = await self.connection.cursor(cursor=aiomysql.DictCursor)
         # the doc lies btw
         # we can pass a dict in instead of a list/tuple
         # i don't fucking trust this at all though.
@@ -92,11 +96,11 @@ class AiomysqlTransaction(BaseTransaction):
         return res
 
     async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None) \
-            -> 'BaseResultSet':
+            -> 'AiomysqlResultSet':
         """
         Returns a :class:`.AiomysqlResultSet` for the specified SQL.
         """
-        cursor = await self.connection.cursor()
+        cursor = await self.connection.cursor(cursor=aiomysql.DictCursor)
         await cursor.execute(sql, params)
         return AiomysqlResultSet(cursor)
 

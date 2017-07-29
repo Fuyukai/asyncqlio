@@ -11,7 +11,7 @@ from asyncpg import Record
 from asyncpg.cursor import Cursor
 from asyncpg.transaction import Transaction
 
-from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction
+from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
 from asyncqlio.exc import DatabaseException, IntegrityError, OperationalError
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class AsyncpgResultSet(BaseResultSet):
         if res and self._keys is None:
             self._keys = res[0].keys()
 
-        return [dict(r) for r in res]
+        return [DictRow(r) for r in res if r is not None]
 
     @property
     def keys(self) -> typing.Iterable[str]:
@@ -72,7 +72,7 @@ class AsyncpgResultSet(BaseResultSet):
             self._keys = row.keys()
 
         if row is not None:
-            return dict(row)
+            return DictRow(row)
 
     async def close(self):
         pass

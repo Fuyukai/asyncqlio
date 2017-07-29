@@ -7,7 +7,7 @@ import typing
 
 from asyncio_extras import threadpool
 
-from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction
+from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
 
 
 class _SqlitePool:
@@ -219,7 +219,7 @@ class Sqlite3ResultSet(BaseResultSet):
         async with threadpool():
             rows = self.cursor.fetchmany(size=n)
 
-        return [dict(r) for r in rows if r is not None]
+        return [DictRow(r) for r in rows if r is not None]
 
     async def fetch_row(self) -> typing.Mapping[str, typing.Any]:
         """
@@ -228,7 +228,7 @@ class Sqlite3ResultSet(BaseResultSet):
         async with threadpool():
             row = self.cursor.fetchone()
 
-        return dict(row) if row is not None else None
+        return DictRow(row) if row is not None else None
 
 
 CONNECTOR_TYPE = Sqlite3Connector

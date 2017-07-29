@@ -5,6 +5,7 @@ import asyncio
 import collections
 import typing
 from abc import abstractmethod
+from collections import OrderedDict
 from urllib.parse import ParseResult, parse_qs
 
 from asyncqlio.meta import AsyncABC
@@ -291,3 +292,26 @@ class BaseConnector(AsyncABC):
         """
         :return: A :class:`.DBInfo` instance that contains information about the server.
         """
+
+
+class DictRow(OrderedDict):
+    """
+    Represents a row returned from a base result set, in dict form.
+
+    This class allows for accessing both via key and index.
+    """
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            try:
+                return list(self.values())[item]
+            except IndexError:
+                raise KeyError(item)
+
+        return super().__getitem__(item)
+
+    def __setitem__(self, key, value, **kwargs):
+        if isinstance(key, int):
+            d_key = list(self.keys()).index(key)
+            return super().__setitem__(d_key, value, **kwargs)
+
+        return super().__setitem__(key, value, **kwargs)
