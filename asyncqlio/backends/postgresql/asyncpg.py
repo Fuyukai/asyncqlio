@@ -191,8 +191,10 @@ class AsyncpgConnector(BaseConnector):
     async def connect(self) -> 'BaseConnector':
         # create our connection pool
         port = self.port or 5432
-        logger.debug("Connecting to postgresql://{}:{}/{}".format(self.host, port, self.db))
-        self.pool = await asyncpg.create_pool(self.dsn, loop=self.loop)
+        logger.debug("Connecting to {}".format(self.dsn))
+        self.pool = await asyncpg.create_pool(host=self.host, port=port, user=self.username,
+                                              password=self.password, database=self.db,
+                                              loop=self.loop, **self.params)
         return self
 
     def get_transaction(self) -> 'AsyncpgTransaction':
