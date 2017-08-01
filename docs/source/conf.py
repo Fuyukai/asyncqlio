@@ -47,7 +47,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',
               'sphinxcontrib.asyncio',
-              # 'sphinx_autodoc_typehints'
+              'sphinx_autodoc_typehints'
               ]
 
 # Autodoc config

@@ -44,6 +44,7 @@ setup(
         "docs": [
             "sphinx>=1.5.0",
             "sphinxcontrib-asyncio",
+            "shpinx-autodoc-typehints>=1.2.1",
             "guzzle_sphinx_theme"
         ],
         "postgresql": [
