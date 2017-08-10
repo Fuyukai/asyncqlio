@@ -44,6 +44,17 @@ class ForeignKey(object):
         #: The :class:`.Column` object this FK is associated with.
         self.column = None  # type: md_column.Column
 
+    def _ddl_split_fk(self) -> 'typing.Tuple[str, str]':
+        """
+        Splits the foreign key.
+        """
+        # assume fname isn't None when doing the first split
+        if self.column is None:
+            return tuple(self._f_name.split("."))[0:2]
+
+        # otherwise
+        return self.column.name, self.column.table.__tablename__
+
     def __repr__(self):
         return "<ForeignKey owner='{}' foreign='{}'>".format(self.column, self.foreign_column)
 
