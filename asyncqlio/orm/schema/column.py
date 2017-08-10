@@ -192,6 +192,15 @@ class Column(object):
         # otherwise just return the attribute
         return i
 
+    @classmethod
+    def with_name(cls, name: str, *args, **kwargs):
+        """
+        Creates this column with a name already set.
+        """
+        col = cls(*args, **kwargs)
+        col.name = name
+        return col
+
     def __eq__(self, other: typing.Any) -> 'typing.Union[md_operators.Eq, bool]':
         # why is this here?
         # sometimes, we need to check if two columns are equal
