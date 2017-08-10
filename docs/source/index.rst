@@ -6,6 +6,16 @@
 Welcome to asyncqlio's documentation!
 =====================================
 
+|b1| |b2| |b3| |b4|
+
+.. |b1| image:: https://img.shields.io/circleci/project/github/SunDwarf/asyncqlio.svg
+   :target: https://circleci.com/gh/SunDwarf/asyncqlio
+.. |b2| image:: https://img.shields.io/pypi/v/asyncqlio.svg
+.. |b3| image:: https://img.shields.io/github/tag/SunDwarf/asyncqlio.svg
+.. |b4| image:: https://img.shields.io/coveralls/SunDwarf/asyncqlio.svg
+   :target: https://codecov.io/gh/SunDwarf/asyncqlio
+
+
 **asyncqlio** is a Python 3.5+ :ref:`ORM` for SQL Relational Databases, that
 uses :mod:`asyncio` for an async interface.
 
