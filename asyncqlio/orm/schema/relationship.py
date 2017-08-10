@@ -237,6 +237,11 @@ class Relationship(object):
         if isinstance(self._table_alias, md_table.AliasedTable):
             return self._table_alias
 
+        fc = self.foreign_column
+        # prevent intended behaviour
+        if not hasattr(fc, "table"):
+            raise ValueError("Bad foreign column passed in relationship (has no table).")
+
         return self.foreign_column.table
 
     @property
