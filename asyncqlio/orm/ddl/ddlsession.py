@@ -2,7 +2,7 @@
 Contains the DDL session object.
 """
 
-from asyncqlio.orm.schema import column as md_column
+from asyncqlio.orm.schema import column as md_column, types as md_types
 from asyncqlio.orm.session import SessionBase
 
 
@@ -10,9 +10,10 @@ class DDLSession(SessionBase):
     """
     A session for executing DDL statements in.
     """
+
     async def create_table(self, table_name: str,
-                     *items: 'md_column.Column',
-                     if_not_exists: bool = True):
+                           *items: 'md_column.Column',
+                           if_not_exists: bool = True):
         """
         Creates a table in this database.
 
@@ -32,23 +33,7 @@ class DDLSession(SessionBase):
         for i in items:
             # TODO: more items
             if isinstance(i, md_column.Column):
-                c_base = "{} {}".format(i.name, i.type.sql())
-
-                # add attributes as appropriate
-                # TODO: More attributes
-                if i.nullable and not i.primary_key:
-                    c_base += " NULL"
-                else:
-                    c_base += " NOT NULL"
-
-                if i.unique:
-                    c_base += " UNIQUE"
-
-                if i.foreign_key is not None:
-                    fk_split = i.foreign_key._ddl_split_fk()
-                    c_base += " REFERENCES {} ({})".format(*fk_split)
-
-                column_fields.append(c_base)
+                column_fields.append(i.get_ddl_sql())
 
         # calculate primary key
         primary_key_cols = [col for col in items
@@ -64,6 +49,7 @@ class DDLSession(SessionBase):
             pkey_text = ""
 
         # join it all up
+        # this uses spacing to prettify the generated SQL a bit
         base += "(\n    {}".format(",\n    ".join(column_fields))
         if pkey_text:
             base += ",\n    {}".format(pkey_text)
@@ -71,3 +57,56 @@ class DDLSession(SessionBase):
         base += "\n);"
 
         return await self.execute(base)
+
+    async def drop_table(self, table_name: str, *,
+                         cascade: bool = False):
+        """
+        Drops a table.
+
+        :param table_name: The name of the table to drop.
+        :param cascade: Should this drop cascade?
+        """
+        base = "DROP TABLE {}".format(table_name)
+        if cascade:
+            base += " CASCADE;"
+        else:
+            base += ";"
+
+        return await self.execute(base)
+
+    async def add_column(self, table_name: str, column: 'md_column.Column'):
+        """
+        Adds a column to a table.
+
+        :param table_name: The name of the table to add the column to.
+        :param column: The column object to add to the table.
+        """
+        ddl = column.get_ddl_sql()
+        base = "ALTER TABLE {} ADD COLUMN {};".format(table_name, ddl)
+
+        return await self.execute(base)
+
+    async def drop_column(self, table_name: str, column_name: str):
+        """
+        Drops a column in a table.
+
+        :param table_name: The name of the table with the column.
+        :param column_name: The name of the column to drop.
+        """
+        # actually use params here
+        fmt = "ALTER TABLE {} DROP COLUMN {};".format(table_name, column_name)
+        return await self.execute(fmt)
+
+    # column alteration
+    async def alter_column_type(self, table_name: str, column_name: str,
+                                new_type: 'md_types.ColumnType'):
+        """
+        Alters the type of a column.
+
+        :param table_name: The table with the column type in it.
+        :param column_name: The name of the column to alter the type of.
+        :param new_type: The new type to set.
+        """
+        fmt = "ALTER TABLE {} ALTER COLUMN {} TYPE {}".format(table_name, column_name,
+                                                              new_type.sql())
+        return await self.execute(fmt)
