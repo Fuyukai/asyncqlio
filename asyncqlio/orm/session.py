@@ -6,6 +6,7 @@ import warnings
 
 from asyncqlio import db as md_db
 from asyncqlio.backends.base import BaseResultSet, BaseTransaction
+from asyncqlio.exc import DatabaseException
 from asyncqlio.orm import inspection as md_inspection, query as md_query
 from asyncqlio.orm.schema import table as md_table
 from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
@@ -36,7 +37,7 @@ class SessionBase(object):
     A superclass for session-like objects.
     """
 
-    def __init__(self, bind: 'md_db.DatabaseInterface'):
+    def __init__(self, bind: 'md_db.DatabaseInterface', **kwargs):
         """
         :param bind: The :class:`.DatabaseInterface` instance we are bound to.
         """

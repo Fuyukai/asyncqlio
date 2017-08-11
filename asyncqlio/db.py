@@ -8,6 +8,7 @@ from urllib.parse import ParseResult, urlparse
 
 from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseTransaction
 from asyncqlio.orm import session as md_session
+from asyncqlio.orm.ddl import ddlsession as md_ddlsession
 from asyncqlio.orm.schema import table as md_table
 
 # sentinels
@@ -150,6 +151,12 @@ class DatabaseInterface(object):
         Gets a new :class:`.Session` bound to this instance.
         """
         return md_session.Session(self, **kwargs)
+
+    def get_ddl_session(self, **kwargs) -> 'md_ddlsession.DDLSession':
+        """
+        Gets a new :class:`.DDLSession` bound to this instance.
+        """
+        return md_ddlsession.DDLSession(self, **kwargs)
 
     async def close(self):
         """
