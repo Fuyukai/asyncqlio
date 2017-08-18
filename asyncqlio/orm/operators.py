@@ -288,12 +288,26 @@ class Eq(ComparisonOp):
     """
     operator = "="
 
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        if self.value is None:
+            sql = "{} IS NULL".format(self.column.quoted_fullname)
+            return OperatorResponse(sql, {})
+
+        return super().generate_sql(emitter, counter)
+
 
 class NEq(ComparisonOp):
     """
     Represents a non-equality operator.
     """
     operator = "!="
+
+    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+        if self.value is None:
+            sql = "{} IS NOT NULL".format(self.column.quoted_fullname)
+            return OperatorResponse(sql, {})
+
+        return super().generate_sql(emitter, counter)
 
 
 class Lt(ComparisonOp):
