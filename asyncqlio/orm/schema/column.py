@@ -2,6 +2,7 @@ import functools
 import inspect
 import logging
 import typing
+import io
 
 from cached_property import cached_property
 
@@ -206,20 +207,23 @@ class Column(object):
         """
         Gets the DDL SQL for this column.
         """
-        base = "{} {}".format(self.name, self.type.sql())
+        base = io.StringIO()
+        base.write(self.name)
+        base.write(" ")
+        base.write(self.type.sql())
         if self.nullable:
-            base += " NULL"
+            base.write(" NULL")
         else:
-            base += " NOT NULL"
+            base.write(" NOT NULL")
 
         if self.unique:
-            base += " UNIQUE"
+            base.write(" UNIQUE")
 
         if self.foreign_key is not None:
             fk = self.foreign_key._ddl_split_fk()
-            base += " REFERENCES {0} ({1})".format(*fk)
+            base.write(" REFERENCES {0} ({1})".format(*fk))
 
-        return base
+        return base.getvalue()
 
     # Operators
 

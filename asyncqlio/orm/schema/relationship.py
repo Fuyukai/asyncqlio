@@ -2,6 +2,7 @@
 Relationship helpers.
 """
 import typing
+import io
 
 from cached_property import cached_property
 
@@ -203,8 +204,11 @@ class Relationship(object):
 
         """
         # TODO: Maybe customize join types?
-        fmt = "LEFT OUTER JOIN {} {} ".format(self.foreign_table.alias_table.__quoted_name__,
-                                              self.foreign_table.__quoted_name__)
+        fmt = io.StringIO()
+        fmt.write("LEFT OUTER JOIN ")
+        fmt.write(self.foreign_table.alias_table.__quoted_name__)
+        fmt.write(" ")
+        fmt.write(self.foreign_table.__quoted_name__)
 
         # explanation
         # if parent is None, we can assume we're the first in the chain
@@ -218,9 +222,12 @@ class Relationship(object):
             left = self.our_column.quoted_fullname_with_table(self.owner_table)
 
         right = self.foreign_column.quoted_fullname_with_table(self.foreign_table)
-        fmt += 'ON {} = {}'.format(left, right)
+        fmt.write('ON ')
+        fmt.write(left)
+        fmt.write(' = ')
+        fmt.write(right)
 
-        return fmt
+        return fmt.getvalue()
 
     # right-wing logic
     @cached_property

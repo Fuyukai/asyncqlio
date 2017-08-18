@@ -2,6 +2,8 @@
 Contains the DDL session object.
 """
 
+import io
+
 from asyncqlio.orm.schema import column as md_column, types as md_types
 from asyncqlio.orm.session import SessionBase
 
@@ -21,11 +23,12 @@ class DDLSession(SessionBase):
         :param items: A list of items to add to the table (columns, indexes, etc).
         :param if_not_exists:
         """
-        base = "CREATE TABLE "
+        base = io.StringIO()
+        base.write("CREATE TABLE ")
         if if_not_exists:
-            base += "IF NOT EXISTS "
+            base.write("IF NOT EXISTS ")
 
-        base += table_name
+        base.write(table_name)
 
         # copy item names
         column_fields = []
@@ -50,13 +53,13 @@ class DDLSession(SessionBase):
 
         # join it all up
         # this uses spacing to prettify the generated SQL a bit
-        base += "(\n    {}".format(",\n    ".join(column_fields))
+        base.write("(\n    {}".format(",\n    ".join(column_fields)))
         if pkey_text:
-            base += ",\n    {}".format(pkey_text)
+            base.write(",\n    {}".format(pkey_text))
 
-        base += "\n);"
+        base.write("\n);")
 
-        return await self.execute(base)
+        return await self.execute(base.getvalue())
 
     async def drop_table(self, table_name: str, *,
                          cascade: bool = False):
@@ -66,13 +69,15 @@ class DDLSession(SessionBase):
         :param table_name: The name of the table to drop.
         :param cascade: Should this drop cascade?
         """
-        base = "DROP TABLE {}".format(table_name)
+        base = io.StringIO()
+        base.write("DROP TABLE")
+        base.write(table_name)
         if cascade:
-            base += " CASCADE;"
+            base.write(" CASCADE;")
         else:
-            base += ";"
+            base.write(";")
 
-        return await self.execute(base)
+        return await self.execute(base.getvalue())
 
     async def add_column(self, table_name: str, column: 'md_column.Column'):
         """
