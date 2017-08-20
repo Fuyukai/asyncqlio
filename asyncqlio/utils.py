@@ -39,3 +39,17 @@ def iter_to_aiter(type_):
 
     type_.__aiter__ = __aiter__
     return type_
+
+
+class Proxy(object):
+    """
+    Base class for a proxy object.
+
+    Takes the object to proxy through as it's first argument, and proxies all getattr access to
+    that object.
+    """
+    def __init__(self, to_proxy: object):
+        self.obb = to_proxy
+
+    def __getattr__(self, item):
+        return getattr(self.obb, item)
