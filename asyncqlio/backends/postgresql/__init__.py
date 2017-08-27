@@ -44,3 +44,7 @@ class PostgresqlDialect(BaseDialect):
     @property
     def has_ilike(self):
         return True
+
+    @property
+    def has_default(self):
+        return True

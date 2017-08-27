@@ -31,3 +31,7 @@ class Sqlite3Dialect(BaseDialect):
     @property
     def has_ilike(self):
         return False
+
+    @property
+    def has_default(self):
+        return False

@@ -29,6 +29,10 @@ class MySQLDialect(BaseDialect):
         return False
 
     @property
+    def has_default(self):
+        return True
+
+    @property
     def has_ilike(self):
         # sigh
         return False

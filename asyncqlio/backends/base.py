@@ -51,6 +51,13 @@ class BaseDialect:
         return False
 
     @property
+    def has_default(self) -> bool:
+        """
+        Returns True if this dialect has DEFAULT.
+        """
+        return False
+
+    @property
     def lastval_method(self):
         """
         The last value method for a dialect. For example, in PostgreSQL this is LASTVAL();

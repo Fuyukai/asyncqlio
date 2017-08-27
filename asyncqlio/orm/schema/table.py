@@ -526,10 +526,14 @@ class Table(metaclass=TableMeta, register=False):
         sql_params = []
 
         for column in self.table.iter_columns():
-            column_names.append(column.quoted_name)
             value = self.get_column_value(column)
             if value is NO_VALUE or (value is None and column.default is NO_DEFAULT):
-                sql_params.append("DEFAULT")
+                # XXX: Only emit a column w/ DEFUALT if the DB supports it (i.e. not sqlite3).
+                # In sqlite3, missing out that column is an implicit default anyway.
+                # It's better to be explicit, but otherwise it syntax errors.
+                if session.bind.dialect.has_default:
+                    column_names.append(column.quoted_name)
+                    sql_params.append("DEFAULT")
             else:
                 # emit a new param
                 name = emitter()
@@ -537,6 +541,7 @@ class Table(metaclass=TableMeta, register=False):
                 # set the params to value
                 # then add the {param_name} to the VALUES
                 params[name] = value
+                column_names.append(column.quoted_name)
                 sql_params.append(param_name)
 
         q += "({}) ".format(", ".join(column_names))
