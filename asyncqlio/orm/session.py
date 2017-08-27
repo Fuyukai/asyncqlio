@@ -210,7 +210,7 @@ class Session(SessionBase):
         return md_query.BulkUpdateQuery(self)
 
     @property
-    def update(self) -> 'md_query.BulkDeleteQuery':
+    def delete(self) -> 'md_query.BulkDeleteQuery':
         """
         Creates a new DELETE query that can be built upon.
 
