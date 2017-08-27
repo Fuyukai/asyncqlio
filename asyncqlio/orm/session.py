@@ -200,6 +200,24 @@ class Session(SessionBase):
         """
         return md_query.InsertQuery(self)
 
+    @property
+    def update(self) -> 'md_query.BulkUpdateQuery':
+        """
+        Creates a new UPDATE query that can be built upon.
+
+        :return: A new :class:`.BulkUpdateQuery`.
+        """
+        return md_query.BulkUpdateQuery(self)
+
+    @property
+    def update(self) -> 'md_query.BulkDeleteQuery':
+        """
+        Creates a new DELETE query that can be built upon.
+
+        :return: A new :class:`.BulkDeleteQuery`.
+        """
+        return md_query.BulkDeleteQuery(self)
+
     @enforce_open
     async def insert_now(self, row: 'md_table.Table') -> typing.Any:
         """
