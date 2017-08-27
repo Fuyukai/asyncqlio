@@ -2,12 +2,15 @@
 A backend using the stdlib sqlite3 driver.
 """
 import asyncio
+import logging
 import sqlite3
 import typing
 
 from asyncio_extras import threadpool
 
 from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
+
+logger = logging.getLogger(__name__)
 
 
 class _SqlitePool:
@@ -136,6 +139,8 @@ class Sqlite3Transaction(BaseTransaction):
         """
         # lock to ensure nothing else is using the connection at once
 
+        logger.debug("Running SQL {} with params {}".format(sql, params))
+
         async with self._lock:
             async with threadpool():
                 res = self.connection.execute(sql, params)
@@ -179,6 +184,9 @@ class Sqlite3Transaction(BaseTransaction):
         """
         Gets a cursor for the specified SQL.
         """
+
+        logger.debug("Running SQL {} with params {}".format(sql, params))
+
         async with self._lock:
             async with threadpool():
                 cur = self.connection.cursor()
