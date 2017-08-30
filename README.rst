@@ -10,7 +10,7 @@ asyncqlio
 .. |b4| image:: https://img.shields.io/coveralls/SunDwarf/asyncqlio.svg
    :target: https://codecov.io/gh/SunDwarf/asyncqlio
 
-`Read the documentation<http://asyncqlio.readthedocs.io/>`_
+`Read the documentation <http://asyncqlio.readthedocs.io/>`_
 
 **asyncqlio** is a Python 3.5+ ORM for SQL Relational Databases,
 that uses asyncio for an async interface.
