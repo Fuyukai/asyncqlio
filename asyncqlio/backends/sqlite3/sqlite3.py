@@ -143,7 +143,10 @@ class Sqlite3Transaction(BaseTransaction):
 
         async with self._lock:
             async with threadpool():
-                res = self.connection.execute(sql, params)
+                if params is None:
+                    res = self.connection.execute(sql)
+                else:
+                    res = self.connection.execute(sql, params)
 
         return res
 
