@@ -92,7 +92,7 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         """
 
     @abstractmethod
-    async def fetch_row(self) -> DictRow:
+    async def fetch_row(self) -> 'DictRow':
         """
         Fetches the **next row** in this query.
 
@@ -100,7 +100,7 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         """
 
     @abstractmethod
-    async def fetch_many(self, n: int) -> DictRow:
+    async def fetch_many(self, n: int) -> 'DictRow':
         """
         Fetches the **next N rows** in this query.
 
@@ -113,14 +113,14 @@ class BaseResultSet(collections.AsyncIterator, AsyncABC):
         Closes this result set.
         """
 
-    async def __anext__(self) -> DictRow:
+    async def __anext__(self) -> 'DictRow':
         res = await self.fetch_row()
         if not res:
             raise StopAsyncIteration
 
         return res
 
-    async def flatten(self) -> typing.List[DictRow]:
+    async def flatten(self) -> 'typing.List[DictRow]':
         """
         Flattens this ResultSet.
 
