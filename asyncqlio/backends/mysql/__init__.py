@@ -36,3 +36,7 @@ class MySQLDialect(BaseDialect):
     def has_ilike(self):
         # sigh
         return False
+
+    @property
+    def has_truncate(self):
+        return True

@@ -265,6 +265,15 @@ class TableMeta(type):
         logger.debug("Registered new table {}".format(tblname))
         self.metadata.register_table(self)
 
+    async def truncate(cls, *, cascade: bool = False):
+        """
+        Truncates this table.
+
+        :param cascade: If this truncation should cascade to other tables.
+        """
+        async with cls._bind.get_session() as sess:
+            return await sess.truncate(cls, cascade=cascade)
+
     def __getattr__(self, item):
         if item.startswith("_"):
             raise AttributeError("'{}' object has no attribute {}".format(self.__name__, item))

@@ -12,6 +12,12 @@ Changelog
 
  - Add new :class:`.DDLSession`, inherited from :class:`.SessionBase`.
 
+ - Fix :meth:`.Sqlite3Transaction.execute` when no params are passed.
+
+ - Add :meth:`.Session.truncate` to truncate tables. Falls back to DELETE FROM if it can't.
+
+ - Add :meth:`.TableMeta.truncate` to truncate tables, which calls :meth:`.Session.truncate`.
+
 
 0.1.0 (released 2017-07-30)
 ---------------------------

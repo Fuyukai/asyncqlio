@@ -35,3 +35,7 @@ class Sqlite3Dialect(BaseDialect):
     @property
     def has_default(self):
         return False
+
+    @property
+    def has_truncate(self):
+        return False

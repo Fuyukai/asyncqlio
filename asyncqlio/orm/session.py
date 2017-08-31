@@ -1,5 +1,6 @@
 import enum
 import functools
+import io
 import logging
 import typing
 import warnings
@@ -217,6 +218,29 @@ class Session(SessionBase):
         :return: A new :class:`.BulkDeleteQuery`.
         """
         return md_query.BulkDeleteQuery(self)
+
+    async def truncate(self, table: 'typing.Type[md_table.Table]', *,
+                       cascade: bool = False):
+        """
+        Truncates a table.
+
+        :param table: The table to truncate.
+        :param cascade: If this truncate should cascade to other tables.
+        :return:
+        """
+        base = io.StringIO()
+        if self.bind.dialect.has_truncate:
+            base.write("TRUNCATE TABLE {} ".format(table.__quoted_name__))
+        else:
+            base.write("DELETE FROM {} ".format(table.__quoted_name__))
+
+        if cascade is True:
+            base.write("CASCADE;")
+        else:
+            base.write(";")
+
+        val = base.getvalue()
+        return await self.execute(val, {})
 
     @enforce_open
     async def insert_now(self, row: 'md_table.Table') -> typing.Any:
