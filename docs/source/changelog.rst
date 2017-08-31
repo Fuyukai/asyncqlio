@@ -18,6 +18,7 @@ Changelog
 
  - Add :meth:`.TableMeta.truncate` to truncate tables, which calls :meth:`.Session.truncate`.
 
+ - Add :meth:`.BaseResultSet.flatten` to flatten a result set.
 
 0.1.0 (released 2017-07-30)
 ---------------------------
