@@ -126,7 +126,7 @@ class AsyncpgTransaction(BaseTransaction):
         Executes SQL inside the transaction.
 
         :param sql: The SQL to execute.
-        :param params: The parameters to excuse with.
+        :param params: The parameters to excecute with.
         """
         # re-paramatarize the query
         logger.debug("Executing query {} with params {}".format(sql, params))
