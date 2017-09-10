@@ -283,6 +283,23 @@ class BigInt(Integer):
         return -9223372036854775808 < value < 9223372036854775807
 
 
+class Real(ColumnType):
+    """
+    Represents a REAL type.
+    """
+
+    def sql(self):
+        return "REAL"
+
+    def validate_set(self, row, value):
+        try:
+            float(value)
+        except ValueError:
+            return False
+        else:
+            return True
+
+
 class Timestamp(ColumnType):
     """
     Represents a TIMESTAMP type.
