@@ -70,7 +70,7 @@ class DDLSession(SessionBase):
         :param cascade: Should this drop cascade?
         """
         base = io.StringIO()
-        base.write("DROP TABLE")
+        base.write("DROP TABLE ")
         base.write(table_name)
         if cascade:
             base.write(" CASCADE;")
