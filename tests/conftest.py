@@ -11,11 +11,12 @@ from asyncqlio.orm.schema.table import table_base, Table
 from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.types import Integer, Text
 
+
 # global so it can be accessed in other fixtures
 iface = DatabaseInterface()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 async def db() -> DatabaseInterface:
     await iface.connect(dsn=os.environ["ASQL_DSN"])
     yield iface
@@ -35,6 +36,7 @@ async def table() -> Table:
     yield Test
     async with iface.get_ddl_session() as session:
         await session.drop_table(Test.__tablename__)
+
 
 
 # override for a module scope
