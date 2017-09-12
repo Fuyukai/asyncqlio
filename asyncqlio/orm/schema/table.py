@@ -615,7 +615,11 @@ class Table(metaclass=TableMeta, register=False):
             # then store it in the params counter
             # and build a new condition for the WHERE clause
             p = emitter()
-            params[p] = history[col]["old"]
+            old = history[col]["old"]
+            if old is not NO_VALUE:
+                params[p] = old
+            else:
+                params[p] = history[col]["new"]
             wheres.append("{} = {}".format(col.quoted_name, session.bind.emit_param(p)))
 
         base_query.write(" WHERE ({});".format(" AND ".join(wheres)))
