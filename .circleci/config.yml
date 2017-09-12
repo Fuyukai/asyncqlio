@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Run tests via tox
           command: |
-            tox -e py35-postgres_asyncpg,py36-postgres_asyncpg
+            tox -e py36-postgres_asyncpg
 
 workflows:
   version: 2
