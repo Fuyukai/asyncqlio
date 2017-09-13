@@ -95,3 +95,4 @@ workflows:
   build:
     jobs:
       - "postgres-asyncpg"
+      - "mysql-aiomysql"
