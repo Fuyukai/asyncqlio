@@ -9,6 +9,8 @@ import pymysql
 
 from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
 
+from asyncqlio.exc import IntegrityError, DatabaseException
+
 logger = logging.getLogger(__name__)
 
 # hijack aiomysql a bit
@@ -91,8 +93,15 @@ class AiomysqlTransaction(BaseTransaction):
         # the doc lies btw
         # we can pass a dict in instead of a list/tuple
         # i don't fucking trust this at all though.
-        res = await cursor.execute(sql, params)
-        await cursor.close()
+        logger.debug("Executing query {} with params {}".format(sql, params))
+        try:
+            res = await cursor.execute(sql, params)
+        except pymysql.err.IntegrityError as e:
+            raise IntegrityError(*e.args)
+        except pymysql.err.ProgrammingError as e:
+            raise DatabaseException(*e.args)
+        finally:
+            await cursor.close()
         return res
 
     async def cursor(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None) \
