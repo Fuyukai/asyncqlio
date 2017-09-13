@@ -136,6 +136,11 @@ class AiomysqlConnector(BaseConnector):
         """
         # aiomysql doesnt support a nice dsn
         port = self.port or 3306
+
+        # XXX: Force SQL mode to be ANSI.
+        # This means we don't break randomly, because we attempt to use ANSI when possible.
+        self.params['sql_mode'] = 'ansi'
+
         logger.info("Connecting to MySQL on mysql://{}:{}/{}".format(self.host, port, self.db))
         self.pool = await aiomysql.create_pool(host=self.host, user=self.username,
                                                password=self.password, port=port,
@@ -147,9 +152,9 @@ class AiomysqlConnector(BaseConnector):
         Closes this connector.
         """
         if forcefully:
-            await self.pool.terminate()
+            self.pool.terminate()
         else:
-            await self.pool.close()
+            self.pool.close()
             await self.pool.wait_closed()
 
     def get_transaction(self) -> BaseTransaction:
