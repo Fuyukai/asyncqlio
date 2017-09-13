@@ -5,7 +5,6 @@ Tests methods of Session.
 import pytest
 
 from asyncqlio import DatabaseInterface
-
 from asyncqlio.orm.schema.table import Table
 
 # mark all test_ functions as coroutines
@@ -31,12 +30,14 @@ async def test_fetch(db: DatabaseInterface, table: Table):
 
 async def test_rollback(db: DatabaseInterface, table: Table):
     sess = db.get_session()
-    await sess.start()
-    await sess.execute('delete from {} where true'.format(table.__tablename__))
-    await sess.rollback()
-    res = await sess.execute('select count(*) from test')
-    assert res == "SELECT 1"
-    await sess.close()
+    try:
+        await sess.start()
+        await sess.execute('delete from {} where true'.format(table.__tablename__))
+        await sess.rollback()
+        res = await sess.execute('select count(*) from test')
+        assert res == "SELECT 1"
+    finally:
+        await sess.close()
 
 
 async def test_select(db: DatabaseInterface, table: Table):
