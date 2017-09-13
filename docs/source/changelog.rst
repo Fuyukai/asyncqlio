@@ -3,7 +3,7 @@
 Changelog
 =========
 
-0.1.1
+0.2.0
 -----
 
  - Prevent ``getattr`` on relationships from causing massive recursion errors.
@@ -19,6 +19,8 @@ Changelog
  - Add :meth:`.TableMeta.truncate` to truncate tables, which calls :meth:`.Session.truncate`.
 
  - Add :meth:`.BaseResultSet.flatten` to flatten a result set.
+
+ - Fix the ``aiomysql`` connector to use ANSI sql mode.
 
 0.1.0 (released 2017-07-30)
 ---------------------------

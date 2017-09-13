@@ -34,8 +34,8 @@ async def test_rollback(db: DatabaseInterface, table: Table):
         await sess.start()
         await sess.execute('delete from {} where true'.format(table.__tablename__))
         await sess.rollback()
-        res = await sess.execute('select count(*) from test')
-        assert res == "SELECT 1"
+        res = await sess.cursor('select count(*) from test')
+        assert (await res.fetch_row())[0] == 1
     finally:
         await sess.close()
 
