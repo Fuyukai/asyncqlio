@@ -62,33 +62,33 @@ jobs:
 
       working_directory: ~/asyncqlio
       steps:
-      - run:
-          name: Install git
-          command: apt update && apt install git -y
+        - run:
+            name: Install git
+            command: apt update && apt install git -y
 
-      - run:
-          name: Install codecov
-          command: pip install codecov
+        - run:
+            name: Install codecov
+            command: pip install codecov
 
-      - checkout
-      - run:
-          name: Install dockerize
-          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-          environment:
-            DOCKERIZE_VERSION: v0.3.0
+        - checkout
+        - run:
+            name: Install dockerize
+            command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+            environment:
+              DOCKERIZE_VERSION: v0.3.0
 
-      - run:
-          name: Wait for Postgres to be ready
-          command: dockerize -wait tcp://localhost:3306 -timeout 1m
+        - run:
+            name: Wait for Postgres to be ready
+            command: dockerize -wait tcp://localhost:3306 -timeout 1m
 
-      - run:
-          name: Run tests via tox
-          command: |
-            tox -e py36-mysql_aiomysql
+        - run:
+            name: Run tests via tox
+            command: |
+              tox -e py36-mysql_aiomysql
 
-      - run:
-          name: Upload coverage
-          command: codecov
+        - run:
+            name: Upload coverage
+            command: codecov
 
 workflows:
   version: 2
