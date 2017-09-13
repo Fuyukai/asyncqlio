@@ -166,7 +166,7 @@ class AiomysqlConnector(BaseConnector):
         else:
             raise ValueError("Cannot work with paramstyle {}".format(pymysql.paramstyle))
 
-    def get_db_server_info(self):
+    async def get_db_server_info(self):
         pass
 
 
