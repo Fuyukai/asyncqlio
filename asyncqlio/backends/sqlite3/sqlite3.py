@@ -37,9 +37,6 @@ class _SqlitePool:
         """
         Connects this pool.
         """
-        if "timeout" not in kwargs:
-            kwargs["timeout"] = 3600
-
         async with threadpool():
             for x in range(0, self.queue.maxsize):
                 conn = self._new_connection()
