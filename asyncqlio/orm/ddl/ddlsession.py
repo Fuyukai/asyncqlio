@@ -3,6 +3,7 @@ Contains the DDL session object.
 """
 
 import io
+import logging
 
 from asyncqlio.orm.schema import column as md_column, types as md_types
 from asyncqlio.orm.session import SessionBase
@@ -115,3 +116,49 @@ class DDLSession(SessionBase):
         fmt = "ALTER TABLE {} ALTER COLUMN {} TYPE {}".format(table_name, column_name,
                                                               new_type.sql())
         return await self.execute(fmt)
+
+    async def create_index(self, table_name: str, column_name: str, *,
+                           unique: bool = False, name: str = None,
+                           if_not_exists: bool = None):
+        """
+        Creates an index on a column.
+
+        :param table_name: The table with the column to be indexed.
+        :param column_name: The name of the column to be indexed.
+        :param unique: Whether the index should enforce unique values.
+        :param name: A name to give the index, if any.
+        :param if_not_exists: Whether to specify IF NOT EXISTS when crating a
+            named index. This defaults to True.
+            Specifying this argument without name is a TypeError.
+        """
+        fmt = io.StringIO()
+        fmt.write("CREATE ")
+        if unique:
+            fmt.write("UNIQUE ")
+        fmt.write("INDEX")
+        if name:
+            if if_not_exists is not False:
+                fmt.write(" IF NOT EXISTS")
+            fmt.write(" ")
+            fmt.write(name)
+        elif if_not_exists is not None:
+            raise TypeError("Cannot specify if_not_exists without name")
+        fmt.write(" ON ")
+        fmt.write(table_name)
+        fmt.write("(")
+        fmt.write(column_name)
+        fmt.write(");")
+
+        await self.execute(fmt.getvalue())
+
+    async def add_foreign_key(self, table_name: str, column_name: str,
+                              foreign_table: str, foreign_column: str):
+        """
+        :param table_name: The table to add a foreign key to.
+        :param column_name: The column to make a foreign key.
+        :param foreign_table: The table to reference with the foreign key.
+        :param foreign_clolumn: The column to reference with the foreign key.
+        """
+        fmt = ("ALTER TABLE {} ADD FOREIGN KEY ({}) REFERENCES {} ({})"
+               .format(table_name, column_name, foreign_table, foreign_coulumn))
+        await self.execute(fmt)
