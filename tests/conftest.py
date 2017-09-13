@@ -38,7 +38,6 @@ async def table() -> Table:
         await session.drop_table(Test.__tablename__)
 
 
-
 # override for a module scope
 @pytest.fixture(scope="module")
 def event_loop():

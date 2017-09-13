@@ -4,6 +4,8 @@ Contains the DDL session object.
 
 import io
 
+from asyncqlio.backends import mysql, postgresql
+
 from asyncqlio.orm.schema import column as md_column, types as md_types
 from asyncqlio.orm.session import SessionBase
 
@@ -112,36 +114,44 @@ class DDLSession(SessionBase):
         :param column_name: The name of the column to alter the type of.
         :param new_type: The new type to set.
         """
-        fmt = "ALTER TABLE {} ALTER COLUMN {} TYPE {}".format(table_name, column_name,
-                                                              new_type.sql())
-        return await self.execute(fmt)
+        fmt = io.StringIO()
+        fmt.write("ALTER TABLE ")
+        fmt.write(table_name)
+        is_postgres = isinstance(self.bind.dialect, postgresql.PostgresqlDialect)
+        if is_postgres:
+            fmt.write(" ALTER ")
+        elif isinstance(self.bind.dialect, mysql.MysqlDialect):
+            fmt.write(" MODIFY ")
+        else:
+            raise RuntimeError("DB dialect does not support this action.")
+        fmt.write(column_name)
+        if is_postgres:
+            fmt.write(" TYPE ")
+        else:
+            fmt.write(" ")
+        fmt.write(new_type.sql())
 
-    async def create_index(self, table_name: str, column_name: str, *,
-                           unique: bool = False, name: str = None,
-                           if_not_exists: bool = None):
+        return await self.execute(fmt.getvalue())
+
+    async def create_index(self, table_name: str, column_name: str, name: str,
+                           *, unique: bool = False, if_not_exists: bool = False):
         """
         Creates an index on a column.
 
         :param table_name: The table with the column to be indexed.
         :param column_name: The name of the column to be indexed.
+        :param name: The name to give the index.
         :param unique: Whether the index should enforce unique values.
-        :param name: A name to give the index, if any.
-        :param if_not_exists: Whether to specify IF NOT EXISTS when crating a
-            named index. This defaults to True.
-            Specifying this argument without name is a TypeError.
+        :param if_not_exists: Whether to use IF NOT EXISTS when making index.
         """
         fmt = io.StringIO()
         fmt.write("CREATE ")
         if unique:
             fmt.write("UNIQUE ")
-        fmt.write("INDEX")
-        if name:
-            if if_not_exists is not False:
-                fmt.write(" IF NOT EXISTS")
-            fmt.write(" ")
-            fmt.write(name)
-        elif if_not_exists is not None:
-            raise TypeError("Cannot specify if_not_exists without name")
+        fmt.write("INDEX ")
+        fmt.write(name)
+        if if_not_exists:
+            fmt.write(" IF NOT EXISTS")
         fmt.write(" ON ")
         fmt.write(table_name)
         fmt.write("(")
