@@ -3,7 +3,6 @@ Contains the DDL session object.
 """
 
 import io
-import logging
 
 from asyncqlio.orm.schema import column as md_column, types as md_types
 from asyncqlio.orm.session import SessionBase
