@@ -80,6 +80,15 @@ class ColumnType(abc.ABC):
         :return: The str SQL name of this type.
         """
 
+    def schema(self) -> str:
+        """
+        :return: The library schema of this object.
+
+        If this is not defined, any arguments given to the type will not persist
+        across schema generation.
+        """
+        return "{}()".format(type(self).__name__)
+
     def validate_set(self, row: 'md_table.Table',
                      value: typing.Any) -> bool:
         """
@@ -169,6 +178,10 @@ class String(ColumnType):
             return "VARCHAR({})".format(self.size)
         else:
             return "VARCHAR"
+
+    def schema(self):
+        size = self.size if self.size > 0 else ""
+        return "{}({})".format(type(self).__name__, size)
 
     def validate_set(self, row, value: typing.Any):
         if self.size < 0:

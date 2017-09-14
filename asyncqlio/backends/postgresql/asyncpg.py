@@ -138,7 +138,7 @@ class AsyncpgTransaction(BaseTransaction):
             raise IntegrityError(*e.args) from e
         except asyncpg.ObjectNotInPrerequisiteStateError as e:
             raise OperationalError(*e.args) from e
-        except asyncpg.SyntaxOrAccessError as e:
+        except (asyncpg.SyntaxOrAccessError, asyncpg.InFailedSQLTransactionError) as e:
             raise DatabaseException(*e.args) from e
 
         return results

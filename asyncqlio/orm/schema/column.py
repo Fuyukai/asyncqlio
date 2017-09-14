@@ -195,7 +195,7 @@ class Column(object):
 
     # DDL stuff
     @classmethod
-    def with_name(cls, name: str, *args, **kwargs):
+    def with_name(cls, name: str, *args, **kwargs) -> 'Column':
         """
         Creates this column with a name already set.
         """
@@ -224,6 +224,29 @@ class Column(object):
             base.write(" REFERENCES {0} ({1})".format(*fk))
 
         return base.getvalue()
+
+    def generate_schema(self, fp=None) -> str:
+        """
+        Generates the library schema for this column.
+        """
+        schema = fp or io.StringIO()
+        schema.write(self.name)
+        schema.write(" = ")
+        schema.write(type(self).__name__)
+        schema.write("(")
+        schema.write(self.type.schema())
+        if self.nullable:
+            schema.write(", nullable=True")
+        if self.unique:
+            schema.write(", unique=True")
+        if self.foreign_key is not None:
+            schema.write(", foreign_key=")
+            schema.write(self.foreign_key.generate_schema(schema))
+        if self.primary_key:
+            schema.write(", primary_key=True")
+        schema.write(")")
+
+        return schema.getvalue() if fp is None else ""
 
     # Operators
 

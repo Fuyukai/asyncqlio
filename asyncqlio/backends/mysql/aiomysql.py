@@ -98,7 +98,7 @@ class AiomysqlTransaction(BaseTransaction):
             res = await cursor.execute(sql, params)
         except pymysql.err.IntegrityError as e:
             raise IntegrityError(*e.args)
-        except pymysql.err.ProgrammingError as e:
+        except (pymysql.err.ProgrammingError, pymysql.err.InternalError) as e:
             raise DatabaseException(*e.args)
         finally:
             await cursor.close()

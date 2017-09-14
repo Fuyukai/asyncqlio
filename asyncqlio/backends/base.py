@@ -71,6 +71,32 @@ class BaseDialect:
         """
         raise NotImplementedError
 
+    def get_primary_key_index_name(self, table_name: str) -> str:
+        """
+        Get the name a dialect gives to a table's primary key index.
+        """
+        raise NotImplementedError
+
+    def get_unique_column_index_name(self, table_name: str) -> str:
+        """
+        Get the name a dialect gives to a unique column index.
+        """
+        raise NotImplementedError
+
+    def get_index_sql(self, tablename: str = None,
+                      *, emitter: 'typing.Callable[[str], str]') -> str:
+        """
+        Get a query to find information on all indexes, optionally limiting by table.
+        """
+        raise NotImplementedError
+
+    def transform_rows_to_indexes(self, *rows: 'DictRow'
+                                  ) -> 'typing.Generator[Index, None, None]':
+        """
+        Transform an appropriate database row to an Index object.
+        """
+        raise NotImplementedError
+
 
 class BaseResultSet(collections.AsyncIterator, AsyncABC):
     """

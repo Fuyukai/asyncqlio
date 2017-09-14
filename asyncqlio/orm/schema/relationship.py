@@ -54,10 +54,28 @@ class ForeignKey(object):
             return tuple(self._f_name.split("."))[0:2]
 
         # otherwise
-        return self.column.name, self.column.table.__tablename__
+        return self.foreign_column.table.__tablename__, self.foreign_column.name
 
     def __repr__(self):
         return "<ForeignKey owner='{}' foreign='{}'>".format(self.column, self.foreign_column)
+
+
+    def generate_schema(self, fp=None) -> str:
+        """
+        Generates a library schema for this foreign key.
+        """
+        schema = fp or io.StringIO()
+        schema.write(type(self).__name__)
+        schema.write('("')
+        if self._f_name is None:
+            schema.write(self.foreign_column.table.__name__)
+            schema.write(".")
+            schema.write(self.foreign_column.name)
+        else:
+            schema.write(self._f_name)
+        schema.write('")')
+
+        return schema.getvalue() if fp is None else ""
 
 
 class Relationship(object):
@@ -165,6 +183,8 @@ class Relationship(object):
 
         self._table_alias = table_alias
 
+        self._alias_set = table_alias is not None
+
         if self.use_iter is False:
             self.load_type = "joined"
 
@@ -197,7 +217,7 @@ class Relationship(object):
             f_name = "<unknown>"
         return "<Relationship '{}' <-> '{}'>".format(o_name, f_name)
 
-    def _get_join_query(self, parent: 'Relationship'):
+    def _get_join_query(self, parent: 'Relationship') -> str:
         """
         Gets the join part of a SELECT query for this relationship.
 
@@ -251,7 +271,7 @@ class Relationship(object):
         return self.left_column
 
     @property
-    def foreign_table(self):
+    def foreign_table(self) -> 'md_table.Table':
         if isinstance(self._table_alias, md_table.AliasedTable):
             return self._table_alias
 
@@ -282,6 +302,46 @@ class Relationship(object):
                 return JoinLoadedOTMRelationship(self, row, session or row._session)
         else:
             raise NotImplementedError("Unknown load type {}".format(self.load_type))
+
+    def _write_column(self, col: 'typing.Union[str, md_column.Column]', fp=None):
+        schema = fp or io.StringIO()
+        schema.write('"')
+        if isinstance(col, str):
+            schema.write(col)
+        else:
+            schema.write(col.table.__name__)
+            schema.write(".")
+            schema.write(col.name)
+        schema.write('"')
+
+    def generate_schema(self, fp=None) -> str:
+        """
+        Generates the library schema for this relationship.
+        """
+        schema = fp or io.StringIO()
+
+        schema.write(self._name)
+        schema.write(" = ")
+        schema.write(type(self).__name__)
+        schema.write("(left=")
+        self._write_column(self.left_column, schema)
+        schema.write(", right=")
+        self._write_column(self.right_column, schema)
+        if self.load_type != "select":
+            schema.write(', load="')
+            schema.write(self.load_type)
+            schema.write('"')
+        if self.back_reference is not None:
+            schema.write(', back_ref="')
+            schema.write(self.back_reference)
+            schema.write('"')
+        if self._alias_set:
+            schema.write(', table_alias="')
+            schema.write(self._table_alias.__tablename__)
+            schema.write('"')
+        schema.write(")")
+
+        return schema.getvalue() if fp is None else ""
 
 
 # Specific relationship types produced for TableRow objects.

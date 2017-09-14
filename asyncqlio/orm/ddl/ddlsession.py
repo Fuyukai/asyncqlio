@@ -2,11 +2,15 @@
 Contains the DDL session object.
 """
 
+import itertools
+import operator
 import io
+import re
 
 from asyncqlio.backends import mysql, postgresql
 
-from asyncqlio.orm.schema import column as md_column, types as md_types
+from asyncqlio.orm.schema import column as md_column, types as md_types,\
+    table as md_table, index as md_index
 from asyncqlio.orm.session import SessionBase
 
 
@@ -171,3 +175,22 @@ class DDLSession(SessionBase):
         fmt = ("ALTER TABLE {} ADD FOREIGN KEY ({}) REFERENCES {} ({})"
                .format(table_name, column_name, foreign_table, foreign_coulumn))
         await self.execute(fmt)
+
+    async def get_indexes(self, table_name: str = None
+                          ) -> 'typing.Generator[md_index.Index, None, None]':
+        """
+        Yields a :class:`.md_index.Index` for each index in the specified table,
+        or for each index in the schema if no table is specified.
+
+        These indexes don't point to a :class:`.md_table.Table` since there
+        might not be one, but they have a table_name attribute.
+
+        :param table_name: The table to get indexes from, or all tables if omitted
+        """
+        params = {"table_name": table_name}
+        emitter = self.bind.emit_param
+        sql = self.bind.dialect.get_index_sql(table_name, emitter=emitter)
+        cur = await self.transaction.cursor(sql, params)
+        records = await cur.flatten()
+        await cur.close()
+        return self.bind.dialect.transform_rows_to_indexes(records[0])
