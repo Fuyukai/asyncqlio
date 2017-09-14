@@ -20,11 +20,11 @@ table_name = "test"
 
 async def get_num_indexes(db: DatabaseInterface) -> int:
     if isinstance(db.dialect, postgresql.PostgresqlDialect):
-        query = ("select count(*) from pg_indexes where tablename = {}"
+        query = ("select count(*) from pg_indexes where table_name = {}"
                  .format(db.connector.emit_param("table_name")))
     elif isinstance(db.dialect, mysql.MysqlDialect):
-        query = ("SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS "
-                 "WHERE TABLE_SCHEMA = {};".format(db.connector.emit_param("table_name")))
+        query = ("select count(*) from information_schema.statistics where "
+                 "table_schema in (select database() from dual)")
     else:
         raise RuntimeError
     params = {"table_name": table_name}
