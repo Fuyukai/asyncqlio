@@ -20,7 +20,7 @@ table_name = "test"
 
 async def get_num_indexes(db: DatabaseInterface) -> int:
     if isinstance(db.dialect, postgresql.PostgresqlDialect):
-        query = ("select count(*) from pg_indexes where table_name = {}"
+        query = ("select count(*) from pg_indexes where tablename = {}"
                  .format(db.connector.emit_param("table_name")))
     elif isinstance(db.dialect, mysql.MysqlDialect):
         query = ("select count(*) from information_schema.statistics where "
