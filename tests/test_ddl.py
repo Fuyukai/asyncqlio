@@ -75,7 +75,7 @@ async def test_alter_column_type(db: DatabaseInterface):
     async with db.get_ddl_session() as sess:
         await sess.alter_column_type(table_name, "age", Real())
     async with db.get_session() as sess:
-        await sess.execute("insert into {} values (1, 'test', 1.5)".format(table_name))
+        await sess.execute("insert into {} values (1, 3.0, 1.5)".format(table_name))
         result = await sess.fetch("select age from {}".format(table_name))
         assert result['age'] == 1.5
 
