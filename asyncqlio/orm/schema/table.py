@@ -224,6 +224,7 @@ class TableMetadata(object):
                     table_name=name,
                 )
 
+
 class TableMeta(type):
     """
     The metaclass for a table object. This represents the "type" of a table class.
@@ -997,7 +998,6 @@ class Table(metaclass=TableMeta, register=False):
             schema.write("\n")
 
         return schema.getvalue() if fp is None else ""
-
 
 
 def table_base(name: str = "Table", meta: 'TableMetadata' = None):

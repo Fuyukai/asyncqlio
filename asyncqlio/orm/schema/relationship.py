@@ -59,7 +59,6 @@ class ForeignKey(object):
     def __repr__(self):
         return "<ForeignKey owner='{}' foreign='{}'>".format(self.column, self.foreign_column)
 
-
     def generate_schema(self, fp=None) -> str:
         """
         Generates a library schema for this foreign key.
