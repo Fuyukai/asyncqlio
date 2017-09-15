@@ -35,8 +35,7 @@ car_body = '''class Car(Table):
     make = Column(String(32))
     model = Column(String(32))
     year = Column(Integer())
-    idx_make = Index(make)
-    idx_model = Index(model)
+    idx_make_model = Index(make, model)
     idx_year = Index(year)
 '''
 
