@@ -59,6 +59,31 @@ class ForeignKey(object):
     def __repr__(self):
         return "<ForeignKey owner='{}' foreign='{}'>".format(self.column, self.foreign_column)
 
+    def get_ddl_sql(self, name: str =None) -> str:
+        """
+        Generates SQL to add this foreign key as a named constraint.
+
+        :param name:
+        """
+        sql = io.StringIO()
+
+        sql.write("CONSTRAINT ")
+        if name is not None:
+            sql.write(name)
+        else:
+            sql.write("FK_")
+            sql.write(self.column.table.__name__)
+            sql.write(self.foreign_column.table.__name__)
+        sql.write(" FOREIGN KEY (")
+        sql.write(self.column.name)
+        sql.write(") REFERENCES ")
+        sql.write(self.foreign_column.table.__tablename__)
+        sql.write("(")
+        sql.write(self.foreign_column.name)
+        sql.write(")")
+
+        return sql.getvalue()
+
     def generate_schema(self, fp=None) -> str:
         """
         Generates a library schema for this foreign key.

@@ -219,10 +219,6 @@ class Column(object):
         if self.unique:
             base.write(" UNIQUE")
 
-        if self.foreign_key is not None:
-            fk = self.foreign_key._ddl_split_fk()
-            base.write(" REFERENCES {0} ({1})".format(*fk))
-
         return base.getvalue()
 
     def generate_schema(self, fp=None) -> str:

@@ -473,6 +473,7 @@ class TableMeta(type):
         sql.write(self.__tablename__)
 
         primary_key_columns = []
+        foreign_key_columns = []
         column_fields = []
         relationship_fields = []
 
@@ -480,6 +481,8 @@ class TableMeta(type):
             column_fields.append(column.get_ddl_sql())
             if column.primary_key is True:
                 primary_key_columns.append(column)
+            elif column.foreign_key is not None:
+                foreign_key_columns.append(column)
 
         sql.write("(\n    ")
         sql.write(",\n    ".join(column_fields))
@@ -490,6 +493,11 @@ class TableMeta(type):
             )
             sql.write(",\n    ")
             sql.write(pkey_text)
+
+        for column in foreign_key_columns:
+            sql.write(",\n    ")
+            sql.write(column.foreign_key.get_ddl_sql())
+
         sql.write("\n)")
 
         unique_idx_name = self._bind.dialect.get_unique_column_index_name
