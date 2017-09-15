@@ -80,7 +80,7 @@ class ForeignKey(object):
         sql.write(self.foreign_column.table.__tablename__)
         sql.write("(")
         sql.write(self.foreign_column.name)
-        sql.write(")")
+        sql.write(") ON DELETE CASCADE")
 
         return sql.getvalue()
 
