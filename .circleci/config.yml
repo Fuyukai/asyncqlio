@@ -74,7 +74,7 @@ jobs:
             DOCKERIZE_VERSION: v0.3.0
 
       - run:
-          name: Wait for Postgres to be ready
+          name: Wait for MySQL to be ready
           command: dockerize -wait tcp://localhost:3306 -timeout 1m
 
       - run:
