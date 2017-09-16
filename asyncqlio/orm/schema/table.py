@@ -463,51 +463,16 @@ class TableMeta(type):
         return None
 
     @enforce_bound
-    async def create(self):
+    async def create(self, *, if_not_exists: bool = True):
         """
         Creates a table with this schema in the database.
         """
-        sql = io.StringIO()
-        sql.write("CREATE TABLE ")
-        sql.write(self.__tablename__)
-
-        primary_key_columns = []
-        foreign_key_columns = []
-        column_fields = []
-        relationship_fields = []
-
-        for column in self.iter_columns():
-            column_fields.append(column.get_ddl_sql())
-            if column.primary_key is True:
-                primary_key_columns.append(column)
-            elif column.foreign_key is not None:
-                foreign_key_columns.append(column)
-
-        sql.write("(\n    ")
-        sql.write(",\n    ".join(column_fields))
-
-        if primary_key_columns:
-            pkey_text = "PRIMARY KEY ({})".format(
-                ", ".join("{.name}".format(x) for x in primary_key_columns)
-            )
-            sql.write(",\n    ")
-            sql.write(pkey_text)
-
-        for column in foreign_key_columns:
-            sql.write(",\n    ")
-            sql.write(column.foreign_key.get_ddl_sql())
-
-        sql.write("\n)")
-
-        unique_idx_name = self._bind.dialect.get_unique_column_index_name
-        pkey_name = self._bind.dialect.get_primary_key_index_name
-        for index in self.explicit_indexes():
-            sql.write(';\n')
-            sql.write(index.get_ddl_sql())
-        sql.write(";")
-
-        async with self._bind.get_session() as session:
-            await session.execute(sql.getvalue())
+        async with self._bind.get_ddl_session() as sess:
+            await sess.create_table(self.__tablename__,
+                                    *self.iter_columns(),
+                                    *self.explicit_indexes(),
+                                    if_not_exists=if_not_exists,
+                                    )
 
     @enforce_bound
     async def drop(self, cascade: bool = False):

@@ -20,7 +20,7 @@ class DDLSession(SessionBase):
     """
 
     async def create_table(self, table_name: str,
-                           *items: 'md_column.Column',
+                           *items: 'typing.Union[md_column.Column, md_index.Index]',
                            if_not_exists: bool = True):
         """
         Creates a table in this database.
@@ -29,43 +29,51 @@ class DDLSession(SessionBase):
         :param items: A list of items to add to the table (columns, indexes, etc).
         :param if_not_exists:
         """
-        base = io.StringIO()
-        base.write("CREATE TABLE ")
+        sql = io.StringIO()
+        sql.write("CREATE TABLE ")
         if if_not_exists:
-            base.write("IF NOT EXISTS ")
+            sql.write("IF NOT EXISTS ")
 
-        base.write(table_name)
+        sql.write(table_name)
 
         # copy item names
+        primary_key_columns = []
+        foreign_key_columns = []
         column_fields = []
+        indexes = []
 
         for i in items:
             # TODO: more items
             if isinstance(i, md_column.Column):
                 column_fields.append(i.get_ddl_sql())
+                if i.primary_key is True:
+                    primary_key_columns.append(i)
+                elif i.foreign_key is not None:
+                    foreign_key_columns.append(i)
+            elif isinstance(i, md_index.Index):
+                indexes.append(i)
+            else:
+                raise TypeError("Cannot create a table with a {}".format(type(i)))
 
-        # calculate primary key
-        primary_key_cols = [col for col in items
-                            if isinstance(col, md_column.Column) and
-                            col.primary_key is True]
+        # this uses spacing to prettify the generated SQL a bit
+        sql.write("(\n    ")
+        sql.write(",\n    ".join(column_fields))
+
         # check to see if we actually have any, or if there was a special type used
         # e.g. for sqlite3
-        if primary_key_cols:
-            pkey_text = "PRIMARY KEY ({})".format(
-                ", ".join("{.name}".format(x) for x in primary_key_cols)
-            )
-        else:
-            pkey_text = ""
+        if primary_key_columns:
+            sql.write(",\n    PRIMARY KEY (")
+            sql.write(", ".join(col.name for col in primary_key_columns))
+            sql.write(")")
 
-        # join it all up
-        # this uses spacing to prettify the generated SQL a bit
-        base.write("(\n    {}".format(",\n    ".join(column_fields)))
-        if pkey_text:
-            base.write(",\n    {}".format(pkey_text))
+        sql.write("\n);")
 
-        base.write("\n);")
+        for index in indexes:
+            sql.write("\n")
+            sql.write(index.get_ddl_sql())
+            sql.write(";")
 
-        return await self.execute(base.getvalue())
+        return await self.execute(sql.getvalue())
 
     async def drop_table(self, table_name: str, *,
                          cascade: bool = False):
