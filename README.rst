@@ -12,8 +12,7 @@ asyncqlio
 
 `Read the documentation <http://asyncqlio.readthedocs.io/>`_
 
-**asyncqlio** is a Python 3.5+ ORM for SQL Relational Databases,
-that uses asyncio for an async interface.
+**asyncqlio** is a Python 3.5+ ORM for SQL Relational Databases, that allows access from async code.
 
 You can install the latest version of asyncqlio from PyPI with pip:
 

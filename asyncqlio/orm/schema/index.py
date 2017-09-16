@@ -1,5 +1,6 @@
-import logging
 import io
+import logging
+import typing
 
 from asyncqlio.orm.schema import column as md_column
 
@@ -77,7 +78,7 @@ class Index(object):
 
         return base.getvalue()
 
-    def _get_column_refs(self) -> 'Typing.Generator[str, None, None]':
+    def _get_column_refs(self) -> 'typing.Generator[str, None, None]':
         for column in self.columns:
             if isinstance(column, str):
                 yield '"{}"'.format(column)
