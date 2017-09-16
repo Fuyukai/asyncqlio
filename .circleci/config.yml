@@ -24,10 +24,6 @@ jobs:
           name: Install git
           command: apt update && apt install git -y
 
-      - run:
-          name: Install codecov
-          command: pip install codecov
-
       - checkout
       - run:
           name: Install dockerize
@@ -43,10 +39,6 @@ jobs:
           name: Run tests via tox
           command: |
             tox -e py36-postgres_asyncpg
-
-      - run:
-          name: Upload coverage
-          command: codecov
 
   "mysql-aiomysql":
     docker:
