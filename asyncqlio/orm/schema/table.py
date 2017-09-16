@@ -217,7 +217,6 @@ class TableMetadata(object):
                 index_name = self._bind.dialect.get_unique_column_index_name(name, column.name)
                 if not index_name:
                     return
-                print(index_name)
                 table._indexes[index_name] = md_index.Index.with_name(
                     index_name,
                     column,
@@ -991,7 +990,12 @@ class Table(metaclass=TableMeta, register=False):
         schema = fp or io.StringIO()
         schema.write("class ")
         schema.write(cls.__name__)
-        schema.write("(Table):\n")
+        schema.write("(Table")
+        if cls.__name__.lower() != cls.__tablename__:
+            schema.write(', table_name="')
+            schema.write(cls.__tablename__)
+            schema.write('"')
+        schema.write("):\n")
         for column in cls.iter_columns():
             schema.write("    ")
             schema.write(column.generate_schema(fp))
