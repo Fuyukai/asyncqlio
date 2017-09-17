@@ -74,6 +74,25 @@ jobs:
           command: |
             tox -e py36-mysql_aiomysql
 
+  "sqlite3-sqlite3":
+    docker:
+      # this image has python 3.4/3.5/3.6 etc all installed
+      - image: themattrix/tox
+        environment:
+          ASQL_DSN: "sqlite3:///test.db"
+
+    working_directory: ~/asyncqlio
+    steps:
+      - run:
+          name: Install git
+          command: apt update && apt install git -y
+
+      - checkout
+
+      - run:
+          name: Run tests via tox
+          command: |
+              tox -e py36-sqlite3_sqlite3
 
 workflows:
   version: 2
@@ -81,3 +100,4 @@ workflows:
     jobs:
       - "postgres-asyncpg"
       - "mysql-aiomysql"
+      - "sqlite3-sqlite3"
