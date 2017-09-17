@@ -194,10 +194,12 @@ class Sqlite3Transaction(BaseTransaction):
 
         return Sqlite3ResultSet(cur)
 
-    async def close(self):
+    async def close(self, *, has_error: bool = False):
         """
         Closes the current transaction.
         """
+        # we can ignore has_error
+        # because we try and do proper transaction logic
         await self.connector.pool.release(self.connection)
         self.connection = None
 

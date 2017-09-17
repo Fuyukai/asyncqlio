@@ -63,7 +63,7 @@ class SessionBase(object):
                 if exc_type != DatabaseException:
                     await self.rollback()
         finally:
-            await self.close()
+            await self.close(has_error=exc_type is not None)
 
         return False
 
@@ -118,15 +118,17 @@ class SessionBase(object):
         return self
 
     @enforce_open
-    async def close(self):
+    async def close(self, *, has_error: bool = False):
         """
         Closes the current session.
+
+        :param has_error: If this session had an error. Internal usage only.
 
         .. warning::
 
             This will **NOT COMMIT ANY DATA**. Old data will die.
         """
-        await self.transaction.close()
+        await self.transaction.close(has_error=has_error)
         self._state = SessionState.CLOSED
         del self.transaction
 

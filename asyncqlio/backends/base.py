@@ -241,9 +241,12 @@ class BaseTransaction(AsyncABC):
         """
 
     @abstractmethod
-    async def close(self):
+    async def close(self, *, has_error: bool = False):
         """
         Called at the end of a transaction to cleanup.
+        The connection will be released if there's no error; otherwise it will be closed.
+
+        :param has_error: If the transaction has an error.
         """
 
     @abstractmethod

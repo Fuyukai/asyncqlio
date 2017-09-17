@@ -4,7 +4,7 @@ Tests the low-level API.
 
 import pytest
 
-from asyncqlio import BaseTransaction, DatabaseInterface
+from asyncqlio import BaseTransaction, DatabaseException, DatabaseInterface
 
 # mark all test_ functions as coroutines
 pytestmark = pytest.mark.asyncio
@@ -29,6 +29,7 @@ async def test_transaction_use(db: DatabaseInterface):
     await tr.execute("SELECT 1 + 1;")
     await tr.rollback()
     await tr.close()
+
 
 async def test_transaction_fetch_one(db: DatabaseInterface):
     tr = db.get_transaction()
@@ -71,3 +72,23 @@ async def test_transaction_fetch_many(db: DatabaseInterface):
 
     await tr.rollback()
     await tr.close()
+
+
+async def test_transaction_with_error(db: DatabaseInterface):
+    tr = db.get_transaction()
+    await tr.begin()
+
+    with pytest.raises(DatabaseException):
+        try:
+            # deliberately bad query
+            await tr.execute("SELECT nonexistant FROM nosuchtable;")
+        finally:
+            await tr.rollback()
+            await tr.close(has_error=True)
+
+    # dont raise this time
+    await tr.begin()
+    await tr.execute("SELECT 1+1;")
+    await tr.rollback()
+    await tr.close()
+

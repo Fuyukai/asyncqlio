@@ -8,8 +8,7 @@ import aiomysql
 import pymysql
 
 from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
-
-from asyncqlio.exc import IntegrityError, DatabaseException
+from asyncqlio.exc import DatabaseException, IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +67,12 @@ class AiomysqlTransaction(BaseTransaction):
         #: The current acquired connection for this transaction.
         self.connection = None  # type: aiomysql.Connection
 
-    async def close(self):
+    async def close(self, *, has_error: bool = False):
         """
         Closes the current connection.
         """
+        if has_error:
+            self.connection.close()
         # release it back to the pool so we don't eat all the connections
         self.connector.pool.release(self.connection)
 

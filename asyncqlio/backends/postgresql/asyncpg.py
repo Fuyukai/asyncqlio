@@ -118,7 +118,9 @@ class AsyncpgTransaction(BaseTransaction):
         else:
             await self.transaction.rollback()
 
-    async def close(self):
+    async def close(self, *, has_error: bool = False):
+        if has_error:
+            await self.acquired_connection.close()
         await self.connector.pool.release(self.acquired_connection)
 
     async def execute(self, sql: str, params: typing.Mapping[str, typing.Any] = None):
