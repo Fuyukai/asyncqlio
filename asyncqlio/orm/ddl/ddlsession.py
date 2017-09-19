@@ -76,20 +76,23 @@ class DDLSession(SessionBase):
         return await self.execute(sql.getvalue())
 
     async def drop_table(self, table_name: str, *,
-                         cascade: bool = False):
+                         cascade: bool = False,
+                         if_exists: bool = True):
         """
         Drops a table.
 
         :param table_name: The name of the table to drop.
         :param cascade: Should this drop cascade?
+        :param if_exists: Should we should only attempt to drop tables that exist?
         """
         base = io.StringIO()
         base.write("DROP TABLE ")
+        if if_exists:
+            base.write("IF EXISTS ")
         base.write(table_name)
         if cascade:
-            base.write(" CASCADE;")
-        else:
-            base.write(";")
+            base.write(" CASCADE")
+        base.write(";")
 
         return await self.execute(base.getvalue())
 

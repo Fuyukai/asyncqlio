@@ -384,14 +384,15 @@ class TableMeta(type):
         Only manually added indexes are yielded from this generator; that is, it
         ignores primary key indexes, unique column indexes, relationship indexes, etc
         """
-        unique_idx_name = self._bind.dialect.get_unique_column_index_name
-        pkey_name = self._bind.dialect.get_primary_key_index_name
+        table_name = self.__tablename__
         for index in self.iter_indexes():
-            if index.name == pkey_name(self.__tablename__):
+            if index.table_name != table_name:
                 continue
-            elif index.name == unique_idx_name(self.__tablename__, next(index.get_column_names())):
+            if index.name == self._bind.dialect.get_primary_key_index_name(table_name):
                 continue
-            elif index.table_name != self.__tablename__:
+            unique_names = (self._bind.dialect.get_unique_column_index_name(table_name, col_name)
+                            for col_name in index.get_column_names())
+            if index.name in unique_names:
                 continue
             yield index
 
@@ -475,14 +476,15 @@ class TableMeta(type):
                                     )
 
     @enforce_bound
-    async def drop(self, cascade: bool = False):
+    async def drop(self, *, cascade: bool = False, if_exists: bool = True):
         """
         Drops this table, or a table with the same name, from the database.
 
         :param cascade: If this drop should cascade.
+        :param if_exists: If we should only attempt to drop tables that exist.
         """
         async with self._bind.get_ddl_session() as sess:
-            await sess.drop_table(self.__tablename__, cascade=cascade)
+            await sess.drop_table(self.__tablename__, if_exists=if_exists, cascade=cascade)
 
     @property
     def primary_key(self) -> 'PrimaryKey':

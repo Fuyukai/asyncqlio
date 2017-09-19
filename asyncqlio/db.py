@@ -34,7 +34,7 @@ class DatabaseInterface(object):
 
     """
 
-    def __init__(self, dsn: str = None, *, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, dsn: str, *, loop: asyncio.AbstractEventLoop = None):
         """
         :param dsn:
             The `Data Source Name <http://whatis.techtarget.com/definition/data-source-name-DSN>_`
@@ -43,11 +43,36 @@ class DatabaseInterface(object):
         self._dsn = dsn
         self.loop = loop or asyncio.get_event_loop()
 
-        #: The current connector instance.
-        self.connector = None  # type: BaseConnector
+        parsed_dsn = urlparse(self._dsn)  # type: ParseResult
+        # db type must always exist
+        # the connector doesn't have to exist, however
+        # if so we use a sentinel value
+        schemes = parsed_dsn.scheme.split("+")
+        db_type = schemes[0]
+        try:
+            db_connector = schemes[1]
+        except IndexError:
+            db_connector = NO_CONNECTOR
+
+        import_path = "asyncqlio.backends.{}".format(db_type)
+        package = importlib.import_module(import_path)
+        if db_connector is not NO_CONNECTOR:
+            mod_path = ".".join([import_path, db_connector])
+        else:
+            mod_path = ".".join([import_path, package.DEFAULT_CONNECTOR])
 
         #: The current Dialect instance.
-        self.dialect = None  # type: BaseDialect
+        self.dialect = getattr(package, "{}Dialect".format(db_type.title()))()  # type: BaseDialect
+
+        logger.debug("Loading connector {}".format(mod_path))
+
+        connector_mod = importlib.import_module(mod_path)
+
+        self._connector_type = connector_mod.CONNECTOR_TYPE
+        self._parsed_dsn = parsed_dsn
+
+        #: The current connector instance.
+        self.connector = None  # type: BaseConnector
 
     async def __aenter__(self):
         if not self.connected:
@@ -77,46 +102,16 @@ class DatabaseInterface(object):
         md.setup_tables()
         return md
 
-    async def connect(self, dsn: str = None, **kwargs) -> BaseConnector:
+    async def connect(self, **kwargs) -> BaseConnector:
         """
         Connects the interface to the database server.
 
         .. note::
             For SQLite3 connections, this will just open the database for reading.
 
-        :param dsn: The Data Source Name to connect to, if it was not specified in the constructor.
         :return: The :class:`~.BaseConnector` established.
         """
-        if dsn is not None:
-            self._dsn = dsn
-
-        parsed_dsn = urlparse(self._dsn)  # type: ParseResult
-        # db type must always exist
-        # the connector doesn't have to exist, however
-        # if so we use a sentinel value
-        schemes = parsed_dsn.scheme.split("+")
-        db_type = schemes[0]
-        try:
-            db_connector = schemes[1]
-        except IndexError:
-            db_connector = NO_CONNECTOR
-
-        import_path = "asyncqlio.backends.{}".format(db_type)
-        package = importlib.import_module(import_path)
-        if db_connector is not NO_CONNECTOR:
-            mod_path = ".".join([import_path, db_connector])
-        else:
-            mod_path = ".".join([import_path, package.DEFAULT_CONNECTOR])
-
-        self.dialect = getattr(package, "{}Dialect".format(db_type.title()))()
-
-        logger.debug("Loading connector {}".format(mod_path))
-
-        connector_mod = importlib.import_module(mod_path)
-        connector_ins = connector_mod.CONNECTOR_TYPE(
-            parsed_dsn, loop=self.loop
-        )  # type: BaseConnector
-        self.connector = connector_ins
+        self.connector = self._connector_type(self._parsed_dsn, loop=self.loop)
         try:
             await self.connector.connect(**kwargs)
         except Exception:

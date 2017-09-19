@@ -13,12 +13,12 @@ from asyncqlio.orm.schema.types import Integer, Text
 
 
 # global so it can be accessed in other fixtures
-iface = DatabaseInterface()
+iface = DatabaseInterface(dsn=os.environ["ASQL_DSN"])
 
 
 @pytest.fixture(scope="module")
 async def db() -> DatabaseInterface:
-    await iface.connect(dsn=os.environ["ASQL_DSN"])
+    await iface.connect()
     yield iface
     await iface.close()
 

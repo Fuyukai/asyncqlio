@@ -39,9 +39,12 @@ class Index(object):
         :param owner: The :class:`.Table` this Column is on.
         :param name: The str name of this table.
         """
-        logger.debug("Index created with name {} on {}".format(name, owner))
-        self.name = name
         self.table = owner
+        if name.startswith(self.table_name):
+            self.name = name
+        else:
+            self.name = "{}_{}".format(self.table_name, name)
+        logger.debug("Index created with name {} on {}".format(name, owner))
 
     def get_column_names(self):
         for column in self.columns:
