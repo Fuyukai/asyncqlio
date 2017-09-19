@@ -6,6 +6,7 @@ import io
 
 from cached_property import cached_property
 
+from asyncqlio.backends import sqlite3
 from asyncqlio.meta import proxy_to_getattr
 from asyncqlio.orm import operators as md_operators
 from asyncqlio.orm.schema import relationship as md_relationship, table as md_table, \
@@ -91,7 +92,6 @@ class Column(object):
                  primary_key: bool = False,
                  nullable: bool = False,
                  default: typing.Any = NO_DEFAULT,
-                 autoincrement: bool = False,
                  index: bool = True,
                  unique: bool = False,
                  foreign_key: 'md_relationship.ForeignKey' = None,
@@ -109,9 +109,6 @@ class Column(object):
         :param default:
             The client-side default for this column. If no value is provided when inserting, this
             value will automatically be added to the insert query.
-
-        :param autoincrement:
-            Should this column auto-increment? This will create a serial sequence.
 
         :param index:
             Should this column be indexed?
@@ -134,6 +131,7 @@ class Column(object):
         if not isinstance(self.type, md_types.ColumnType):
             # assume we need to create the "default" type
             self.type = self.type.create_default()  # type: md_types.ColumnType
+
         # update our own object on the column
         self.type.column = self
 
@@ -145,9 +143,6 @@ class Column(object):
 
         #: If this Column is nullable.
         self.nullable = nullable
-
-        #: If this Column is to autoincrement.
-        self.autoincrement = autoincrement
 
         #: If this Column is indexed.
         self.indexed = index
@@ -201,6 +196,15 @@ class Column(object):
         if isinstance(self.table, str):
             return self.table
         return self.table.__tablename__
+
+    @property
+    def autoincrement(self) -> str:
+        """
+        Whether this column is set to autoincrement.
+        """
+        if isinstance(self.table.metadata._bind.dialect, sqlite3.Sqlite3Dialect):
+            return self.primary_key and isinstance(self.type, md_types.Integer)
+        return isinstance(self.type, md_types.Serial)
 
     # DDL stuff
     @classmethod

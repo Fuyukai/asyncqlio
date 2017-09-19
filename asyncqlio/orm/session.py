@@ -361,7 +361,7 @@ class Session(SessionBase):
                         # there should only be one value here
                         value = list(lval_row.values())[0]
                     column = next(
-                        filter(lambda x: x.auto_increment, row.table.iter_columns()), None
+                        filter(lambda x: x.autoincrement, row.table.iter_columns()), None
                     )
                     row.store_column_value(column, value)
 

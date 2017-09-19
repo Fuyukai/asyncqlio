@@ -296,6 +296,35 @@ class BigInt(Integer):
         return -9223372036854775808 < value < 9223372036854775807
 
 
+class Serial(Integer):
+    """
+    Represents a SERIAL type.
+
+    This type does not exist in SQLite; integer primary keys autoincrement already.
+    """
+
+    def sql(self):
+        return "SERIAL"
+
+
+class BigSerial(Serial, BigInt):
+    """
+    Represents a BIGSERIAL type.
+    """
+
+    def sql(self):
+        return "BIGSERIAL"
+
+
+class SmallSerial(Serial, SmallInt):
+    """
+    Represents a SMALLSERIAL type.
+    """
+
+    def sql(self):
+        return "SMALLSERIAL"
+
+
 class Real(ColumnType):
     """
     Represents a REAL type.
