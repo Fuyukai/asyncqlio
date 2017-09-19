@@ -7,8 +7,8 @@ import operator
 import io
 import re
 
-from asyncqlio.backends import mysql, postgresql
-
+from asyncqlio.backends import mysql, postgresql, sqlite3
+from asyncqlio.exc import UnsupportedOperationException
 from asyncqlio.orm.schema import column as md_column, types as md_types,\
     table as md_table, index as md_index
 from asyncqlio.orm.session import SessionBase
@@ -93,6 +93,21 @@ class DDLSession(SessionBase):
 
         return await self.execute(base.getvalue())
 
+    async def rename_table(self, table_name: str, new_name: str):
+        """
+        Changes a table's name.
+
+        :param table_name: The table to change the name of.
+        :param new_name: The new name to give the table.
+        """
+        if isinstance(self.bind.dialect, (postgresql.PostgresqlDialect, sqlite3.Sqlite3Dialect)):
+            fmt = "ALTER TABLE {} RENAME TO {};"
+        elif isinstance(self.bind.dialect, mysql.MysqlDialect):
+            fmt = "RENAME TABLE {} TO {};"
+        else:
+            raise UnsupportedOperationException
+        return await self.execute(fmt.format(table_name, new_name))
+
     async def add_column(self, table_name: str, column: 'md_column.Column'):
         """
         Adds a column to a table.
@@ -102,6 +117,8 @@ class DDLSession(SessionBase):
         """
         ddl = column.get_ddl_sql()
         base = "ALTER TABLE {} ADD COLUMN {};".format(table_name, ddl)
+        if isinstance(self.bind.dialect, sqlite3.Sqlite3Dialect):
+            base = base.replace("NOT NULL", "NULL")
 
         return await self.execute(base)
 
@@ -112,6 +129,20 @@ class DDLSession(SessionBase):
         :param table_name: The name of the table with the column.
         :param column_name: The name of the column to drop.
         """
+        if isinstance(self.bind.dialect, sqlite3.Sqlite3Dialect):
+            # sqlite3 is so good guys
+            tmp_name = "tmp_modify_{}".format(table_name)
+            columns = []
+            for column in await self.get_columns(table_name):
+                if column.name != column_name:
+                    columns.append(column)
+            col_names = ", ".join(col.name for col in columns)
+            await self.create_table(tmp_name, *columns, *await self.get_indexes(table_name))
+            await self.execute("insert into {} select {} from {}"
+                               .format(tmp_name, col_names, table_name))
+            await self.drop_table(table_name)
+            await self.rename_table(tmp_name, table_name)
+            return
         # actually use params here
         fmt = "ALTER TABLE {} DROP COLUMN {};".format(table_name, column_name)
         return await self.execute(fmt)
@@ -126,6 +157,21 @@ class DDLSession(SessionBase):
         :param column_name: The name of the column to alter the type of.
         :param new_type: The new type to set.
         """
+        if isinstance(self.bind.dialect, sqlite3.Sqlite3Dialect):
+            # we're in for a a ride
+            tmp_name = "tmp_modify_{}".format(table_name)
+            columns = []
+            if not isinstance(new_type, md_types.ColumnType):
+                new_type = new_type()
+            for column in await self.get_columns(table_name):
+                if column.name == column_name:
+                    column.type = new_type
+                columns.append(column)
+            await self.create_table(tmp_name, *columns, *await self.get_indexes(table_name))
+            await self.execute("insert into {} select * from {}".format(tmp_name, table_name))
+            await self.drop_table(table_name)
+            await self.rename_table(tmp_name, table_name)
+            return
         fmt = io.StringIO()
         fmt.write("ALTER TABLE ")
         fmt.write(table_name)
@@ -184,6 +230,26 @@ class DDLSession(SessionBase):
                .format(table_name, column_name, foreign_table, foreign_coulumn))
         await self.execute(fmt)
 
+    async def get_columns(self, table_name: str = None
+                          ) -> 'typing.Generator[md_index.Column, None, None]':
+        """
+        Yields a :class:`.md_column.Column` for each column in the specified table,
+        or for each column in the schema if no table is specified.
+
+        These columns don't point to a :class:`.md_table.Table` since there
+        might not be one, but accessing __name__ and __tablename__ of the column's
+        table will still work as expected.
+
+        :param table_name: The table to get indexes from, or all tables if omitted
+        """
+        params = {"table_name": table_name}
+        emitter = self.bind.emit_param
+        sql = self.bind.dialect.get_column_sql(table_name, emitter=emitter)
+        cur = await self.transaction.cursor(sql, params)
+        records = await cur.flatten()
+        await cur.close()
+        return self.bind.dialect.transform_rows_to_columns(*records, table_name=table_name)
+
     async def get_indexes(self, table_name: str = None
                           ) -> 'typing.Generator[md_index.Index, None, None]':
         """
@@ -201,4 +267,4 @@ class DDLSession(SessionBase):
         cur = await self.transaction.cursor(sql, params)
         records = await cur.flatten()
         await cur.close()
-        return self.bind.dialect.transform_rows_to_indexes(records[0])
+        return self.bind.dialect.transform_rows_to_indexes(*records, table_name=table_name)

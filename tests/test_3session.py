@@ -32,7 +32,7 @@ async def test_rollback(db: DatabaseInterface, table: Table):
     sess = db.get_session()
     try:
         await sess.start()
-        await sess.execute('delete from {} where true'.format(table.__tablename__))
+        await sess.execute('delete from {} where 1=1'.format(table.__tablename__))
         await sess.rollback()
     finally:
         await sess.close()

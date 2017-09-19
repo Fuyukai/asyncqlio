@@ -193,6 +193,15 @@ class Column(object):
         # otherwise just return the attribute
         return i
 
+    @property
+    def table_name(self) -> str:
+        """
+        The name of this column's table.
+        """
+        if isinstance(self.table, str):
+            return self.table
+        return self.table.__tablename__
+
     # DDL stuff
     @classmethod
     def with_name(cls, name: str, *args, **kwargs) -> 'Column':

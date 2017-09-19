@@ -201,7 +201,7 @@ class TableMetadata(object):
             table._indexes[index_name] = md_index.Index.with_name(
                 index_name,
                 *table._primary_key.columns,
-                table_name=name,
+                table=name,
             )
             table._primary_key.index_name = index_name
 
@@ -220,7 +220,7 @@ class TableMetadata(object):
                 table._indexes[index_name] = md_index.Index.with_name(
                     index_name,
                     column,
-                    table_name=name,
+                    table=name,
                 )
 
 

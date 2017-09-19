@@ -136,7 +136,8 @@ class AsyncpgTransaction(BaseTransaction):
 
         try:
             results = await self.acquired_connection.execute(query, *params)
-        except asyncpg.IntegrityConstraintViolationError as e:
+        except (asyncpg.IntegrityConstraintViolationError,
+                asyncpg.exceptions.NotNullViolationError) as e:
             raise IntegrityError(*e.args) from e
         except asyncpg.ObjectNotInPrerequisiteStateError as e:
             raise OperationalError(*e.args) from e

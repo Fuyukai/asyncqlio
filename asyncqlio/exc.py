@@ -33,3 +33,9 @@ class NoSuchColumnError(DatabaseException):
     """
     Raised when a non-existing column is requested.
     """
+
+
+class UnsupportedOperationException(DatabaseException):
+    """
+    Raised when an operation that the database driver doesn't support is attempted.
+    """

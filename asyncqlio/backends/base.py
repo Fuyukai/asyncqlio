@@ -83,17 +83,31 @@ class BaseDialect:
         """
         raise NotImplementedError
 
-    def get_index_sql(self, tablename: str = None,
+    def get_column_sql(self, table_name: str = None,
+                       *, emitter: 'typing.Callable[[str], str]') -> str:
+        """
+        Get a query to find information on all columns, optionally limiting by table.
+        """
+        raise NotImplementedError
+
+    def get_index_sql(self, table_name: str = None,
                       *, emitter: 'typing.Callable[[str], str]') -> str:
         """
         Get a query to find information on all indexes, optionally limiting by table.
         """
         raise NotImplementedError
 
-    def transform_rows_to_indexes(self, *rows: 'DictRow'
+    def transform_columns_to_indexes(self, *rows: 'DictRow', table_name: str
+                                     ) -> 'typing.Generator[Column, None, None]':
+        """
+        Transform appropriate database rows to Column objects.
+        """
+        raise NotImplementedError
+
+    def transform_rows_to_indexes(self, *rows: 'DictRow', table_name: str
                                   ) -> 'typing.Generator[Index, None, None]':
         """
-        Transform an appropriate database row to an Index object.
+        Transform appropriate database rows to Index objects.
         """
         raise NotImplementedError
 

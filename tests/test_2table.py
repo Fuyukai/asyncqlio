@@ -60,6 +60,17 @@ async def test_indexes(db: DatabaseInterface):
                 assert table.get_index(index.name) is not None
 
 
+async def test_columns(db: DatabaseInterface):
+    async with db.get_ddl_session() as sess:
+        for table in tables:
+            for gen_col in await sess.get_columns(table.__tablename__):
+                tbl_col = table.get_column(gen_col.name)
+                assert tbl_col is not None
+                assert gen_col.name == tbl_col.name
+                assert gen_col.table_name == tbl_col.table_name
+                assert isinstance(tbl_col.type, type(gen_col.type))
+
+
 async def test_generate_schema():
     for table, body in zip(tables, class_bodies):
         assert table.generate_schema() == body
