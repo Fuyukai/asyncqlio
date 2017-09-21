@@ -1,8 +1,8 @@
 import functools
 import inspect
+import io
 import logging
 import typing
-import io
 
 from cached_property import cached_property
 
@@ -95,7 +95,7 @@ class Column(object):
                  index: bool = True,
                  unique: bool = False,
                  foreign_key: 'md_relationship.ForeignKey' = None,
-                 table: 'md_table.Table' = None):
+                 table: 'typing.Type[md_table.Table]' = None):
         """
         :param type_:
             The :class:`.ColumnType` that represents the type of this column.
@@ -198,7 +198,7 @@ class Column(object):
         return self.table.__tablename__
 
     @property
-    def autoincrement(self) -> str:
+    def autoincrement(self) -> bool:
         """
         Whether this column is set to autoincrement.
         """

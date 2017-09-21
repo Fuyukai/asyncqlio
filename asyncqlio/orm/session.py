@@ -77,7 +77,8 @@ class SessionBase(object):
         Starts the session, acquiring a transaction connection which will be used to modify the DB.
         This **must** be called before using the session.
 
-        .. code-block:: python
+        .. code-block:: python3
+
             sess = db.get_session()  # or get_ddl_session etc
             await sess.start()
 
@@ -178,7 +179,8 @@ class Session(SessionBase):
     Sessions are bound to a :class:`.DatabaseInterface` instance which they use to get a transaction
     and execute queries in.
 
-    .. code-block:: python
+    .. code-block:: python3
+
         # get a session from our db interface
         sess = db.get_session()
     """
@@ -249,6 +251,7 @@ class Session(SessionBase):
         Inserts a row NOW.
 
         .. warning::
+
             This will only generate the INSERT statement for the row now.
             Only :meth:`.Session.commit` will actually commit the row to storage.
 
@@ -275,6 +278,7 @@ class Session(SessionBase):
         Updates a row NOW.
 
         .. warning::
+
             This will only generate the UPDATE statement for the row now.
             Only :meth:`.Session.commit` will actually commit the row to storage.
 
@@ -303,6 +307,7 @@ class Session(SessionBase):
         Executes a select query.
 
         .. warning::
+
             Unlike the other `run_*_query` methods, this method should not be used without a good
             reason; it creates a special class that is used for the query.
 
