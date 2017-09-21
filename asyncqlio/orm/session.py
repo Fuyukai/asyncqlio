@@ -228,7 +228,6 @@ class Session(SessionBase):
 
         :param table: The table to truncate.
         :param cascade: If this truncate should cascade to other tables.
-        :return:
         """
         base = io.StringIO()
         if self.bind.dialect.has_truncate:

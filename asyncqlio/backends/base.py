@@ -9,6 +9,7 @@ from collections import OrderedDict
 from urllib.parse import ParseResult, parse_qs
 
 from asyncqlio.meta import AsyncABC
+from asyncqlio.orm.schema import column as md_column, index as md_index
 
 
 class BaseDialect:
@@ -97,15 +98,15 @@ class BaseDialect:
         """
         raise NotImplementedError
 
-    def transform_columns_to_indexes(self, *rows: 'DictRow', table_name: str
-                                     ) -> 'typing.Generator[Column, None, None]':
+    def transform_columns_to_indexes(self, *rows: 'DictRow', table_name: str) \
+            -> 'typing.Generator[md_column.Column, None, None]':
         """
         Transform appropriate database rows to Column objects.
         """
         raise NotImplementedError
 
-    def transform_rows_to_indexes(self, *rows: 'DictRow', table_name: str
-                                  ) -> 'typing.Generator[Index, None, None]':
+    def transform_rows_to_indexes(self, *rows: 'DictRow') \
+            -> 'typing.Generator[md_index.Index, None, None]':
         """
         Transform appropriate database rows to Index objects.
         """

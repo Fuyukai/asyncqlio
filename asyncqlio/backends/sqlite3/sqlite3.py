@@ -8,9 +8,9 @@ import typing
 
 from asyncio_extras import threadpool
 
-from asyncqlio.utils import separate_statements
 from asyncqlio.backends.base import BaseConnector, BaseResultSet, BaseTransaction, DictRow
 from asyncqlio.exc import DatabaseException, IntegrityError
+from asyncqlio.utils import separate_statements
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +139,9 @@ class Sqlite3Transaction(BaseTransaction):
         # lock to ensure nothing else is using the connection at once
 
         logger.debug("Running SQL {} with params {}".format(sql, params))
-        for stmt in separate_statements(sql):
-            async with self._lock:
-                async with threadpool():
+        async with self._lock:
+            async with threadpool():
+                for stmt in separate_statements(sql):
                     try:
                         if params is None:
                             res = self.connection.execute(stmt)

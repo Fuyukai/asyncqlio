@@ -36,7 +36,9 @@ Changelog
 
  - Actually generate foreign keys upon table creation.
  
- - Add Serial, BigSerial, and SmallSerial types to support automatic incrementation
+ - Add :class:`.Serial`, :class:`.BigSerial`, and :class:`.SmallSerial` types to support automatic
+     incrementation
+
 
 0.1.0 (released 2017-07-30)
 ---------------------------
