@@ -7,7 +7,7 @@ asyncqlio
    :target: https://circleci.com/gh/SunDwarf/asyncqlio
 .. |b2| image:: https://img.shields.io/pypi/v/asyncqlio.svg
 .. |b3| image:: https://img.shields.io/github/tag/SunDwarf/asyncqlio.svg
-.. |b4| image:: https://img.shields.io/coveralls/SunDwarf/asyncqlio.svg
+.. |b4| image:: https://img.shields.io/codecov/c/github/SunDwarf/asyncqlio.svg
    :target: https://codecov.io/gh/SunDwarf/asyncqlio
 
 `Read the documentation <http://asyncqlio.readthedocs.io/>`_
