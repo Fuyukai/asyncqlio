@@ -1,13 +1,4 @@
-# RTD configuration
+## Read the docs config file.
 
-python:
-  # asyncqlio requires 3.5+
-  version: 3.5
-  # install with pip to get version number
-  pip_install: true
-  # install doc requirements
-  extra_requirements:
-    - docs
-    # install all backends for autodoc
-    - postgres
-    - mysql
+conda:
+    file: environment.yml
