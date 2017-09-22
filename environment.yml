@@ -26,3 +26,5 @@ dependencies:
     - asyncio_extras
     - setuptools_scm
     - pytest-runner
+    # lets hope this doesnt explode
+    - "/home/docs/checkouts/readthedocs.org/user_builds/asyncqlio/checkouts/latest/"
