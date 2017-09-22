@@ -45,7 +45,8 @@ setup(
             "sphinx>=1.5.0",
             "sphinxcontrib-asyncio",
             "sphinx-autodoc-typehints>=1.2.1",
-            "guzzle_sphinx_theme"
+            "guzzle_sphinx_theme",
+            "typing"  # for rtd
         ],
         "postgresql": [
             "asyncpg>=0.12.0"
