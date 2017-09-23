@@ -206,7 +206,7 @@ class Column(object):
         """
         Whether this column is set to autoincrement.
         """
-        if isinstance(self.table.metadata._bind.dialect, sqlite3.Sqlite3Dialect):
+        if isinstance(self.table.metadata.bind.dialect, sqlite3.Sqlite3Dialect):
             return self.primary_key and isinstance(self.type, md_types.Integer)
         return isinstance(self.type, md_types.Serial)
 

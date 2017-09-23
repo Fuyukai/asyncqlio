@@ -59,7 +59,7 @@ def enforce_bound(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            self._bind
+            self.metadata.bind
         except AttributeError:
             raise RuntimeError("Table must be bound first.")
         return func(self, *args, **kwargs)

@@ -214,7 +214,7 @@ class String(ColumnType):
 
         :param other: The other string to check.
         """
-        if self.column.table._bind.dialect.has_ilike:
+        if self.column.table.bind.dialect.has_ilike:
             return md_operators.ILike(self.column, other)
         else:
             return md_operators.HackyILike(self.column, other)

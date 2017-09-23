@@ -324,7 +324,7 @@ class TableMeta(type):
 
         :param cascade: If this truncation should cascade to other tables.
         """
-        async with cls._bind.get_session() as sess:
+        async with cls.metadata.bind.get_session() as sess:
             return await sess.truncate(cls, cascade=cascade)
 
     def __getattr__(self, item):
@@ -339,10 +339,6 @@ class TableMeta(type):
                 raise AttributeError(item) from None
         else:
             return col
-
-    @property
-    def _bind(self):
-        return self.metadata._bind
 
     @property
     def __quoted_name__(self):
@@ -394,9 +390,10 @@ class TableMeta(type):
         for index in self.iter_indexes():
             if index.table_name != table_name:
                 continue
-            if index.name == self._bind.dialect.get_primary_key_index_name(table_name):
+            if index.name == self.metadata.bind.dialect.get_primary_key_index_name(table_name):
                 continue
-            unique_names = (self._bind.dialect.get_unique_column_index_name(table_name, col_name)
+            unique_names = (self.metadata.bind.dialect.get_unique_column_index_name(table_name,
+                                                                                    col_name)
                             for col_name in index.get_column_names())
             if index.name in unique_names:
                 continue
@@ -474,7 +471,7 @@ class TableMeta(type):
         """
         Creates a table with this schema in the database.
         """
-        async with self._bind.get_ddl_session() as sess:
+        async with self.metadata.bind.get_ddl_session() as sess:
             await sess.create_table(self.__tablename__,
                                     *self.iter_columns(),
                                     *self.explicit_indexes(),
@@ -489,7 +486,7 @@ class TableMeta(type):
         :param cascade: If this drop should cascade.
         :param if_exists: If we should only attempt to drop tables that exist.
         """
-        async with self._bind.get_ddl_session() as sess:
+        async with self.metadtata.bind.get_ddl_session() as sess:
             await sess.drop_table(self.__tablename__, if_exists=if_exists, cascade=cascade)
 
     @property

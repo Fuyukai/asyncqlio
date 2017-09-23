@@ -97,7 +97,7 @@ class DatabaseInterface(object):
         if isinstance(md, md_table.TableMeta):
             md = md.metadata
         # first set a bind on the metadata
-        md._bind = self
+        md.bind = self
         # then setup tables
         md.setup_tables()
         return md
