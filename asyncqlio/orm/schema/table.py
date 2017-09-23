@@ -12,6 +12,7 @@ from collections import OrderedDict
 
 from asyncqlio import db as md_db
 from asyncqlio.exc import SchemaError
+from asyncqlio.meta import typeproperty
 from asyncqlio.orm import inspection as md_inspection, session as md_session
 from asyncqlio.orm.schema import column as md_column, index as md_index, \
     relationship as md_relationship
@@ -351,17 +352,6 @@ class TableMeta(type):
 
         raise AttributeError("'{}' object has no attribute {}".format(self.__name__, item))
 
-    @property
-    def __quoted_name__(self):
-        return '"{}"'.format(self.__tablename__)
-
-    @property
-    def columns(self) -> 'typing.List[md_column.Column]':
-        """
-        :return: A list of :class:`.Column` this Table has.
-        """
-        return list(self.iter_columns())
-
     def __repr__(self):
         try:
             return "<Table object='{}' name='{}'>".format(self.__name__, self.__tablename__)
@@ -449,6 +439,23 @@ class Table(metaclass=TableMeta, register=False):
 
         if kwargs:
             self._init_row(**kwargs)
+
+    # Class properties
+    @typeproperty
+    @classmethod
+    def columns(cls) -> 'typing.List[md_column.Column]':
+        """
+        :return: A list of :class:`.Column` this Table has.
+        """
+        return list(cls.iter_columns())
+
+    @typeproperty
+    @classmethod
+    def __quoted_name__(cls) -> str:
+        """
+        :return: The quoted name of this table.
+        """
+        return '"{}"'.format(cls.__tablename__)
 
     # Class methods
     @classmethod

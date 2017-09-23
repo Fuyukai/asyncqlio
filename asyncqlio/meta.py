@@ -3,6 +3,7 @@ Useful metamagic classes, such as async ABCs.
 """
 
 import inspect
+import typing
 from abc import ABCMeta
 
 
@@ -34,6 +35,39 @@ def proxy_to_getattr(*magic_methods: str):
         return obb
 
     return _modify_type
+
+
+class TypeProperty(object):
+    """
+    A property on a type.
+    """
+
+    def __init__(self, fget):
+        """
+        :param fget: The function to call on getting the property.
+        """
+        self.fget = fget
+        self.name = None
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, instance, owner):
+        # we always the type, never the instance
+        if owner is None:
+            owner = type(instance)
+
+        return self.fget.__get__(instance, owner)()
+
+
+def typeproperty(func: typing.Callable[[], typing.Any]) -> TypeProperty:
+    """
+    Marks a function as a type property.
+    """
+    if not isinstance(func, (classmethod, staticmethod)):
+        func = classmethod(func)
+
+    return TypeProperty(func)
 
 
 # Copied from https://github.com/dabeaz/curio/blob/master/curio/meta.py
