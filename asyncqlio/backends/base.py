@@ -77,9 +77,12 @@ class BaseDialect:
         """
         raise NotImplementedError
 
-    def get_unique_column_index_name(self, table_name: str) -> str:
+    def get_unique_column_index_name(self, table_name: str, column_name: str) -> str:
         """
         Get the name a dialect gives to a unique column index.
+
+        :param table_name: The name of the table to use.
+        :param column_name: The name of the column to use.
         """
         raise NotImplementedError
 
@@ -87,6 +90,8 @@ class BaseDialect:
                        *, emitter: 'typing.Callable[[str], str]') -> str:
         """
         Get a query to find information on all columns, optionally limiting by table.
+
+        :param table_name: The name of the table to use.
         """
         raise NotImplementedError
 
@@ -101,18 +106,25 @@ class BaseDialect:
                        *, on_conflict_update: bool=True) -> 'typing.Tuple[str, set]':
         """
         Get a formattable query and a set of required params to execute upsert-like functionality.
+
+        :param table_name: The name of the table to upsert into.
         """
         raise NotImplementedError
 
     def transform_columns_to_indexes(self, *rows: 'DictRow', table_name: str):
         """
         Transform appropriate database rows to Column objects.
+
+        :param rows: A list of :class:`.DictRow` objects returned from the database.
+        :param table_name: The name of the table being transformed.
         """
         raise NotImplementedError
 
     def transform_rows_to_indexes(self, *rows: 'DictRow'):
         """
         Transform appropriate database rows to Index objects.
+
+        :param rows: A list of :class:`.DictRow` objects returned from the database.
         """
         raise NotImplementedError
 

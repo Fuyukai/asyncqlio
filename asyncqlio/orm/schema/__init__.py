@@ -8,6 +8,7 @@ Code for ORM schema objects.
 
     table
     column
+    index
     relationship
 
     types

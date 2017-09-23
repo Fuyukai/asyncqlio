@@ -554,6 +554,7 @@ class UpsertQuery(InsertQuery):
     """
     Represents an UPSERT query.
     """
+
     def __init__(self, sess: 'md_session.Session', column: 'md_column.Column',
                  *rows: 'md_table.Table'):
         """
@@ -591,8 +592,9 @@ class UpsertQuery(InsertQuery):
         """
         Generates the SQL statements for this upsert query.
 
-        :returns: A list of two-item tuples to execute:
-            - The SQL query+params to emit to actually upsert the row
+        :returns: A list of two-item tuples:
+            - The SQL query to use
+            - The params to use with the query
         """
         queries = []
         counter = itertools.count()
@@ -607,7 +609,7 @@ class UpsertQuery(InsertQuery):
                 *self._update_cols,
                 on_conflict_column=self._conflict_col,
                 on_conflict_update=self._on_conflict_update,
-                )
+            )
             queries.append((query, params))
 
         return queries
@@ -878,7 +880,6 @@ class RowDeleteQuery(BaseQuery):
         Adds a row to this query.
 
         :param row: The :class:`.Table` instance
-        :return:
         """
         self.rows_to_delete.append(row)
 
@@ -902,4 +903,7 @@ class RowDeleteQuery(BaseQuery):
         return queries
 
     async def run(self):
+        """
+        Runs this query.
+        """
         return await self.session.run_delete_query(self)

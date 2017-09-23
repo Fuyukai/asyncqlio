@@ -2,15 +2,12 @@
 Contains the DDL session object.
 """
 
-import itertools
-import operator
 import io
-import re
+import typing
 
 from asyncqlio.backends import mysql, postgresql, sqlite3
 from asyncqlio.exc import UnsupportedOperationException
-from asyncqlio.orm.schema import column as md_column, types as md_types,\
-    table as md_table, index as md_index
+from asyncqlio.orm.schema import column as md_column, index as md_index, types as md_types
 from asyncqlio.orm.session import SessionBase
 
 
@@ -27,7 +24,7 @@ class DDLSession(SessionBase):
 
         :param table_name: The name of the table.
         :param items: A list of items to add to the table (columns, indexes, etc).
-        :param if_not_exists:
+        :param if_not_exists: Only create this table if it doesn't exist.
         """
         sql = io.StringIO()
         sql.write("CREATE TABLE ")
@@ -79,7 +76,7 @@ class DDLSession(SessionBase):
                          cascade: bool = False,
                          if_exists: bool = True):
         """
-        Drops a table.
+        Drops a table in the database.
 
         :param table_name: The name of the table to drop.
         :param cascade: Should this drop cascade?
@@ -140,12 +137,15 @@ class DDLSession(SessionBase):
                 if column.name != column_name:
                     columns.append(column)
             col_names = ", ".join(col.name for col in columns)
+
+            # do the sqlite3 awfulness
             await self.create_table(tmp_name, *columns, *await self.get_indexes(table_name))
             await self.execute("insert into {} select {} from {}"
                                .format(tmp_name, col_names, table_name))
             await self.drop_table(table_name)
             await self.rename_table(tmp_name, table_name)
             return
+
         # actually use params here
         fmt = "ALTER TABLE {} DROP COLUMN {};".format(table_name, column_name)
         return await self.execute(fmt)
@@ -165,7 +165,8 @@ class DDLSession(SessionBase):
             tmp_name = "tmp_modify_{}".format(table_name)
             columns = []
             if not isinstance(new_type, md_types.ColumnType):
-                new_type = new_type()
+                new_type = new_type.create_default()
+
             for column in await self.get_columns(table_name):
                 if column.name == column_name:
                     column.type = new_type
@@ -219,7 +220,7 @@ class DDLSession(SessionBase):
         fmt.write(column_name)
         fmt.write(");")
 
-        await self.execute(fmt.getvalue())
+        return await self.execute(fmt.getvalue())
 
     async def add_foreign_key(self, table_name: str, column_name: str,
                               foreign_table: str, foreign_column: str):
@@ -227,14 +228,14 @@ class DDLSession(SessionBase):
         :param table_name: The table to add a foreign key to.
         :param column_name: The column to make a foreign key.
         :param foreign_table: The table to reference with the foreign key.
-        :param foreign_clolumn: The column to reference with the foreign key.
+        :param foreign_column: The column to reference with the foreign key.
         """
         fmt = ("ALTER TABLE {} ADD FOREIGN KEY ({}) REFERENCES {} ({})"
-               .format(table_name, column_name, foreign_table, foreign_coulumn))
+               .format(table_name, column_name, foreign_table, foreign_column))
         await self.execute(fmt)
 
-    async def get_columns(self, table_name: str = None
-                          ) -> 'typing.Generator[md_index.Column, None, None]':
+    async def get_columns(self, table_name: str = None) \
+            -> 'typing.Generator[md_column.Column, None, None]':
         """
         Yields a :class:`.md_column.Column` for each column in the specified table,
         or for each column in the schema if no table is specified.
@@ -247,14 +248,16 @@ class DDLSession(SessionBase):
         """
         params = {"table_name": table_name}
         emitter = self.bind.emit_param
+
         sql = self.bind.dialect.get_column_sql(table_name, emitter=emitter)
         cur = await self.transaction.cursor(sql, params)
         records = await cur.flatten()
         await cur.close()
+
         return self.bind.dialect.transform_rows_to_columns(*records, table_name=table_name)
 
-    async def get_indexes(self, table_name: str = None
-                          ) -> 'typing.Generator[md_index.Index, None, None]':
+    async def get_indexes(self, table_name: str = None) \
+            -> 'typing.Generator[md_index.Index, None, None]':
         """
         Yields a :class:`.md_index.Index` for each index in the specified table,
         or for each index in the schema if no table is specified.
@@ -266,8 +269,10 @@ class DDLSession(SessionBase):
         """
         params = {"table_name": table_name}
         emitter = self.bind.emit_param
+
         sql = self.bind.dialect.get_index_sql(table_name, emitter=emitter)
         cur = await self.transaction.cursor(sql, params)
         records = await cur.flatten()
         await cur.close()
+
         return self.bind.dialect.transform_rows_to_indexes(*records, table_name=table_name)

@@ -1,3 +1,7 @@
+"""
+Classes for session objects.
+"""
+
 import enum
 import functools
 import io

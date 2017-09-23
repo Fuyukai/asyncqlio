@@ -39,6 +39,7 @@ def proxy_to_getattr(*magic_methods: str):
 # Copied from https://github.com/dabeaz/curio/blob/master/curio/meta.py
 # Copyright (C) David Beazley (Dabeaz LLC)
 # This code is licenced under the MIT licence.
+# This code has been minutely edited in formatting and docstrings.
 
 class AsyncABCMeta(ABCMeta):
     """
@@ -67,14 +68,18 @@ class AsyncABC(metaclass=AsyncABCMeta):
 class AsyncInstanceType(AsyncABCMeta):
     """
     Metaclass that allows for asynchronous instance initialization and the
-    __init__() method to be defined as a coroutine.   Usage:
-    class Spam(metaclass=AsyncInstanceType):
-        async def __init__(self, x, y):
-            self.x = x
-            self.y = y
-    async def main():
-         s = await Spam(2, 3)
-         ...
+    __init__() method to be defined as a coroutine.
+
+    .. code-block:: python3
+
+        class Spam(metaclass=AsyncInstanceType):
+            async def __init__(self, x, y):
+                self.x = x
+                self.y = y
+
+        async def main():
+             s = await Spam(2, 3)
+             ...
     """
 
     @staticmethod

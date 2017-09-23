@@ -1,3 +1,7 @@
+"""
+Column types.
+"""
+
 import abc
 import datetime
 import typing

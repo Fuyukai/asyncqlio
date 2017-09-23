@@ -22,24 +22,27 @@ Changelog
 
  - Fix the ``aiomysql`` connector to use ANSI sql mode.
 
- - Add new :class:`.Index` representing an index in a database.
+ - Add new :class:`.Index` representing an index in a database. (:pr:`30`)
 
- - Add :meth:`.Table.create` to create tables from :class:`.Table` objects.
+ - Add :meth:`.TableMeta.create` to create tables from :class:`.Table` classes. (:pr:`30`)
 
  - Add :meth:`.Table.generate_schema` to create a representative Python class from the table.
+   (:pr:`30`)
 
  - Add :meth:`.DDLSession.get_indexes` to get :class:`.Index` objects from an existing database.
+   (:pr:`30`)
 
- - Add :meth:`.DDLSesion.create_index` to create an index on an existing database table.
+ - Add :meth:`.DDLSession.create_index` to create an index on an existing database table.
+   (:pr:`30`)
 
  - Support :class:`.Index` objects in :meth:`.DDLSession.create_table`.
 
  - Actually generate foreign keys upon table creation.
 
  - Add :class:`.Serial`, :class:`.BigSerial`, and :class:`.SmallSerial` types to support automatic
-     incrementation
+   incrementation. (:issue:`17`, :pr:`34`)
 
- - Add :class:`.UpsertQuery`.
+ - Add :class:`.UpsertQuery`. (:issue:`32`, :pr:`38`)
 
 
 0.1.0 (released 2017-07-30)

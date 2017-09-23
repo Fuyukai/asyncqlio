@@ -1,3 +1,7 @@
+"""
+Table objects.
+"""
+
 import collections
 import io
 import itertools
@@ -9,8 +13,8 @@ from collections import OrderedDict
 from asyncqlio import db as md_db
 from asyncqlio.exc import SchemaError
 from asyncqlio.orm import inspection as md_inspection, session as md_session
-from asyncqlio.orm.schema import column as md_column, relationship as md_relationship,\
-    index as md_index
+from asyncqlio.orm.schema import column as md_column, index as md_index, \
+    relationship as md_relationship
 from asyncqlio.orm.schema.decorators import enforce_bound
 from asyncqlio.sentinels import NO_DEFAULT, NO_VALUE
 
@@ -195,14 +199,16 @@ class TableMetadata(object):
         creates one.
         """
         for name, table in self.tables.items():
-            index_name = self._bind.dialect.get_primary_key_index_name(name)
+            index_name = self.bind.dialect.get_primary_key_index_name(name)
             if not index_name:
                 return
+
             table._indexes[index_name] = md_index.Index.with_name(
                 index_name,
                 *table._primary_key.columns,
                 table=name,
             )
+
             table._primary_key.index_name = index_name
 
     def generate_unique_column_indexes(self):
@@ -214,7 +220,7 @@ class TableMetadata(object):
             if isinstance(table, AliasedTable):
                 continue
             for column in table.iter_columns():
-                index_name = self._bind.dialect.get_unique_column_index_name(name, column.name)
+                index_name = self.bind.dialect.get_unique_column_index_name(name, column.name)
                 if not index_name:
                     return
                 table._indexes[index_name] = md_index.Index.with_name(

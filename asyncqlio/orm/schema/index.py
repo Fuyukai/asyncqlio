@@ -1,8 +1,12 @@
+"""
+Represents
+"""
+
 import io
 import logging
 import typing
 
-from asyncqlio.orm.schema import column as md_column
+from asyncqlio.orm.schema import column as md_column, table as md_table
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +26,19 @@ class Index(object):
     def __init__(self, *columns: 'typing.Union[md_column.Column, str]',
                  unique: bool = False,
                  table: 'md_table.Table' = None):
+        """
+        :param columns: The :class:`.Column` objects that this index is on.
+        :param unique: Is this index unique?
+        :param table: The :class:`.Table` for this index. Can be None if the index is a member of \
+            a table.
+        """
         self.columns = columns
         self.unique = unique
         self.table = table
 
     def __repr__(self):
-        return "<Index table={} columns={} name={}>".format(self.table_name, self.columns, self.name)
+        return "<Index table={} columns={} name={}>".format(self.table_name, self.columns,
+                                                            self.name)
 
     def __hash__(self):
         return super().__hash__()
@@ -46,7 +57,10 @@ class Index(object):
             self.name = "{}_{}".format(self.table_name, name)
         logger.debug("Index created with name {} on {}".format(name, owner))
 
-    def get_column_names(self):
+    def get_column_names(self) -> typing.Generator[str, None, None]:
+        """
+        :return: A generator that yields the names of the columns for this index.
+        """
         for column in self.columns:
             if isinstance(column, str):
                 yield column
@@ -65,7 +79,7 @@ class Index(object):
     @classmethod
     def with_name(cls, name: str, *args, **kwargs) -> 'Index':
         """
-        Creates this column with a name and, optionally, table name alrady set.
+        Creates this column with a name and, optionally, table name already set.
         """
         idx = cls(*args, **kwargs)
         idx.name = name

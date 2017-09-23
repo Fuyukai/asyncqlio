@@ -55,6 +55,7 @@ def enforce_bound(func):
     Enforces that a method on a :class:`.Table` cannot be used before the table
     is bound to database via :meth:.DatabaseInterface.bind_tables.
     """
+
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         try:

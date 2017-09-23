@@ -1,8 +1,8 @@
 """
-Relationship helpers.
+Relationship objects.
 """
-import typing
 import io
+import typing
 
 from cached_property import cached_property
 

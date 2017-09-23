@@ -46,6 +46,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',
+              'sphinx.ext.extlinks',
               'sphinxcontrib.asyncio',
               'sphinx_autodoc_typehints'
               ]
@@ -146,3 +147,9 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/3/': None}
+
+# Extlink configuration.
+extlinks = {
+    "issue": ("https://github.com/SunDwarf/asyncqlio/issues/%s", "issue #"),
+    "pr": ("https://github.com/SunDwarf/asyncqlio/pull/%s", "PR #")
+}

@@ -1,3 +1,7 @@
+"""
+Classes for column objects.
+"""
+
 import functools
 import inspect
 import io
