@@ -496,6 +496,7 @@ class TableMeta(type):
         :setter: A new :class:`.PrimaryKey` for this table.
 
         .. note::
+
             A primary key will automatically be calculated from columns at define time, if any
             columns have ``primary_key`` set to True.
         """
@@ -744,6 +745,7 @@ class Table(metaclass=TableMeta, register=False):
                         on_conflict_update: bool):
         """
         Gets the UPSERT sql for this row.
+
         :param session: The :class:`.Session` whose dialect to use when creating the SQL.
         :param update_columns: The :class:`.Column` objects to update on conflict.
         :param on_conflict_column: The :class:`.Column` on which there may be a conflict.
