@@ -735,6 +735,64 @@ class Table(metaclass=TableMeta, register=False):
 
         return base_query.getvalue(), params
 
+    def _get_upsert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session',
+                        *update_columns: 'md_column.Column',
+                        on_conflict_column: 'md_column.Column',
+                        on_conflict_update: bool):
+        """
+        Gets the UPSERT sql for this row.
+        :param session: The :class:`.Session` whose dialect to use when creating the SQL.
+        :param update_columns: The :class:`.Column` objects to update on conflict.
+        :param on_conflict_column: The :class:`.Column` on which there may be a conflict.
+        :param on_conflict_update: Whether to update the table on conflict.
+        """
+        params = {}
+        fmt_params = {}
+        row_dict = {}
+
+        fmt, needed_params = session.bind.dialect.get_upsert_sql(
+            self.table.__quoted_name__,
+            on_conflict_update=on_conflict_update,
+        )
+
+        for column in type(self).iter_columns():
+            param = emitter()
+            params[param] = self.get_column_value(column)
+            row_dict[column] = session.bind.emit_param(param)
+
+        col_names = ", ".join(col.quoted_name for col in row_dict.keys())
+
+        for fmt_param in needed_params:
+            if fmt_param == "where":
+                param = emitter()
+                fmt_params["where"] = "{}={}".format(on_conflict_column.quoted_fullname,
+                                                     session.bind.emit_param(param))
+                params[param] = self.get_column_value(on_conflict_column)
+
+            elif fmt_param == "update":
+                fmt_params["update"] = ", ".join("{}={}".format(col.quoted_name, param)
+                                                 for col, param in row_dict.items()
+                                                 if col in update_columns)
+
+            elif fmt_param == "returning":
+                fmt_params["returning"] = col_names
+
+            elif fmt_param == "insert":
+                fmt_params["insert"] = "({}) VALUES ({})".format(
+                    col_names,
+                    ", ".join(row_dict.values()),
+                )
+
+            elif fmt_param == "col":
+                fmt_params["col"] = on_conflict_column.quoted_name
+
+            else:
+                raise RuntimeError("Driver passed an invalid format specification.")
+
+        sql = fmt.format(**fmt_params)
+
+        return sql, params
+
     def _get_delete_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session') \
             -> typing.Tuple[str, typing.Any]:
         """

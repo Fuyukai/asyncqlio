@@ -1,4 +1,5 @@
 from pkgutil import extend_path
+import io
 import itertools
 import operator
 
@@ -67,6 +68,21 @@ class MysqlDialect(BaseDialect):
         if table_name:
             sql += "AND table_name={}".format(emitter("table_name"))
         return sql
+
+    def get_upsert_sql(self, table_name, *, on_conflict_update=True):
+        sql = io.StringIO()
+        params = {"insert"}
+        sql.write("INSERT INTO ")
+        sql.write(table_name)
+        sql.write(" {insert} ON DUPLICATE KEY UPDATE ")
+        if on_conflict_update:
+            params.add("update")
+            sql.write("{update}")
+        else:
+            params.add("col")
+            sql.write("{col}={col}")
+        sql.write(";")
+        return sql.getvalue(), params
 
     def transform_rows_to_columns(self, *rows, table_name=None):
         for row in rows:

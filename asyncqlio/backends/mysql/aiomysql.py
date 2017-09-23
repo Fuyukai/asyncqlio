@@ -94,7 +94,6 @@ class AiomysqlTransaction(BaseTransaction):
         # the doc lies btw
         # we can pass a dict in instead of a list/tuple
         # i don't fucking trust this at all though.
-        logger.debug("Executing query {} with params {}".format(sql, params))
         try:
             res = await cursor.execute(sql, params)
         except pymysql.err.IntegrityError as e:
@@ -110,6 +109,7 @@ class AiomysqlTransaction(BaseTransaction):
         """
         Returns a :class:`.AiomysqlResultSet` for the specified SQL.
         """
+        logger.debug("Executing query {} with params {}".format(sql, params))
         cursor = await self.connection.cursor(cursor=aiomysql.DictCursor)
         await cursor.execute(sql, params)
         return AiomysqlResultSet(cursor)

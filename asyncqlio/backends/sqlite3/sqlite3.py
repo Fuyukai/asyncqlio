@@ -196,14 +196,15 @@ class Sqlite3Transaction(BaseTransaction):
 
         async with self._lock:
             async with threadpool():
-                cur = self.connection.cursor()
-                try:
-                    if params is None:
-                        cur.execute(sql)
-                    else:
-                        cur.execute(sql, params)
-                except sqlite3.OperationalError as e:
-                    raise DatabaseException(*e.args)
+                for stmt in separate_statements(sql):
+                    cur = self.connection.cursor()
+                    try:
+                        if params is None:
+                            cur.execute(stmt)
+                        else:
+                            cur.execute(stmt, params)
+                    except sqlite3.OperationalError as e:
+                        raise DatabaseException(*e.args)
 
         return Sqlite3ResultSet(cur)
 

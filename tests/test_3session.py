@@ -58,6 +58,17 @@ async def test_update(db: DatabaseInterface, table: Table):
             assert result.name == name
 
 
+async def test_upsert(db: DatabaseInterface, table: Table):
+    async with db.get_session() as sess:
+        query = sess.insert.rows(table(id=1, name="upsert", email="notupdated"))
+        query = query.on_conflict(table.id).update(table.name)
+        await query.run()
+    async with db.get_session() as sess:
+        res = await sess.select(table).where(table.id == 1).first()
+    assert table.name == "upsert"
+    assert table.email != "notupdated"
+
+
 async def test_merge(db: DatabaseInterface, table: Table):
     id_ = 100
     async with db.get_session() as sess:

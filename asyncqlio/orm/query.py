@@ -522,11 +522,19 @@ class InsertQuery(BaseQuery):
         self.rows_to_insert.append(row)
         return self
 
+    def on_conflict(self, column: 'md_column.Column') -> 'InsertQuery':
+        """
+        Get an :class:`.UpsertQuery` to react upon a conflict.
+
+        :param column: The :class:`.Column` upon which to check for a conflict.
+        """
+        return UpsertQuery(self.session, column, *self.rows_to_insert)
+
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
         Generates the SQL statements for this insert query.
 
-        This will return a list of two-item tuples to execute:
+        :returns: A list of two-item tuples to execute:
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
@@ -537,6 +545,69 @@ class InsertQuery(BaseQuery):
 
         for row in self.rows_to_insert:
             query, params = row._get_insert_sql(emit, self.session)
+            queries.append((query, params))
+
+        return queries
+
+
+class UpsertQuery(InsertQuery):
+    """
+    Represents an UPSERT query.
+    """
+    def __init__(self, sess: 'md_session.Session', column: 'md_column.Column',
+                 *rows: 'md_table.Table'):
+        """
+        :param sess: The :class:`.Session` this query is attached to.
+        :param column: The :class:`.Column` on which the conflict might happen.
+        :param rows: The :class:`.Table` objects that are to be added.
+        """
+        super().__init__(sess)
+
+        self._on_conflict_update = False
+        self._conflict_col = column
+        self._update_cols = ()
+        self.rows_to_insert = list(rows)
+
+    def update(self, *cols: 'md_column.Column') -> 'UpsertQuery':
+        """
+        Used to specify which :class:`.Column` objects to update on a conflict.
+
+        :param cols: The :class:`.Column` objects to update.
+        """
+        self._on_conflict_update = True
+        self._update_cols = cols
+        return self
+
+    def nothing(self) -> 'UpsertQuery':
+        """
+        Specify that this query should do nothing if there's a conflict.
+
+        This is the default behavior.
+        """
+        self._update_cols = ()  # just in case
+        return self
+
+    def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
+        """
+        Generates the SQL statements for this upsert query.
+
+        :returns: A list of two-item tuples to execute:
+            - The SQL query+params to emit to actually upsert the row
+        """
+        queries = []
+        counter = itertools.count()
+
+        def emit():
+            return "param_{}".format(next(counter))
+
+        for row in self.rows_to_insert:
+            query, params = row._get_upsert_sql(
+                emit,
+                self.session,
+                *self._update_cols,
+                on_conflict_column=self._conflict_col,
+                on_conflict_update=self._on_conflict_update,
+                )
             queries.append((query, params))
 
         return queries

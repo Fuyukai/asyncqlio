@@ -11,6 +11,7 @@ PostgreSQL backends.
 
 # used for namespace packages
 from pkgutil import extend_path
+import io
 import re
 
 from asyncqlio.exc import DatabaseException
@@ -94,6 +95,20 @@ FROM information_schema.columns
             sql += (" WHERE tablename={}"
                     .format(emitter("table_name")))
         return sql
+
+    def get_upsert_sql(self, table_name, *, on_conflict_update=True):
+        sql = io.StringIO()
+        params = {"insert", "col", "returning"}
+        sql.write("INSERT INTO ")
+        sql.write(table_name)
+        sql.write(" {insert} ON CONFLICT ({col}) DO ")
+        if on_conflict_update:
+            params.add("update")
+            sql.write("UPDATE SET {update} ")
+        else:
+            sql.write("NOTHING ")
+        sql.write("RETURNING {returning};")
+        return sql.getvalue(), params
 
     def transform_rows_to_columns(self, *rows, table_name=None):
         for row in rows:

@@ -1,3 +1,4 @@
+import io
 import re
 from pkgutil import extend_path
 
@@ -65,6 +66,20 @@ class Sqlite3Dialect(BaseDialect):
             sql += (" AND tbl_name={}"
                     .format(emitter("table_name")))
         return sql
+
+    def get_upsert_sql(self, table_name, *, on_conflict_update=True):
+        sql = io.StringIO()
+        params = {"insert"}
+        if on_conflict_update:
+            params.update({"update", "where"})
+            sql.write("UPDATE ")
+            sql.write(table_name)
+            sql.write(" SET {update} WHERE {where};\n")
+        sql.write("INSERT OR IGNORE INTO ")
+        sql.write(table_name)
+        sql.write(" {insert};")
+
+        return sql.getvalue(), params
 
     def transform_rows_to_columns(self, *rows, table_name):
         for row in rows:
