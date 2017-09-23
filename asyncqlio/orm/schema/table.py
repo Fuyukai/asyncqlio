@@ -719,7 +719,7 @@ class Table(metaclass=TableMeta, register=False):
             self._session = session
 
         q = io.StringIO()
-        q.write("INSERT INTO {} ".format(self.table.__quoted_name__))
+        q.write("INSERT INTO {} ".format(self.__quoted_name__))
         params = {}
         column_names = []
         sql_params = []
@@ -769,7 +769,7 @@ class Table(metaclass=TableMeta, register=False):
 
         params = {}
         base_query = io.StringIO()
-        base_query.write("UPDATE {} SET ".format(self.table.__quoted_name__))
+        base_query.write("UPDATE {} SET ".format(self.__quoted_name__))
         # the params to "set"
         sets = []
 
@@ -833,7 +833,7 @@ class Table(metaclass=TableMeta, register=False):
         row_dict = {}
 
         fmt, needed_params = session.bind.dialect.get_upsert_sql(
-            self.table.__quoted_name__,
+            self.__quoted_name__,
             on_conflict_update=on_conflict_update,
         )
 
@@ -884,7 +884,7 @@ class Table(metaclass=TableMeta, register=False):
             self._session = session
 
         query = io.StringIO()
-        query.write("DELETE FROM {} ".format(self.table.__quoted_name__))
+        query.write("DELETE FROM {} ".format(self.__quoted_name__))
         # generate the where clauses
         wheres = []
         params = {}
