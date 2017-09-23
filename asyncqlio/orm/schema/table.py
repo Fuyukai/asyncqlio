@@ -486,7 +486,7 @@ class TableMeta(type):
         :param cascade: If this drop should cascade.
         :param if_exists: If we should only attempt to drop tables that exist.
         """
-        async with self.metadtata.bind.get_ddl_session() as sess:
+        async with self.metadata.bind.get_ddl_session() as sess:
             await sess.drop_table(self.__tablename__, if_exists=if_exists, cascade=cascade)
 
     @property
