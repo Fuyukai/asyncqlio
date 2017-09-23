@@ -336,14 +336,20 @@ class TableMeta(type):
         if item.startswith("_"):
             raise AttributeError("'{}' object has no attribute {}".format(self.__name__, item))
 
+        # lets hope we have a descendant as Table
         col = self.get_column(item)
-        if col is None:
-            try:
-                return next(filter(lambda tup: tup[0] == item, self._relationships.items()))[1]
-            except StopIteration:
-                raise AttributeError(item) from None
-        else:
+        if col is not None:
             return col
+
+        relationship = self.get_relationship(item)
+        if relationship is not None:
+            return relationship
+
+        index = self.get_index(item)
+        if index is not None:
+            return index
+
+        raise AttributeError("'{}' object has no attribute {}".format(self.__name__, item))
 
     @property
     def __quoted_name__(self):
