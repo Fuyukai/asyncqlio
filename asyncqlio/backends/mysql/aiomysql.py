@@ -84,7 +84,7 @@ class AiomysqlTransaction(BaseTransaction):
         await self.connection.begin()
         return self
 
-    async def execute(self, sql: str, params: typing.Union[typing.Mapping, typing.Iterable] = None):
+    async def execute(self, sql: str, params=None):
         """
         Executes some SQL in the current transaction.
         """
