@@ -1061,7 +1061,7 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
     .. code-block:: python3
 
         # ensure the table is bound to that database
-        db.bind_tables(Table)
+        db.bind_tables(Table.metadata)
 
         # now we can do queries
         sess = db.get_session()
@@ -1076,7 +1076,7 @@ def table_base(name: str = "Table", meta: 'TableMetadata' = None):
             id = Column(Integer, primary_key=True)
             ...
 
-        db.bind_tables(Table)
+        db.bind_tables(Table.metadata)
         # later on, in some worker code
         user = await User.get(1)
 
