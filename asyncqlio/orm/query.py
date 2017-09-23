@@ -553,6 +553,8 @@ class InsertQuery(BaseQuery):
 class UpsertQuery(InsertQuery):
     """
     Represents an UPSERT query.
+
+    .. versionadded:: 0.2.0
     """
 
     def __init__(self, sess: 'md_session.Session', column: 'md_column.Column',

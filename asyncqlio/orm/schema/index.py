@@ -20,8 +20,12 @@ class Index(object):
         class MyTable(Table):
             id = Column(Integer, primary_key=True)
             name = Column(Text)
+
+            # make an index on the name column
+            # by specifying it as the column
             name_index = Index(name)
 
+    .. versionadded:: 0.2.0
     """
     def __init__(self, *columns: 'typing.Union[md_column.Column, str]',
                  unique: bool = False,

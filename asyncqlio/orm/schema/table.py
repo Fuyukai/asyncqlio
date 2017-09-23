@@ -197,6 +197,8 @@ class TableMetadata(object):
         """
         Generates an index for the primary key of each table, if the dialect
         creates one.
+
+        .. versionadded:: 0.2.0
         """
         for name, table in self.tables.items():
             index_name = self.bind.dialect.get_primary_key_index_name(name)
@@ -215,6 +217,8 @@ class TableMetadata(object):
         """
         Generates an index for columns marked as unique in each table, if the
         dialect creates them.
+
+        .. versionadded:: 0.2.0
         """
         for name, table in self.tables.items():
             if isinstance(table, AliasedTable):
@@ -236,14 +240,20 @@ class TableMeta(type):
     """
 
     def __prepare__(*args, **kwargs):
+        # this is required so that columns are ordered.
         return OrderedDict()
 
     def __new__(mcs, name: str, bases: tuple, class_body: dict,
                 register: bool = True, *args, **kwargs):
+        # usually a cloned class
+        # so we just skip it directly
         if register is False:
             return type.__new__(mcs, name, bases, class_body)
 
-        # hijack columns
+        # what we do here is hijack some objects
+        # this allows us to re-organize them in our own internal data structures
+        # allowing us to do some better actions with them
+
         columns = OrderedDict()
         relationships = OrderedDict()
         indexes = OrderedDict()
@@ -302,11 +312,15 @@ class TableMeta(type):
         # TABLE ATTRIBUTES #
         # ================ #
 
+        #: The :class:`.TableMetadata` for this table.
+        self.metadata = self.metadata  # type: TableMetadata
+
         #: A dict of columns for this table.
         self._columns = self._columns  # type: typing.Dict[str, md_column.Column]
 
         #: A dict of relationships for this table.
-        self._relationships = self._relationships  # type: typing.Dict[str, md_relationship.Relationship]
+        self._relationships = \
+            self._relationships  # type: typing.Dict[str, md_relationship.Relationship]
 
         #: A dict of indexes for this table.
         self._indexes = self._indexes  # type: typing.Dict[str, md_index.Index]
@@ -317,15 +331,6 @@ class TableMeta(type):
 
         logger.debug("Registered new table {}".format(tblname))
         self.metadata.register_table(self)
-
-    async def truncate(cls, *, cascade: bool = False):
-        """
-        Truncates this table.
-
-        :param cascade: If this truncation should cascade to other tables.
-        """
-        async with cls.metadata.bind.get_session() as sess:
-            return await sess.truncate(cls, cascade=cascade)
 
     def __getattr__(self, item):
         if item.startswith("_"):
@@ -357,96 +362,6 @@ class TableMeta(type):
         except AttributeError:
             return super().__repr__()
 
-    def iter_relationships(self) -> 'typing.Generator[md_relationship.Relationship, None, None]':
-        """
-        :return: A generator that yields :class:`.Relationship` objects for this table.
-        """
-        for rel in self._relationships.values():
-            yield rel
-
-    def iter_columns(self) -> 'typing.Generator[md_column.Column, None, None]':
-        """
-        :return: A generator that yields :class:`.Column` objects for this table.
-        """
-        for col in self._columns.values():
-            yield col
-
-    def iter_indexes(self) -> 'typing.Generator[md_index.Index, None, None]':
-        """
-        :return: A generator that yields :class:`.Index` objects for this table.
-        """
-        for idx in self._indexes.values():
-            yield idx
-
-    @enforce_bound
-    def explicit_indexes(self) -> 'typing.Generator[md_index.Index, None, None]':
-        """
-        :return: A generator that yields :class:`.Index` objects for this table.
-
-        Only manually added indexes are yielded from this generator; that is, it
-        ignores primary key indexes, unique column indexes, relationship indexes, etc
-        """
-        table_name = self.__tablename__
-        for index in self.iter_indexes():
-            if index.table_name != table_name:
-                continue
-            if index.name == self.metadata.bind.dialect.get_primary_key_index_name(table_name):
-                continue
-            unique_names = (self.metadata.bind.dialect.get_unique_column_index_name(table_name,
-                                                                                    col_name)
-                            for col_name in index.get_column_names())
-            if index.name in unique_names:
-                continue
-            yield index
-
-    def get_column(self, column_name: str, *,
-                   raise_si: bool = False) -> 'typing.Union[md_column.Column, None]':
-        """
-        Gets a column by name.
-
-        :param column_name: The column name to lookup.
-
-            This can be one of the following:
-                - The column's ``name``
-                - The column's ``alias_name()`` for this table
-
-        :return: The :class:`.Column` associated with that name, or None if no column was found.
-        """
-        try:
-            return self._columns[column_name]
-        except KeyError:
-            for column in self._columns.values():
-                alias = column.alias_name(table=self)
-                if alias == column_name:
-                    return column
-
-        return None
-
-    def get_relationship(self,
-                         relationship_name) -> 'typing.Union[md_relationship.Relationship, None]':
-        """
-        Gets a relationship by name.
-
-        :param relationship_name: The name of the relationship to get.
-        :return: The :class:`.Relationship` associated with that name, or None if it doesn't exist.
-        """
-        try:
-            return self._relationships[relationship_name]
-        except KeyError:
-            return None
-
-    def get_index(self, index_name) -> 'typing.Union[md_index.Index, None]':
-        """
-        Gets an index by name.
-
-        :param index_name: The name of the index to get.
-        :return: The :class:`.Index` associated with that name, or None if it doesn't exist.
-        """
-        try:
-            return self._indexes[index_name]
-        except KeyError:
-            return None
-
     def _calculate_primary_key(self) -> typing.Union['PrimaryKey', None]:
         """
         Calculates the current primary key for a table, given all the columns.
@@ -465,29 +380,6 @@ class TableMeta(type):
             return pk
 
         return None
-
-    @enforce_bound
-    async def create(self, *, if_not_exists: bool = True):
-        """
-        Creates a table with this schema in the database.
-        """
-        async with self.metadata.bind.get_ddl_session() as sess:
-            await sess.create_table(self.__tablename__,
-                                    *self.iter_columns(),
-                                    *self.explicit_indexes(),
-                                    if_not_exists=if_not_exists,
-                                    )
-
-    @enforce_bound
-    async def drop(self, *, cascade: bool = False, if_exists: bool = True):
-        """
-        Drops this table, or a table with the same name, from the database.
-
-        :param cascade: If this drop should cascade.
-        :param if_exists: If we should only attempt to drop tables that exist.
-        """
-        async with self.metadata.bind.get_ddl_session() as sess:
-            await sess.drop_table(self.__tablename__, if_exists=if_exists, cascade=cascade)
 
     @property
     def primary_key(self) -> 'PrimaryKey':
@@ -551,6 +443,176 @@ class Table(metaclass=TableMeta, register=False):
 
         if kwargs:
             self._init_row(**kwargs)
+
+    # Class methods
+    @classmethod
+    @enforce_bound
+    async def create(cls, *, if_not_exists: bool = True):
+        """
+        Creates a table with this schema in the database.
+        """
+        async with cls.metadata.bind.get_ddl_session() as sess:
+            await sess.create_table(cls.__tablename__,
+                                    *cls.iter_columns(),
+                                    *cls.explicit_indexes(),
+                                    if_not_exists=if_not_exists,
+                                    )
+
+    @classmethod
+    @enforce_bound
+    async def drop(cls, *, cascade: bool = False, if_exists: bool = True):
+        """
+        Drops this table, or a table with the same name, from the database.
+
+        :param cascade: If this drop should cascade.
+        :param if_exists: If we should only attempt to drop tables that exist.
+        """
+        async with cls.metadata.bind.get_ddl_session() as sess:
+            await sess.drop_table(cls.__tablename__, if_exists=if_exists, cascade=cascade)
+
+    @classmethod
+    async def truncate(cls, *, cascade: bool = False):
+        """
+        Truncates this table.
+
+        :param cascade: If this truncation should cascade to other tables.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+        """
+        async with cls.metadata.bind.get_session() as sess:
+            return await sess.truncate(cls, cascade=cascade)
+
+    @classmethod
+    def iter_relationships(cls) -> 'typing.Generator[md_relationship.Relationship, None, None]':
+        """
+        :return: A generator that yields :class:`.Relationship` objects for this table.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        for rel in cls._relationships.values():
+            yield rel
+
+    @classmethod
+    def iter_columns(cls) -> 'typing.Generator[md_column.Column, None, None]':
+        """
+        :return: A generator that yields :class:`.Column` objects for this table.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        for col in cls._columns.values():
+            yield col
+
+    @classmethod
+    def iter_indexes(cls) -> 'typing.Generator[md_index.Index, None, None]':
+        """
+        :return: A generator that yields :class:`.Index` objects for this table.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        for idx in cls._indexes.values():
+            yield idx
+
+    @classmethod
+    @enforce_bound
+    def explicit_indexes(cls) -> 'typing.Generator[md_index.Index, None, None]':
+        """
+        :return: A generator that yields :class:`.Index` objects for this table.
+
+        Only manually added indexes are yielded from this generator; that is, it
+        ignores primary key indexes, unique column indexes, relationship indexes, etc
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+        """
+        table_name = cls.__tablename__
+        for index in cls.iter_indexes():
+            if index.table_name != table_name:
+                continue
+            if index.name == cls.metadata.bind.dialect.get_primary_key_index_name(table_name):
+                continue
+            unique_names = (cls.metadata.bind.dialect.get_unique_column_index_name(table_name,
+                                                                                   col_name)
+                            for col_name in index.get_column_names())
+            if index.name in unique_names:
+                continue
+            yield index
+
+    @classmethod
+    def get_column(cls, column_name: str) -> 'typing.Union[md_column.Column, None]':
+        """
+        Gets a column by name.
+
+        :param column_name: The column name to lookup.
+
+            This can be one of the following:
+                - The column's ``name``
+                - The column's ``alias_name()`` for this table
+
+        :return: The :class:`.Column` associated with that name, or None if no column was found.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        try:
+            return cls._columns[column_name]
+        except KeyError:
+            for column in cls._columns.values():
+                alias = column.alias_name(table=cls)
+                if alias == column_name:
+                    return column
+
+        return None
+
+    @classmethod
+    def get_relationship(cls, relationship_name) \
+            -> 'typing.Union[md_relationship.Relationship, None]':
+        """
+        Gets a relationship by name.
+
+        :param relationship_name: The name of the relationship to get.
+        :return: The :class:`.Relationship` associated with that name, or None if it doesn't exist.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        try:
+            return cls._relationships[relationship_name]
+        except KeyError:
+            return None
+
+    @classmethod
+    def get_index(cls, index_name) -> 'typing.Union[md_index.Index, None]':
+        """
+        Gets an index by name.
+
+        :param index_name: The name of the index to get.
+        :return: The :class:`.Index` associated with that name, or None if it doesn't exist.
+
+        .. versionchanged:: 0.2.0
+
+            Moved from :class:`.TableMeta` to :class:`.Table` as a classmethod.
+
+        """
+        try:
+            return cls._indexes[index_name]
+        except KeyError:
+            return None
 
     def _init_row(self, **values):
         """
@@ -745,6 +807,8 @@ class Table(metaclass=TableMeta, register=False):
                         on_conflict_update: bool):
         """
         Gets the UPSERT sql for this row.
+
+        .. versionadded:: 0.2.0
 
         :param session: The :class:`.Session` whose dialect to use when creating the SQL.
         :param update_columns: The :class:`.Column` objects to update on conflict.
