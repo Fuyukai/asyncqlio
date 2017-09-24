@@ -377,13 +377,11 @@ class BaseConnector(AsyncABC):
         :param name: The name of the parameter.
         :return: A string that represents the substitute to be placed in the query.
         """
-
     @abstractmethod
-    async def get_db_server_info(self):
+    async def get_db_server_version(self) -> str:
         """
-        :return: A :class:`.DBInfo` instance that contains information about the server.
+        Gets the version of the DB server running.
         """
-
 
 # python 3.5 dicts are unordered
 # so we inherit from OrderedDict instead of dict

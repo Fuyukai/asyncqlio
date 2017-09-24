@@ -181,8 +181,13 @@ class AiomysqlConnector(BaseConnector):
         else:
             raise ValueError("Cannot work with paramstyle {}".format(pymysql.paramstyle))
 
-    async def get_db_server_info(self):
-        pass
+    async def get_db_server_version(self):
+        tr = self.get_transaction()
+        async with tr:
+            cur = await tr.cursor("SELECT VERSION();")
+            row = await cur.fetch_row()
+
+        return row[0]
 
 
 CONNECTOR_TYPE = AiomysqlConnector

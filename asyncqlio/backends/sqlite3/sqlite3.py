@@ -109,8 +109,8 @@ class Sqlite3Connector(BaseConnector):
     def emit_param(self, name: str) -> str:
         return ":{}".format(name)
 
-    async def get_db_server_info(self):
-        raise NotImplementedError
+    async def get_db_server_version(self):  # pragma: no cover
+        return sqlite3.sqlite_version
 
 
 class Sqlite3Transaction(BaseTransaction):

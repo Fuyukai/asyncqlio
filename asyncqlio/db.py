@@ -168,11 +168,9 @@ class DatabaseInterface(object):
         if self.connector is not None:
             await self.connector.close()
 
-    async def get_db_server_info(self):
+    # db server stuff
+    async def get_db_server_version(self) -> str:
         """
-        Gets DB server info.
-
-        .. warning::
-            This is **not** supported on SQLite3 connections.
+        Gets the version of the DB server.
         """
-        # todo: make this do something
+        return await self.connector.get_db_server_version()

@@ -203,8 +203,13 @@ class AsyncpgConnector(BaseConnector):
     def get_transaction(self) -> 'AsyncpgTransaction':
         return AsyncpgTransaction(self)
 
-    async def get_db_server_info(self):
-        return None
+    async def get_db_server_version(self):
+        tr = self.get_transaction()
+        async with tr:
+            cur = await tr.cursor("SELECT version();")
+            row = await cur.fetch_row()
+
+        return row[0]
 
 
 # define the asyncpg connector as the connector type to make an instance of
