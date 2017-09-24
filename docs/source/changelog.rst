@@ -44,6 +44,9 @@ Changelog
 
  - Add :class:`.UpsertQuery`. (:issue:`32`, :pr:`38`)
 
+ - Change :meth:`.DatabaseInterface.emit_param` to globally keep track of the param counter,
+   which simplifies a lot of operator code.
+
 
 0.1.0 (released 2017-07-30)
 ---------------------------
