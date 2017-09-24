@@ -92,6 +92,7 @@ class BaseDialect:
         Get a query to find information on all columns, optionally limiting by table.
 
         :param table_name: The name of the table to use.
+        :param emitter: The emitter to use.
         """
         raise NotImplementedError
 
@@ -99,6 +100,9 @@ class BaseDialect:
                       *, emitter: 'typing.Callable[[str], str]') -> str:
         """
         Get a query to find information on all indexes, optionally limiting by table.
+
+        :param table_name: The name of the table to use.
+        :param emitter: The emitter to use.
         """
         raise NotImplementedError
 
@@ -108,6 +112,7 @@ class BaseDialect:
         Get a formattable query and a set of required params to execute upsert-like functionality.
 
         :param table_name: The name of the table to upsert into.
+        :param on_conflict_update: If this is to update on conflict.
         """
         raise NotImplementedError
 

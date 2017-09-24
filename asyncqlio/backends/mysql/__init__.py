@@ -1,14 +1,12 @@
-from pkgutil import extend_path
 import io
 import itertools
 import operator
+from pkgutil import extend_path
 
-from asyncqlio.exc import DatabaseException
-from asyncqlio.sentinels import NO_DEFAULT
 from asyncqlio.backends.base import BaseDialect
-from asyncqlio.orm.schema import column as md_column
-from asyncqlio.orm.schema import index as md_index
-from asyncqlio.orm.schema import types as md_types
+from asyncqlio.exc import DatabaseException
+from asyncqlio.orm.schema import column as md_column, index as md_index, types as md_types
+from asyncqlio.sentinels import NO_DEFAULT
 
 __path__ = extend_path(__path__, __name__)
 

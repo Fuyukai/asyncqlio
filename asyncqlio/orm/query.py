@@ -276,7 +276,7 @@ class SelectQuery(BaseQuery):
         params = {}
         c_sql = []
         for condition in self.conditions:
-            response = condition.generate_sql(self.session.bind.emit_param, counter)
+            response = condition.generate_sql(self.session.bind.emit_param)
             params.update(response.parameters)
             c_sql.append(response.sql)
 
@@ -289,7 +289,7 @@ class SelectQuery(BaseQuery):
             fmt.write(" WHERE {}".format(" AND ".join(c_sql)))
 
         if self.orderer is not None:
-            res = self.orderer.generate_sql(self.session.bind.emit_param, counter)
+            res = self.orderer.generate_sql(self.session.bind.emit_param)
             fmt.write(" ORDER BY {}".format(res.sql))
         if self.row_limit is not None:
             fmt.write(" LIMIT {}".format(self.row_limit))
@@ -725,7 +725,7 @@ class BulkUpdateQuery(BulkQuery):
         params = {}
 
         # get the sql and params from the generate_sql call
-        response = self.setting.generate_sql(self.session.bind.emit_param, counter)
+        response = self.setting.generate_sql(self.session.bind.emit_param)
         # update params
         params.update(response.parameters)
         query.write(response.sql)
@@ -734,7 +734,7 @@ class BulkUpdateQuery(BulkQuery):
         c_sql = []
         for condition in self.conditions:
             # pass the condition offset
-            res = condition.generate_sql(self.session.bind.emit_param, counter)
+            res = condition.generate_sql(self.session.bind.emit_param)
             params.update(res.parameters)
             c_sql.append(res.sql)
 
@@ -778,7 +778,7 @@ class BulkDeleteQuery(BulkQuery):
         c_sql = []
         for condition in self.conditions:
             # pass the condition offset
-            res = condition.generate_sql(self.session.bind.emit_param, counter)
+            res = condition.generate_sql(self.session.bind.emit_param)
             params.update(res.parameters)
             c_sql.append(res.sql)
 

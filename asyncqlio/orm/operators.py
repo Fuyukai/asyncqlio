@@ -3,7 +3,6 @@ Classes for operators returned from queries.
 """
 import abc
 import functools
-import itertools
 import typing
 
 from asyncqlio.orm.schema import column as md_column
@@ -48,20 +47,8 @@ class BaseOperator(abc.ABC):
     """
     The base operator class.
     """
-
-    def get_param(self, emitter: typing.Callable[[str], str], counter: itertools.count) \
-            -> typing.Tuple[str, str]:
-        """
-        Gets the next parameter.
-
-        :param emitter: A function that emits a parameter name that can be formatted in a SQL query.
-        :param counter: The counter for parameters.
-        """
-        name = "param_{}".format(next(counter))
-        return emitter(name), name
-
     @abc.abstractmethod
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count) \
+    def generate_sql(self, emitter: typing.Callable[[], typing.Tuple[str, str]]) \
             -> OperatorResponse:
         """
         Generates the SQL for an operator.
@@ -69,7 +56,6 @@ class BaseOperator(abc.ABC):
         Parameters must be generated using the emitter callable.
 
         :param emitter: A callable that can be used to generate param placeholders in a query.
-        :param counter: The current "parameter number".
         :return: A :class:`.OperatorResponse` representing the result.
 
         .. warning::
@@ -113,11 +99,11 @@ class And(BaseOperator):
     def __init__(self, *ops: 'BaseOperator'):
         self.operators = list(ops)
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         final = []
         vals = {}
         for op in self.operators:
-            response = op.generate_sql(emitter, counter)
+            response = op.generate_sql(emitter)
             final.append(response.sql)
             vals.update(response.parameters)
 
@@ -136,11 +122,11 @@ class Or(BaseOperator):
     def __init__(self, *ops: 'BaseOperator'):
         self.operators = list(ops)
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         final = []
         vals = {}
         for op in self.operators:
-            response = op.generate_sql(emitter, counter)
+            response = op.generate_sql(emitter)
             final.append(response.sql)
             vals.update(response.parameters)
 
@@ -164,7 +150,7 @@ class Sorter(BaseOperator, metaclass=abc.ABCMeta):
         """
         pass
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         names = ", ".join(col.alias_name(quoted=True) for col in self.cols)
         sql = "{} {}".format(names, self.sort_order)
 
@@ -209,8 +195,8 @@ class BasicSetter(BaseOperator, ColumnValueMixin, metaclass=abc.ABCMeta):
         """
         pass
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
-        param_name, name = self.get_param(emitter, counter)
+    def generate_sql(self, emitter):
+        param_name, name = emitter()
         params = {name: self.value}
 
         sql = "{0} = {0} {1} {2}".format(self.column.quoted_name, self.set_operator, param_name)
@@ -224,8 +210,8 @@ class ValueSetter(BasicSetter):
     set_operator = "="
 
     # override as the default setter impl doesn't work
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
-        param_name, name = self.get_param(emitter, counter)
+    def generate_sql(self, emitter):
+        param_name, name = emitter()
         params = {name: self.value}
 
         sql = "{0} = {1}".format(self.column.quoted_name, param_name)
@@ -247,12 +233,12 @@ class DecrementSetter(BasicSetter):
 
 
 class In(BaseOperator, ColumnValueMixin):
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter: typing.Callable[[str], str]):
         # generate a dict of params
         params = {}
         l = []
         for item in self.value:
-            emitted, name = self.get_param(emitter, counter)
+            emitted, name = emitter()
             params[name] = item
             l.append(emitted)
 
@@ -268,13 +254,13 @@ class ComparisonOp(ColumnValueMixin, BaseOperator):
     """
     operator = None
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         params = {}
         if isinstance(self.value, md_column.Column):
             sql = "{} {} {}".format(self.column.quoted_fullname, self.operator,
                                     self.value.quoted_fullname)
         else:
-            param_name, name = self.get_param(emitter, counter)
+            param_name, name = emitter()
             sql = "{} {} {}".format(self.column.quoted_fullname, self.operator, param_name)
             params[name] = self.value
 
@@ -288,12 +274,12 @@ class Eq(ComparisonOp):
     """
     operator = "="
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         if self.value is None:
             sql = "{} IS NULL".format(self.column.quoted_fullname)
             return OperatorResponse(sql, {})
 
-        return super().generate_sql(emitter, counter)
+        return super().generate_sql(emitter)
 
 
 class NEq(ComparisonOp):
@@ -302,12 +288,12 @@ class NEq(ComparisonOp):
     """
     operator = "!="
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         if self.value is None:
             sql = "{} IS NOT NULL".format(self.column.quoted_fullname)
             return OperatorResponse(sql, {})
 
-        return super().generate_sql(emitter, counter)
+        return super().generate_sql(emitter)
 
 
 class Lt(ComparisonOp):
@@ -361,7 +347,7 @@ class HackyILike(BaseOperator, ColumnValueMixin):
     A "hacky" ILIKE operator for databases that do not support it.
     """
 
-    def generate_sql(self, emitter: typing.Callable[[str], str], counter: itertools.count):
+    def generate_sql(self, emitter):
         # lower(column) like (pattern|column)
         # this will lower the column
         params = {}
@@ -370,7 +356,7 @@ class HackyILike(BaseOperator, ColumnValueMixin):
         if isinstance(self.value, md_column.Column):
             param_name = "LOWER({})".format(self.value.quoted_fullname)
         else:
-            param_name, name = self.get_param(emitter, counter)
+            param_name, name = emitter()
             params[name] = self.value
 
         sql = "LOWER({}) LIKE {}".format(self.column.quoted_fullname, param_name)

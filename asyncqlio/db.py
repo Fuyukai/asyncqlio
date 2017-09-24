@@ -3,7 +3,9 @@ The main Database object. This is the "database interface" to the actual DB serv
 """
 import asyncio
 import importlib
+import itertools
 import logging
+from typing import Tuple, Union
 from urllib.parse import ParseResult, urlparse
 
 from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseTransaction
@@ -29,10 +31,11 @@ class DatabaseInterface(object):
         # pass the DSN in the constructor
         dsn = "postgresql://postgres:B07_L1v3s_M4tt3r_T00@127.0.0.1/mydb"
         my_database = DatabaseInterface(dsn)
-        # or provide it in the `.connect()` call
-        await my_database.connect(dsn)
+        # then connect
+        await my_database.connect()
 
     """
+    param_counter = itertools.count()
 
     def __init__(self, dsn: str, *, loop: asyncio.AbstractEventLoop = None):
         """
@@ -121,14 +124,19 @@ class DatabaseInterface(object):
 
         return self.connector
 
-    def emit_param(self, name: str) -> str:
+    def emit_param(self, name: str = None) -> Union[Tuple[str, str], str]:
         """
         Emits a param in the format that the DB driver specifies.
 
-        :param name: The name of the parameter to emit.
-        :return: A str representing the emitted param.
+        :param name: The name to use. If this is None, a name will automatically be used, \
+            and no name param will be returned.
+        :return: The emitted param, and the name of the param emitted.
         """
-        return self.connector.emit_param(name)
+        if name is not None:
+            return self.connector.emit_param(name)
+
+        name = "param_{}".format(next(self.param_counter))
+        return self.connector.emit_param(name), name
 
     def get_transaction(self, **kwargs) -> BaseTransaction:
         """
