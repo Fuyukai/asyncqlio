@@ -37,7 +37,8 @@ class DatabaseInterface(object):
     """
     param_counter = itertools.count()
 
-    def __init__(self, dsn: str, *, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, dsn: str, *, loop: asyncio.AbstractEventLoop = None,
+                 connector: BaseConnector = None):
         """
         :param dsn:
             The `Data Source Name <http://whatis.techtarget.com/definition/data-source-name-DSN>_`
@@ -59,19 +60,21 @@ class DatabaseInterface(object):
 
         import_path = "asyncqlio.backends.{}".format(db_type)
         package = importlib.import_module(import_path)
-        if db_connector is not NO_CONNECTOR:
-            mod_path = ".".join([import_path, db_connector])
-        else:
-            mod_path = ".".join([import_path, package.DEFAULT_CONNECTOR])
 
         #: The current Dialect instance.
         self.dialect = getattr(package, "{}Dialect".format(db_type.title()))()  # type: BaseDialect
 
-        logger.debug("Loading connector {}".format(mod_path))
+        if connector is None:
+            if db_connector is not NO_CONNECTOR:
+                mod_path = ".".join([import_path, db_connector])
+            else:
+                mod_path = ".".join([import_path, package.DEFAULT_CONNECTOR])
 
-        connector_mod = importlib.import_module(mod_path)
+            logger.debug("Loading connector {}".format(mod_path))
+            connector_mod = importlib.import_module(mod_path)
+            connector = connector_mod.CONNECTOR_TYPE
 
-        self._connector_type = connector_mod.CONNECTOR_TYPE
+        self._connector_type = connector
         self._parsed_dsn = parsed_dsn
 
         #: The current connector instance.
