@@ -5,7 +5,7 @@ import asyncio
 import importlib
 import itertools
 import logging
-from typing import Tuple, Union
+from typing import Tuple, Type, Union
 from urllib.parse import ParseResult, urlparse
 
 from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseTransaction
@@ -38,7 +38,7 @@ class DatabaseInterface(object):
     param_counter = itertools.count()
 
     def __init__(self, dsn: str, *, loop: asyncio.AbstractEventLoop = None,
-                 connector: BaseConnector = None):
+                 connector: Type[BaseConnector] = None):
         """
         :param dsn:
             The `Data Source Name <http://whatis.techtarget.com/definition/data-source-name-DSN>_`
