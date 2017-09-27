@@ -32,24 +32,25 @@ else:
 
 # -- General configuration ------------------------------------------------
 
-# If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+# Sphinx extensions
+extensions = [
+    # Required for autogeneration of documentation
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.doctest',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.coverage',
-              'sphinx.ext.ifconfig',
-              'sphinx.ext.viewcode',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.extlinks',
-              'sphinxcontrib.asyncio',
-              'sphinx_autodoc_typehints'
-              ]
+    # Linking to other documents
+    'sphinx.ext.intersphinx',
+
+    # View the code in sphinx easily.
+    'sphinx.ext.viewcode',
+
+    # Link to issues and PRs
+    'sphinx.ext.extlinks',
+
+    # Prettify the docs in general
+    'sphinxcontrib.asyncio',
+    'sphinx_autodoc_typehints'
+]
 
 # Autodoc config
 autoclass_content = 'both'  # include both class docstring and __init__
@@ -146,7 +147,9 @@ epub_copyright = copyright
 epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/3/': None}
+intersphinx_mapping = {
+    'https://docs.python.org/3/': None
+}
 
 # Extlink configuration.
 extlinks = {

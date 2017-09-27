@@ -54,9 +54,16 @@ table, you only need to do this:
     class Server(Table, table_name="server"):
         id = Column(Int(), primary_key=True, unique=True)
 
-In this example, a column called ``id`` is added to the table with the type :class:`~.types.Int`,
-and is set to be a primary key and unique. Of course, you can name it anything and add a
-different type; all that matters is that the object is a :class:`.Column`.
+In this example, a column called ``id`` is added to the table with the type
+:class:`~.types .Integer`, and is set to be a primary key and unique. Of course, you can name it
+anything and add different type; all that matters is that the object is a :class:`.Column`.
+
+.. warning::
+
+    Auto-incrementing columns is handled specially for databases that support the SERIAL type. To
+    autoincrement a column on Sqlite3, use a type of :class:`~.types.Integer` and
+    ``primary_key=True``.
+    For other databases, use :class:`~.types.Serial` (or Big/Small variants) of such.
 
 .. autoclass:: asyncqlio.orm.schema.column.Column
     :noindex:
@@ -75,7 +82,7 @@ to N columns in the table. Typically keys with multiple columns are known as
     :noindex:
     :members:
 
-    Primary keys will be automatically generated on a table when multiple columns are marked as
+Primary keys will be automatically generated on a table when multiple columns are marked as
 ``primary_key`` in the constructor, but a :class:`.PrimaryKey` object can be constructed manually
 and set on ``Table.primary_key``.
 
@@ -92,6 +99,8 @@ For implementing your own types, see :ref:`creating-col-types`.
 .. automodule:: asyncqlio.orm.schema.types
     :noindex:
     :members:
+
+.. _row-objects:
 
 Row Objects
 -----------
@@ -110,4 +119,15 @@ corresponding with the names of the columns, like so:
 
     row = User(id=1, name="heck")
 
+These row objects have their column values accessible via attribute access:
 
+.. code-block:: python3
+
+    print(row.id)  # prints 1
+
+Row objects also produced from queries, and act exactly the same.
+
+.. code-block::
+
+    row = await sess.select(User).where(User.id.eq(1)).first()
+    print(row.name)  # prints "heck"

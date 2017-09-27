@@ -16,7 +16,7 @@ Welcome to asyncqlio's documentation!
    :target: https://codecov.io/gh/SunDwarf/asyncqlio
 
 
-**asyncqlio** is a Python 3.5+ :ref:`ORM` for SQL Relational Databases, that allows access from
+**asyncqlio** is a Python 3.5+ for SQL Relational Databases, that allows access from
 async code.
 
 You can install the latest version of asyncqlio from PyPI with pip:
@@ -36,9 +36,9 @@ Of course, asyncqlio by itself is useless without a driver to connect to a
 database. asyncqlio comes with modules that use other libraries as backend
 drivers to connect to these servers:
 
-   - PostgreSQL (asyncpg, aiopg): :ref:`driver-psql`
-   - MySQL (aiomysql): :ref:`driver-mysql`
-   - SQLite3 (sqlite3): :ref:`driver-sqlite3`
+   - PostgreSQL (asyncpg, aiopg)
+   - MySQL (aiomysql)
+   - SQLite3 (sqlite3)
 
 Other databases may be supported in the future. 
 
@@ -83,3 +83,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. _ORM: Object Relational Mapper

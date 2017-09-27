@@ -12,8 +12,6 @@ the :class:`.DatabaseInterface` provided by the library, using a
 
     db = DatabaseInterface("postgresql://myuser:mypassword@127.0.0.1:5432/db")
 
-You can omit the DSN if you plan on providing it later.
-
 The DSN
 -------
 
@@ -38,16 +36,16 @@ connection or connection pool for usage in the database.
 
 .. code-block:: python3
 
-    # if you specified the DSN earlier
+    # connects the database and initializes the backend
     await db.connect()
-    # otherwise
-    await db.connect(dsn)
 
 Once connected, you can do a test query to verify everything works:
 
 .. code-block:: python3
 
     async with db.get_transaction() as t:
-        print(await (await t.cursor("SELECT 1;")).fetch_row())
+        cur = await t.cursor("SELECT 1;")
+        row = await cur.fetch_row()
+        print(row)
 
 

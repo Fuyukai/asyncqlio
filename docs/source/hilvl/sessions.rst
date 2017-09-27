@@ -70,7 +70,7 @@ result, you can use :meth:`.BaseResultSet.fetch_row`:
 Inserting Rows
 --------------
 
-The session is the one-stop gateway to inserting, updating, or even deleting :ref:`Row Objects` .
+The session is the one-stop gateway to inserting, updating, or even deleting :ref:`row-objects`.
 There are several methods used: :meth:`.Session.add`, :meth:`.Session.merge`, and
 :meth:`.Session.remove` are the high level methods.
 
