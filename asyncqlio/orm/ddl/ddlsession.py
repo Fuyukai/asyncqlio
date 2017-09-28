@@ -176,9 +176,11 @@ class DDLSession(SessionBase):
             await self.drop_table(table_name)
             await self.rename_table(tmp_name, table_name)
             return
+
         fmt = io.StringIO()
         fmt.write("ALTER TABLE ")
         fmt.write(table_name)
+
         is_postgres = isinstance(self.bind.dialect, postgresql.PostgresqlDialect)
         if is_postgres:
             fmt.write(" ALTER ")
@@ -186,11 +188,14 @@ class DDLSession(SessionBase):
             fmt.write(" MODIFY ")
         else:
             raise RuntimeError("DB dialect does not support this action.")
+
         fmt.write(column_name)
+
         if is_postgres:
             fmt.write(" TYPE ")
         else:
             fmt.write(" ")
+
         fmt.write(new_type.sql())
 
         return await self.execute(fmt.getvalue())
