@@ -38,7 +38,9 @@ setup(
     ],
     install_requires=[
         "cached_property==1.3.0",
-        "asyncio_extras==1.3.0"
+        "asyncio_extras==1.3.0",
+        "click",
+        "tqdm"
     ],
     extras_require={
         "docs": [

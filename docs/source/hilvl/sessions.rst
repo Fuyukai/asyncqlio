@@ -74,9 +74,9 @@ The session is the one-stop gateway to inserting, updating, or even deleting :re
 There are several methods used: :meth:`.Session.add`, :meth:`.Session.merge`, and
 :meth:`.Session.remove` are the high level methods.
 
- - :meth:`.Session.add` is used for new rows, or rows that have been retrieved from a query
+ - :meth:`.Session.add` is used for new rows, or rows that have been retrieved from a query.
 
- - :meth:`.Session.merge` is used for rows that already exist in the database
+ - :meth:`.Session.merge` is used for rows that already exist in the database.
 
  - :meth:`.Session.remove` is used to delete rows that exist in the database.
 

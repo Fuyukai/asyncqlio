@@ -522,7 +522,7 @@ class InsertQuery(BaseQuery):
         self.rows_to_insert.append(row)
         return self
 
-    def on_conflict(self, column: 'md_column.Column') -> 'InsertQuery':
+    def on_conflict(self, column: 'md_column.Column') -> 'UpsertQuery':
         """
         Get an :class:`.UpsertQuery` to react upon a conflict.
 
