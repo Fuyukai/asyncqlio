@@ -200,8 +200,8 @@ class DDLSession(SessionBase):
 
         return await self.execute(fmt.getvalue())
 
-    async def create_index(self, table_name: str, column_name: str, name: str,
-                           *, unique: bool = False, if_not_exists: bool = False):
+    async def create_index(self, table_name: str, name: str, *column_names: str,
+                           unique: bool = False, if_not_exists: bool = False):
         """
         Creates an index on a column.
 
@@ -222,7 +222,7 @@ class DDLSession(SessionBase):
         fmt.write(" ON ")
         fmt.write(table_name)
         fmt.write("(")
-        fmt.write(column_name)
+        fmt.write(", ".join(column_names))
         fmt.write(");")
 
         return await self.execute(fmt.getvalue())
