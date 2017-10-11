@@ -522,13 +522,13 @@ class InsertQuery(BaseQuery):
         self.rows_to_insert.append(row)
         return self
 
-    def on_conflict(self, column: 'md_column.Column') -> 'UpsertQuery':
+    def on_conflict(self, *columns: 'md_column.Column') -> 'UpsertQuery':
         """
         Get an :class:`.UpsertQuery` to react upon a conflict.
 
-        :param column: The :class:`.Column` upon which to check for a conflict.
+        :param column: The :class:`.Column` objects upon which to check for a conflict.
         """
-        return UpsertQuery(self.session, column, *self.rows_to_insert)
+        return UpsertQuery(self.session, columns=columns, rows=self.rows_to_insert)
 
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
@@ -557,19 +557,27 @@ class UpsertQuery(InsertQuery):
     .. versionadded:: 0.2.0
     """
 
-    def __init__(self, sess: 'md_session.Session', column: 'md_column.Column',
-                 *rows: 'md_table.Table'):
+    def __init__(self, sess: 'md_session.Session', *, columns: 'md_column.Column',
+                 rows: 'md_table.Table'):
         """
         :param sess: The :class:`.Session` this query is attached to.
-        :param column: The :class:`.Column` on which the conflict might happen.
+        :param column: The :class:`.Column` objects on which the conflict might happen.
         :param rows: The :class:`.Table` objects that are to be added.
         """
         super().__init__(sess)
 
         self._on_conflict_update = False
-        self._conflict_col = column
-        self._update_cols = ()
+        self._conflict_cols = list(columns)
+        self._update_cols = []
         self.rows_to_insert = list(rows)
+
+    def on_conflict(self, *columns: 'md_column.Column') -> 'UpsertQuery':
+        """
+        Add more conflict columns to this query.
+
+        :param column: The :class:`.Column` objects upon which to check for a conflict.
+        """
+        self._conflict_cols.extend(columns)
 
     def update(self, *cols: 'md_column.Column') -> 'UpsertQuery':
         """
@@ -578,7 +586,7 @@ class UpsertQuery(InsertQuery):
         :param cols: The :class:`.Column` objects to update.
         """
         self._on_conflict_update = True
-        self._update_cols = cols
+        self._update_cols.extend(cols)
         return self
 
     def nothing(self) -> 'UpsertQuery':
@@ -587,7 +595,7 @@ class UpsertQuery(InsertQuery):
 
         This is the default behavior.
         """
-        self._update_cols = ()  # just in case
+        self._update_cols = []  # just in case
         return self
 
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
@@ -608,8 +616,8 @@ class UpsertQuery(InsertQuery):
             query, params = row._get_upsert_sql(
                 emit,
                 self.session,
-                *self._update_cols,
-                on_conflict_column=self._conflict_col,
+                update_columns=self._update_cols,
+                on_conflict_columns=self._conflict_cols,
                 on_conflict_update=self._on_conflict_update,
             )
             queries.append((query, params))

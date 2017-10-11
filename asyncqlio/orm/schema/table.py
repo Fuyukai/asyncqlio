@@ -815,8 +815,9 @@ class Table(metaclass=TableMeta, register=False):
         return base_query.getvalue(), params
 
     def _get_upsert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session',
-                        *update_columns: 'md_column.Column',
-                        on_conflict_column: 'md_column.Column',
+                        *,
+                        update_columns: 'md_column.Column',
+                        on_conflict_columns: 'md_column.Column',
                         on_conflict_update: bool):
         """
         Gets the UPSERT sql for this row.
@@ -866,7 +867,8 @@ class Table(metaclass=TableMeta, register=False):
                 )
 
             elif fmt_param == "col":
-                fmt_params["col"] = on_conflict_column.quoted_name
+                names = ", ".join(col.quoted_name for col in on_conflict_columns)
+                fmt_params["col"] = names
 
             else:
                 raise RuntimeError("Driver passed an invalid format specification.")
