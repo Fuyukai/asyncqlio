@@ -6,6 +6,8 @@ import io
 import logging
 import typing
 
+from cached_property import cached_property
+
 from asyncqlio.orm.schema import column as md_column, table as md_table
 
 logger = logging.getLogger(__name__)
@@ -79,6 +81,24 @@ class Index(object):
         if isinstance(self.table, str):
             return self.table
         return self.table.__tablename__
+
+    @cached_property
+    def quoted_name(self) -> str:
+        """
+        Gets the quoted name for this Index.
+
+        This returns the column name in "inde" format.
+        """
+        return r'"{}"'.format(self.name)
+
+    @cached_property
+    def quoted_fullname(self) -> str:
+        """
+        Gets the full quoted name for this index.
+
+        This returns the column name in "table"."index" format.
+        """
+        return r'"{}"."{}"'.format(self.table_name, self.name)
 
     @classmethod
     def with_name(cls, name: str, *args, **kwargs) -> 'Index':
