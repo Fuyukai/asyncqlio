@@ -9,7 +9,7 @@ import pytest
 from asyncqlio import DatabaseInterface
 from asyncqlio.orm.schema.table import table_base, Table
 from asyncqlio.orm.schema.column import Column
-from asyncqlio.orm.schema.types import Integer, Text
+from asyncqlio.orm.schema.types import Integer, String
 
 
 # global so it can be accessed in other fixtures
@@ -27,8 +27,8 @@ async def db() -> DatabaseInterface:
 async def table() -> Table:
     class Test(table_base()):
         id = Column(Integer(), primary_key=True)
-        name = Column(Text())
-        email = Column(Text())
+        name = Column(String(64))
+        email = Column(String(64))
     async with iface.get_ddl_session() as session:
         await session.create_table(Test.__tablename__,
                                    *Test.iter_columns())
