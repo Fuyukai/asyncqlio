@@ -74,7 +74,7 @@ async def test_create_index(db: DatabaseInterface):
     else:
         num_indexes = 2
     async with db.get_ddl_session() as sess:
-        await sess.create_index(table_name, "name", "index_name")
+        await sess.create_index(table_name, "index_name", "name")
     assert await get_num_indexes(db) == num_indexes
 
 
@@ -84,7 +84,7 @@ async def test_create_unique_index(db: DatabaseInterface):
     else:
         num_indexes = 3
     async with db.get_ddl_session() as sess:
-        await sess.create_index(table_name, "age", "index_age", unique=True)
+        await sess.create_index(table_name, "index_age", "age", unique=True)
     assert await get_num_indexes(db) == num_indexes
     fmt = "insert into {} values ({{}}, 'test', 10);".format(table_name)
     async with db.get_session() as sess:
