@@ -20,8 +20,10 @@ async def test_insert(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         name = kwargs["name"]
         email = kwargs["email"]
-        await sess.insert.rows(*(table(id=i, name=name.format(i), email=email.format(i))
-                                 for i in range(50)))
+        rows = []
+        for i in range(50):
+            rows.append(table(id=i, name=name.format(i), email=email.format(i)))
+        await sess.insert.rows(*rows)
 
 
 async def test_fetch(db: DatabaseInterface, table: Table):
