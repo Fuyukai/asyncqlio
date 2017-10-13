@@ -814,10 +814,10 @@ class Table(metaclass=TableMeta, register=False):
 
         return base_query.getvalue(), params
 
-    def _get_upsert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session',
+    def _get_upsert_sql(self, emitter: 'typing.Callable[[], str]', session: 'md_session.Session',
                         *,
-                        update_columns: 'md_column.Column',
-                        on_conflict_columns: 'md_column.Column',
+                        update_columns: 'typing.List[md_column.Column]',
+                        on_conflict_columns: 'typing.List[md_column.Column]',
                         on_conflict_update: bool):
         """
         Gets the UPSERT sql for this row.
@@ -826,7 +826,7 @@ class Table(metaclass=TableMeta, register=False):
 
         :param session: The :class:`.Session` whose dialect to use when creating the SQL.
         :param update_columns: The :class:`.Column` objects to update on conflict.
-        :param on_conflict_column: The :class:`.Column` on which there may be a conflict.
+        :param on_conflict_columns: The :class:`.Column` objects on which there may be a conflict.
         :param on_conflict_update: Whether to update the table on conflict.
         """
         params = {}

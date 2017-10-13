@@ -206,8 +206,8 @@ class DDLSession(SessionBase):
         Creates an index on a column.
 
         :param table_name: The table with the column to be indexed.
-        :param column_name: The name of the column to be indexed.
         :param name: The name to give the index.
+        :param column_names: The names of the columns to be indexed.
         :param unique: Whether the index should enforce unique values.
         :param if_not_exists: Whether to use IF NOT EXISTS when making index.
         """

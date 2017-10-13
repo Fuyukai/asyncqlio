@@ -87,7 +87,7 @@ class Index(object):
         """
         Gets the quoted name for this Index.
 
-        This returns the column name in "inde" format.
+        This returns the column name in "index" format.
         """
         return r'"{}"'.format(self.name)
 
