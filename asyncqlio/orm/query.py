@@ -526,9 +526,9 @@ class InsertQuery(BaseQuery):
         """
         Get an :class:`.UpsertQuery` to react upon a conflict.
 
-        :param column: The :class:`.Column` objects upon which to check for a conflict.
+        :param columns: The :class:`.Column` objects upon which to check for a conflict.
         """
-        return UpsertQuery(self.session, columns=columns, rows=self.rows_to_insert)
+        return UpsertQuery(self.session, *columns, rows=self.rows_to_insert)
 
     def generate_sql(self) -> typing.List[typing.Tuple[str, tuple]]:
         """
@@ -557,7 +557,7 @@ class UpsertQuery(InsertQuery):
     .. versionadded:: 0.2.0
     """
 
-    def __init__(self, sess: 'md_session.Session', *, columns: 'md_column.Column',
+    def __init__(self, sess: 'md_session.Session', *columns: 'md_column.Column',
                  rows: 'md_table.Table'):
         """
         :param sess: The :class:`.Session` this query is attached to.
