@@ -200,14 +200,14 @@ class DDLSession(SessionBase):
 
         return await self.execute(fmt.getvalue())
 
-    async def create_index(self, table_name: str, column_name: str, name: str,
-                           *, unique: bool = False, if_not_exists: bool = False):
+    async def create_index(self, table_name: str, name: str, *column_names: str,
+                           unique: bool = False, if_not_exists: bool = False):
         """
         Creates an index on a column.
 
         :param table_name: The table with the column to be indexed.
-        :param column_name: The name of the column to be indexed.
         :param name: The name to give the index.
+        :param column_names: The names of the columns to be indexed.
         :param unique: Whether the index should enforce unique values.
         :param if_not_exists: Whether to use IF NOT EXISTS when making index.
         """
@@ -222,7 +222,7 @@ class DDLSession(SessionBase):
         fmt.write(" ON ")
         fmt.write(table_name)
         fmt.write("(")
-        fmt.write(column_name)
+        fmt.write(", ".join(column_names))
         fmt.write(");")
 
         return await self.execute(fmt.getvalue())

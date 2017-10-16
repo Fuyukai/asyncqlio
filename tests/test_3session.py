@@ -11,21 +11,26 @@ from asyncqlio.orm.schema.table import Table
 pytestmark = pytest.mark.asyncio
 
 kwargs = {
-    "name": "test",
-    "email": "test@example.com",
+    "name": "test{}",
+    "email": "test{}@example.com",
 }
 
 
 async def test_insert(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
-        await sess.insert.rows(*(table(id=i, **kwargs) for i in range(50)))
+        name = kwargs["name"]
+        email = kwargs["email"]
+        rows = []
+        for i in range(50):
+            rows.append(table(id=i, name=name.format(i), email=email.format(i)))
+        await sess.insert.rows(*rows)
 
 
 async def test_fetch(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         res = await sess.fetch('select * from {}'.format(table.__tablename__))
     for attr, value in kwargs.items():
-        assert res[attr] == value
+        assert res[attr] == value.format(res["id"])
 
 
 async def test_rollback(db: DatabaseInterface, table: Table):
@@ -45,7 +50,7 @@ async def test_select(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         res = await sess.select(table).where(table.id == 1).first()
     for attr, value in kwargs.items():
-        assert getattr(res, attr, object()) == value
+        assert getattr(res, attr, object()) == value.format(res.id)
 
 
 async def test_update(db: DatabaseInterface, table: Table):
@@ -69,6 +74,20 @@ async def test_upsert(db: DatabaseInterface, table: Table):
     assert table.email != "notupdated"
 
 
+async def test_upsert_multiple_constriants(db: DatabaseInterface, table: Table):
+    idx_name = "{}_email_idx".format(table.__tablename__)
+    async with db.get_ddl_session() as sess:
+        await sess.create_index(table.__tablename__, idx_name, "email", "name", unique=True)
+    for i in range(51, 53):
+        async with db.get_session() as sess:
+            query = sess.insert.rows(table(id=51, name="test1", email="test1@example.com"))
+            query = query.on_conflict(table.name, table.email).nothing()
+            await query.run()
+    async with db.get_session() as sess:
+        res = await sess.select(table).where(table.id == 52).first()
+    assert res is None
+
+
 async def test_merge(db: DatabaseInterface, table: Table):
     id_ = 100
     async with db.get_session() as sess:
@@ -82,8 +101,8 @@ async def test_delete(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         await sess.delete(table).where(table.id == 1)
     async with db.get_session() as sess:
-        res = await sess.select(table).first()
-    assert res.id != 1
+        res = await sess.select(table).where(table.id == 1).first()
+    assert res is None
 
 
 async def test_truncate(db: DatabaseInterface, table: Table):

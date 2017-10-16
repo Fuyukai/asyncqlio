@@ -814,9 +814,10 @@ class Table(metaclass=TableMeta, register=False):
 
         return base_query.getvalue(), params
 
-    def _get_upsert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session',
-                        *update_columns: 'md_column.Column',
-                        on_conflict_column: 'md_column.Column',
+    def _get_upsert_sql(self, emitter: 'typing.Callable[[], str]', session: 'md_session.Session',
+                        *,
+                        update_columns: 'typing.List[md_column.Column]',
+                        on_conflict_columns: 'typing.List[md_column.Column]',
                         on_conflict_update: bool):
         """
         Gets the UPSERT sql for this row.
@@ -825,7 +826,7 @@ class Table(metaclass=TableMeta, register=False):
 
         :param session: The :class:`.Session` whose dialect to use when creating the SQL.
         :param update_columns: The :class:`.Column` objects to update on conflict.
-        :param on_conflict_column: The :class:`.Column` on which there may be a conflict.
+        :param on_conflict_columns: The :class:`.Column` objects on which there may be a conflict.
         :param on_conflict_update: Whether to update the table on conflict.
         """
         params = {}
@@ -846,10 +847,11 @@ class Table(metaclass=TableMeta, register=False):
 
         for fmt_param in needed_params:
             if fmt_param == "where":
-                param = emitter()
-                fmt_params["where"] = "{}={}".format(on_conflict_column.quoted_fullname,
-                                                     session.bind.emit_param(param))
-                params[param] = self.get_column_value(on_conflict_column)
+                fmt_params["where"] = " AND ".join("{}={}".format(col.quoted_fullname,
+                                                   session.bind.emit_param(param))
+                                                   for col in on_conflict_columns)
+                params.update({emitter(): self.get_column_value(col)
+                               for col in on_conflict_columns})
 
             elif fmt_param == "update":
                 fmt_params["update"] = ", ".join("{}={}".format(col.quoted_name, param)
@@ -866,7 +868,8 @@ class Table(metaclass=TableMeta, register=False):
                 )
 
             elif fmt_param == "col":
-                fmt_params["col"] = on_conflict_column.quoted_name
+                names = ", ".join(col.quoted_name for col in on_conflict_columns)
+                fmt_params["col"] = names
 
             else:
                 raise RuntimeError("Driver passed an invalid format specification.")

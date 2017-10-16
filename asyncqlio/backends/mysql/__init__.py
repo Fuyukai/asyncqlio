@@ -70,15 +70,15 @@ class MysqlDialect(BaseDialect):
     def get_upsert_sql(self, table_name, *, on_conflict_update=True):
         sql = io.StringIO()
         params = {"insert"}
-        sql.write("INSERT INTO ")
+        sql.write("INSERT ")
+        if not on_conflict_update:
+            sql.write("IGNORE ")
+        sql.write("INTO ")
         sql.write(table_name)
-        sql.write(" {insert} ON DUPLICATE KEY UPDATE ")
+        sql.write(" {insert}")
         if on_conflict_update:
             params.add("update")
-            sql.write("{update}")
-        else:
-            params.add("col")
-            sql.write("{col}={col}")
+            sql.write(" ON DUPLICATE KEY UPDATE {update}")
         sql.write(";")
         return sql.getvalue(), params
 

@@ -351,7 +351,7 @@ class Session(SessionBase):
             returned_row = await cur.fetch_row()
 
             # if we have returns, we can store the column values directly
-            if self.bind.dialect.has_returns:
+            if self.bind.dialect.has_returns and returned_row is not None:
                 for colname, value in returned_row.items():
                     column = row.table.get_column(colname)
                     if column is None:
