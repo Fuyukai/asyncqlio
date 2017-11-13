@@ -41,8 +41,8 @@ class ColumnChange(abc.ABC):
         """
         self.column = column
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def current_value(self) -> typing.Any:
         """
         :return: The current value for the column, i.e. after the change.
