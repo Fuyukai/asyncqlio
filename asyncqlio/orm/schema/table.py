@@ -968,7 +968,7 @@ class Table(metaclass=TableMeta, register=False):
             raise RuntimeError("This row is marked as deleted")
 
         if track_history:
-            change = md_history.ColumnChange(column)
+            change = md_history.ValueChange(column)
             if column in self._history:
                 history = change.handle_change_with_history(self._history[change], value)
             else:
