@@ -42,4 +42,6 @@ from asyncqlio.orm.schema.table import Table, table_base
 from asyncqlio.orm.schema.history import ColumnChange, ValueChange
 from asyncqlio.orm.schema.types import BigInt, BigSerial, Boolean, ColumnType, Integer, Numeric, \
      Real, Serial, SmallInt, SmallSerial, String, Text, Timestamp
+
+from asyncqlio.orm.schema.history import ColumnChange, ValueChange
 from asyncqlio.orm.session import Session
