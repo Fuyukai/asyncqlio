@@ -32,13 +32,13 @@ from asyncqlio.backends.base import BaseConnector, BaseDialect, BaseResultSet, B
 # import helpers
 from asyncqlio.db import DatabaseInterface
 from asyncqlio.exc import *
-from asyncqlio.orm.inspection import get_pk, get_row_history, get_row_session
+from asyncqlio.orm.inspection import get_pk, get_row_session
 # orm
 from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.index import Index
 from asyncqlio.orm.schema.relationship import ForeignKey, Relationship
 from asyncqlio.orm.schema.table import Table, table_base
-# int types; misc; string types; dt types
+from asyncqlio.orm.schema.history import ColumnChange, ValueChange
 from asyncqlio.orm.schema.types import BigInt, BigSerial, Boolean, ColumnType, Integer, Real, \
      Serial, SmallInt, SmallSerial, String, Text, Timestamp
 from asyncqlio.orm.session import Session

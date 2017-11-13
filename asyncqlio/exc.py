@@ -2,6 +2,9 @@
 Exceptions for asyncqlio.
 """
 
+__all__ = ["DatabaseException", "SchemaError", "IntegrityError", "OperationalError",
+           "NoSuchColumnError", "UnsupportedOperationException"]
+
 
 class DatabaseException(Exception):
     """
