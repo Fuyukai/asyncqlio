@@ -4,6 +4,7 @@ Classes for the history API.
 .. currentmodule:: asyncqlio.orm.schema.history
 """
 import abc
+import typing
 from typing import Any, Callable
 
 from asyncqlio.orm.operators import OperatorResponse
@@ -39,6 +40,13 @@ class ColumnChange(abc.ABC):
         :param column: The :class:`.Column` this change is for.
         """
         self.column = column
+
+    @abc.abstractmethod
+    @property
+    def current_value(self) -> typing.Any:
+        """
+        :return: The current value for the column, i.e. after the change.
+        """
 
     @abc.abstractmethod
     def handle_change(self, before: Any, after: Any) -> None:
@@ -80,6 +88,10 @@ class ValueChange(ColumnChange):
 
         #: The new value of the column.
         self._new = None
+
+    @property
+    def current_value(self):
+        return self._new
 
     def handle_change(self, before: Any, after: Any):
         self._previous = before

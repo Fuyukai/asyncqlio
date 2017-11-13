@@ -4,7 +4,7 @@ Inspection module - contains utilities for inspecting Table objects and Row obje
 import typing
 
 from asyncqlio.orm import session as md_session
-from asyncqlio.orm.schema import column as md_column, table as md_table
+from asyncqlio.orm.schema import table as md_table
 
 
 def get_row_session(row: 'md_table.Table') -> 'md_session.Session':
@@ -14,24 +14,6 @@ def get_row_session(row: 'md_table.Table') -> 'md_session.Session':
     :param row: The :class:`.Table` instance to inspect.
     """
     return row._session
-
-
-def get_row_history(row: 'md_table.Table') \
-        -> 'typing.Dict[md_column.Column, typing.Dict[str, typing.Any]]':
-    """
-    Gets the history for the specified row.
-
-    This returns a dict, indexed by Column, with values being another dict with `old` and `new` keys
-    that represent the old and new values of the item.
-    """
-    d = {}
-    for column in row.table.iter_columns():
-        old_value = row.get_old_value(column)
-        new_value = row.get_column_value(column, return_default=False)
-
-        d[column] = {"old": old_value, "new": new_value}
-
-    return d
 
 
 def get_pk(row: 'md_table.Table', as_tuple: bool = True):
