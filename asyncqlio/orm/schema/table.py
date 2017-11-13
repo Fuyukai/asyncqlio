@@ -786,7 +786,7 @@ class Table(metaclass=TableMeta, register=False):
         base_query.write(" WHERE (")
         where_clauses = 0
 
-        for column in self.table.primary_key.columns:
+        for idx, column in enumerate(self.table.primary_key.columns):
             # don't use history object here, however
             try:
                 value = self._values[column]
@@ -800,6 +800,11 @@ class Table(metaclass=TableMeta, register=False):
             params[param] = value
             base_query.write("{} = {}".format(column.quoted_fullname,
                                               session.bind.emit_param(param)))
+
+            if idx < len(self.table.primary_key.columns):
+                base_query.write(" AND ")
+
+        base_query.write(")")
 
         if where_clauses == 0:
             raise ValueError("No where clauses specified when generating update")
