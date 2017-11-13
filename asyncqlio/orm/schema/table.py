@@ -798,7 +798,8 @@ class Table(metaclass=TableMeta, register=False):
 
             param = emitter()
             params[param] = value
-            base_query.write("{} = {}".format(column.quoted_fullname, param))
+            base_query.write("{} = {}".format(column.quoted_fullname,
+                                              session.bind.emit_param(param)))
 
         if where_clauses == 0:
             raise ValueError("No where clauses specified when generating update")
