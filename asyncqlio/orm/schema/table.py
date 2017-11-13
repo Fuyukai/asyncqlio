@@ -976,11 +976,11 @@ class Table(metaclass=TableMeta, register=False):
         if track_history:
             change = md_history.ValueChange(column)
             if column in self._history:
-                history = change.handle_change_with_history(self._history[change], value)
+                change.handle_change_with_history(self._history[column], value)
             else:
-                history = change.handle_change(self._values[change], value)
+                 change.handle_change(self._values[column], value)
 
-            self._history[column] = history
+            self._history[column] = change
         else:
             self._values[column] = value
 
