@@ -710,7 +710,8 @@ class Table(metaclass=TableMeta, register=False):
     __hash__ = object.__hash__
 
     # sql generation methods
-    def _get_insert_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session'):
+    def _get_insert_sql(self, emitter: typing.Callable[[], typing.Tuple[str, str]],
+                        session: 'md_session.Session'):
         """
         Gets the INSERT into statement SQL for this row.
         """
@@ -734,13 +735,12 @@ class Table(metaclass=TableMeta, register=False):
                     sql_params.append("DEFAULT")
             else:
                 # emit a new param
-                name = emitter()
-                param_name = session.bind.emit_param(name)
+                param, name = emitter()
                 # set the params to value
                 # then add the {param_name} to the VALUES
                 params[name] = value
                 column_names.append(column.quoted_name)
-                sql_params.append(param_name)
+                sql_params.append(param)
 
         q.write("({}) ".format(", ".join(column_names)))
         q.write("VALUES ")
@@ -759,7 +759,8 @@ class Table(metaclass=TableMeta, register=False):
         q.write(";")
         return q.getvalue(), params
 
-    def _get_update_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session'):
+    def _get_update_sql(self, emitter: typing.Callable[[], typing.Tuple[str, str]],
+                        session: 'md_session.Session'):
         """
         Gets the UPDATE statement SQL for this row.
         """
@@ -875,8 +876,8 @@ class Table(metaclass=TableMeta, register=False):
 
         return sql, params
 
-    def _get_delete_sql(self, emitter: typing.Callable[[], str], session: 'md_session.Session') \
-            -> typing.Tuple[str, typing.Any]:
+    def _get_delete_sql(self, emitter: typing.Callable[[], typing.Tuple[str, str]],
+                        session: 'md_session.Session') -> typing.Tuple[str, typing.Any]:
         """
         Gets the DELETE sql for this row.
         """
@@ -891,9 +892,9 @@ class Table(metaclass=TableMeta, register=False):
 
         for col, value in zip(self.table.primary_key.columns,
                               md_inspection.get_pk(self, as_tuple=True)):
-            name = emitter()
+            param, name = emitter()
             params[name] = value
-            wheres.append("{} = {}".format(col.quoted_fullname, session.bind.emit_param(name)))
+            wheres.append("{} = {}".format(col.quoted_fullname, param))
 
         query.write("WHERE ({}) ".format(" AND ".join(wheres)))
         return query.getvalue(), params

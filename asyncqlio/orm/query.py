@@ -254,8 +254,6 @@ class SelectQuery(BaseQuery):
         """
         Generates the SQL for this query.
         """
-        counter = itertools.count()
-
         # calculate the column names
         foreign_tables, joins = self.get_required_join_paths()
         selected_columns = self.table.iter_columns()
@@ -538,13 +536,9 @@ class InsertQuery(BaseQuery):
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
-        counter = itertools.count()
-
-        def emit():
-            return "param_{}".format(next(counter))
 
         for row in self.rows_to_insert:
-            query, params = row._get_insert_sql(emit, self.session)
+            query, params = row._get_insert_sql(self.session.bind.emit_param, self.session)
             queries.append((query, params))
 
         return queries
@@ -728,8 +722,7 @@ class BulkUpdateQuery(BulkQuery):
         query = io.StringIO()
         query.write('UPDATE {} SET '.format(self._table.__quoted_name__))
 
-        # define counter and params used in generating sql
-        counter = itertools.count()
+        # define params used in generating sql
         params = {}
 
         # get the sql and params from the generate_sql call
@@ -778,8 +771,7 @@ class BulkDeleteQuery(BulkQuery):
         query = io.StringIO()
         query.write("DELETE FROM {} ".format(self._table.__quoted_name__))
 
-        # define counter and params used in generating sql
-        counter = itertools.count()
+        # define params used in generating sql
         params = {}
 
         # format conditions
@@ -850,13 +842,9 @@ class RowUpdateQuery(BaseQuery):
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
-        counter = itertools.count()
-
-        def emit():
-            return "param_{}".format(next(counter))
 
         for row in self.rows_to_update:
-            queries.append(row._get_update_sql(emit, self.session))
+            queries.append(row._get_update_sql(self.session.bind.emit_param, self.session))
 
         return queries
 
@@ -902,13 +890,9 @@ class RowDeleteQuery(BaseQuery):
             - The SQL query+params to emit to actually insert the row
         """
         queries = []
-        counter = itertools.count()
-
-        def emit():
-            return "param_{}".format(next(counter))
 
         for row in self.rows_to_delete:
-            queries.append(row._get_delete_sql(emit, self.session))
+            queries.append(row._get_delete_sql(self.session.bind.emit_param, self.session))
 
         return queries
 
