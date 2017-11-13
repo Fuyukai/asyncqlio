@@ -796,10 +796,10 @@ class Table(metaclass=TableMeta, register=False):
             else:
                 where_clauses += 1
 
-            param = emitter()
+            name, param = emitter()
             params[param] = value
             base_query.write("{} = {}".format(column.quoted_fullname,
-                                              session.bind.emit_param(param)))
+                                              name))
 
             if idx + 1 < len(self.table.primary_key.columns):
                 base_query.write(" AND ")

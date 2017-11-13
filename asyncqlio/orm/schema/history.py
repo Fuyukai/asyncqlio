@@ -4,8 +4,7 @@ Classes for the history API.
 .. currentmodule:: asyncqlio.orm.schema.history
 """
 import abc
-import typing
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 from asyncqlio.orm.operators import OperatorResponse
 from asyncqlio.orm.schema import column as md_column
@@ -43,7 +42,7 @@ class ColumnChange(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def current_value(self) -> typing.Any:
+    def current_value(self) -> Any:
         """
         :return: The current value for the column, i.e. after the change.
         """
@@ -70,7 +69,7 @@ class ColumnChange(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_update_sql(self, emitter: Callable[[], str]) -> 'OperatorResponse':
+    def get_update_sql(self, emitter: Callable[[], Tuple[str, str]]) -> 'OperatorResponse':
         """
         :return: The UPDATE SQL (the part after the ``SET``) for this change.
         """
@@ -102,7 +101,7 @@ class ValueChange(ColumnChange):
         self._previous = previous._previous
         self._new = new
 
-    def get_update_sql(self, emitter: Callable[[], str]) -> 'OperatorResponse':
-        name = emitter()
-        sql = "{} = {}".format(self.column.quoted_fullname, name)
+    def get_update_sql(self, emitter: Callable[[], Tuple[str, str]]) -> 'OperatorResponse':
+        emitted, name = emitter()
+        sql = "{} = {}".format(self.column.quoted_fullname, emitted)
         return OperatorResponse(sql, {name: self._new})
