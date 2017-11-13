@@ -931,10 +931,10 @@ class Table(metaclass=TableMeta, register=False):
             raise ValueError("Column table must match row table")
 
         try:
-            return self._history[self.column].current_value
+            return self._history[column].current_value
         except KeyError:
             try:
-                return self._values[self.column]
+                return self._values[column]
             except KeyError:
                 if return_default:
                     default = column.default
