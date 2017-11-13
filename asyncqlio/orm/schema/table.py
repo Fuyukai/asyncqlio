@@ -801,7 +801,7 @@ class Table(metaclass=TableMeta, register=False):
             base_query.write("{} = {}".format(column.quoted_fullname,
                                               session.bind.emit_param(param)))
 
-            if idx < len(self.table.primary_key.columns):
+            if idx + 1 < len(self.table.primary_key.columns):
                 base_query.write(" AND ")
 
         base_query.write(")")
