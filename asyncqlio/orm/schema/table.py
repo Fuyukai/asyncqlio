@@ -924,6 +924,10 @@ class Table(metaclass=TableMeta, register=False):
         """
         Gets the value from the specified column in this row.
 
+        .. warning::
+
+            This method should not be used by user code; it is for types to interface with only.
+
         :param column: The column.
         :param return_default: If this should return the column default, or NO_VALUE.
         """
@@ -945,22 +949,35 @@ class Table(metaclass=TableMeta, register=False):
                 else:
                     return NO_VALUE
 
-    def store_column_value(self, column: 'md_column.Column', value: typing.Any):
+    def store_column_value(self, column: 'md_column.Column', value: typing.Any,
+                           *, track_history: bool = True):
         """
         Updates the value of a column in this row.
-
         This will also update the history of the value, if applicable.
+
+        .. warning::
+
+            This method should not be used by user code; it is for types to interface with only.
+
+        :param column: The column to store.
+        :param value: The value to store in the column.
+        :param track_history: Should history be tracked? Only false if creating a row from a data \
+            source.
         """
         if self.__deleted:
             raise RuntimeError("This row is marked as deleted")
 
-        change = md_history.ColumnChange(column)
-        if column in self._history:
-            history = change.handle_change_with_history(self._history[change], value)
-        else:
-            history = change.handle_change(self._values[change], value)
+        if track_history:
+            change = md_history.ColumnChange(column)
+            if column in self._history:
+                history = change.handle_change_with_history(self._history[change], value)
+            else:
+                history = change.handle_change(self._values[change], value)
 
-        self._history[column] = history
+            self._history[column] = history
+        else:
+            self._values[column] = value
+
         return self
 
     def get_relationship_instance(self, relation_name: str):
