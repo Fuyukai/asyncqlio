@@ -347,11 +347,11 @@ class SelectQuery(BaseQuery):
         # create a new Table
         row = self.table._internal_from_row(row_expando, existed=True)
 
-        # update previous values
+        # update values
         for column in self.table.iter_columns():
             val = row.get_column_value(column, return_default=False)
             if val is not NO_VALUE:
-                row._previous_values[column] = val
+                row._values[column] = val
 
         # update the existed
         md_inspection._set_mangled(row, "existed", True)
