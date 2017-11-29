@@ -7,7 +7,7 @@ __path__ = extend_path(__path__, __name__)
 DEFAULT_CONNECTOR = "aiomysql"
 
 
-class MySQLDialect(BaseDialect):
+class MysqlDialect(BaseDialect):
     """
     The dialect for MySQL.
     """
