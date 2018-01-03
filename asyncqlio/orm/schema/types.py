@@ -4,6 +4,7 @@ Column types.
 
 import abc
 import datetime
+import decimal
 import typing
 
 from asyncqlio.exc import DatabaseException
@@ -356,3 +357,53 @@ class Timestamp(ColumnType):
 
     def validate_set(self, row, value):
         return isinstance(value, datetime.datetime)
+
+
+class Numeric(ColumnType):
+    """
+    Represents a NUMERIC type.
+
+    .. note::
+        :class:`.Numeric` type columns are similar to :class:`.Real` objects, except Numeric
+        represents an explicit known value (``DECIMAL``, ``NUMERIC``, ``DOUBLE``, etc) and not
+        a floating point type like ``REAL``, or ``FLOAT``. Use :class:`.Real` for floating points.
+    """
+
+    def __init__(self, precision: int = 10, scale: int = 0, asdecimal: bool = True):
+        """
+        :param precision: Total number of digits stored, excluding the the decimal.
+        :param scale: Number of digits to be stored after the decimal point.
+        :param asdecimal: Set value as Python ``decimal.Decimal``, floats are used when false.
+        """
+        super().__init__()
+
+        self.precision = precision
+        self.scale = scale
+        self.asdecimal = asdecimal
+
+    def sql(self):
+        if self.scale <= 0:
+            return "NUMERIC({})".format(self.precision)
+
+        return "NUMERIC({},{})".format(self.precision, self.scale)
+
+    def schema(self):
+        name = type(self).__name__
+
+        if self.scale <= 0:
+            return "{}({})".format(name, self.precision)
+
+        return "{}({}, {})".format(name, self.precision, self.scale)
+
+    def on_get(self, row):
+        fmt = '{0:.%df}' % self.scale
+        value = fmt.format(row.get_column_value(self.column))
+
+        if not self.asdecimal:
+            return float(value)
+
+        return decimal.Decimal(value)
+
+    def on_set(self, row, value: typing.Any):
+        fmt = '{0:.%df}' % self.scale
+        return super().on_set(row, fmt.format(value))

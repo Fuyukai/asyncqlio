@@ -16,6 +16,11 @@ DEFAULT_CONNECTOR = "sqlite3"
 find_col_expr = re.compile(r"\((.*)\)")
 
 
+def _parse_numeric_params(t):
+    m = re.search('.*\(([0-9]+)(?:,([0-9]+))?\)', t)
+    return [int(v) if v is not None else 0 for v in m.groups()]
+
+
 class Sqlite3Dialect(BaseDialect):
     """
     The dialect for sqlite3.
@@ -106,6 +111,10 @@ class Sqlite3Dialect(BaseDialect):
                 real_type = md_types.Real
             elif psql_type == "TIMESTAMP":
                 real_type = md_types.Timestamp
+            elif psql_type.startswith("NUMERIC"):
+                real_type = md_types.Numeric(*_parse_numeric_params(psql_type)[1:])
+            elif psql_type.startswith("DECIMAL"):
+                real_type = md_types.Numeric(*_parse_numeric_params(psql_type)[1:])
             else:
                 raise DatabaseException("Cannot parse type {}".format(psql_type))
 
