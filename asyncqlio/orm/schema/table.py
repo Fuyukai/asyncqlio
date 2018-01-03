@@ -583,6 +583,9 @@ class Table(metaclass=TableMeta, register=False):
             return cls._columns[column_name]
         except KeyError:
             for column in cls._columns.values():
+                if column.name == column_name:
+                    return column
+
                 alias = column.alias_name(table=cls)
                 if alias == column_name:
                     return column
