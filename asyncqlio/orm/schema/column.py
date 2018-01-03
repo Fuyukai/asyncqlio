@@ -172,9 +172,10 @@ class Column(object):
         :param owner: The :class:`.Table` this Column is on.
         :param name: The str name of this table.
         """
-        logger.debug("Column created with name {} on {}".format(name, owner))
-        self.name = name
-        self.table = owner
+        if self.name is None:
+            logger.debug("Column created with name {} on {}".format(name, owner))
+            self.name = name
+            self.table = owner
 
     def __getattr__(self, item):
         # try and get it from the columntype
