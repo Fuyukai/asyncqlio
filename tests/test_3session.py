@@ -91,7 +91,7 @@ async def test_upsert_multiple_constriants(db: DatabaseInterface, table: Table):
 async def test_merge(db: DatabaseInterface, table: Table):
     id_ = 100
     async with db.get_session() as sess:
-        await sess.execute("insert into {} values ({}, 'test', '')"
+        await sess.execute("insert into {} values ({}, 'test', '', 0, 0)"
                            .format(table.__tablename__, id_))
     async with db.get_session() as sess:
         await sess.merge(table(id=id_))
@@ -111,3 +111,16 @@ async def test_truncate(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         res = await sess.select(table).first()
     assert res is None
+
+
+async def test_numeric_decimal(db: DatabaseInterface, table: Table):
+    async with db.get_session() as sess:
+        query = sess.insert.rows(table(id=110, name="numeric", email="", lat=12.010, lon=12.010))
+        await query.run()
+    async with db.get_session() as sess:
+        res = await sess.select(table).where(table.id == 110).first()
+
+    import decimal
+
+    assert str(res.lat) == "12.010"
+    assert str(res.lon) == "12.01"

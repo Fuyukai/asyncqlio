@@ -108,6 +108,10 @@ class MysqlDialect(BaseDialect):
                 real_type = md_types.Real
             elif mysql_type == "timestamp":
                 real_type = md_types.Timestamp
+            elif mysql_type == "double":
+                real_type = md_types.Numeric
+            elif mysql_type == "decimal":
+                real_type = md_types.Numeric
             else:
                 raise DatabaseException("Cannot parse type {}".format(mysql_type))
 

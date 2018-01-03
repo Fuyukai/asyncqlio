@@ -11,7 +11,13 @@ from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.index import Index
 from asyncqlio.orm.schema.relationship import Relationship, ForeignKey
 from asyncqlio.orm.schema.table import table_base as table_base
-from asyncqlio.orm.schema.types import Integer, Text, String
+from asyncqlio.orm.schema.types import (
+    Integer,
+    Text,
+    String,
+    Numeric,
+    Timestamp,
+)
 
 # mark all test_ functions as coroutines
 pytestmark = pytest.mark.asyncio
@@ -23,6 +29,9 @@ person_body = '''class Person(Table):
     ssn = Column(Integer(), unique=True)
     name = Column(String(128))
     age = Column(Integer())
+    lat = Column(Numeric(5, 2))
+    lon = Column(Numeric(5))
+    created = Column(Timestamp())
     person_name_idx = Index(name)
     person_age_idx = Index(age)
     cars = Relationship(left="Person.id", right="Car.owner_id")

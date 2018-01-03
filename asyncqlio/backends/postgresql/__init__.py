@@ -135,6 +135,10 @@ FROM information_schema.columns
                 real_type = md_types.Real
             elif psql_type.startswith("timestamp"):
                 real_type = md_types.Timestamp
+            elif psql_type == "decimal":
+                real_type = md_types.Numeric
+            elif psql_type == "numeric":
+                real_type = md_types.Numeric
             else:
                 raise DatabaseException("Cannot parse type {}".format(psql_type))
 
