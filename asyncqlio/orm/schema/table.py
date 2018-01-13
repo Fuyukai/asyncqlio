@@ -1004,8 +1004,11 @@ class Table(metaclass=TableMeta, register=False):
             change = md_history.ValueChange(column)
             if column in self._history:
                 change.handle_change_with_history(self._history[column], value)
-            else:
+            elif column in self._values:
                 change.handle_change(self._values[column], value)
+            else:
+                # new!
+                change.handle_change(None, value)
 
             self._history[column] = change
         else:
