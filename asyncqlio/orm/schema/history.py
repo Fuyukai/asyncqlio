@@ -103,5 +103,5 @@ class ValueChange(ColumnChange):
 
     def get_update_sql(self, emitter: Callable[[], Tuple[str, str]]) -> 'OperatorResponse':
         emitted, name = emitter()
-        sql = "{} = {}".format(self.column.quoted_fullname, emitted)
+        sql = "{} = {}".format(self.column.quoted_name, emitted)
         return OperatorResponse(sql, {name: self._new})

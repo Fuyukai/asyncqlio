@@ -93,6 +93,7 @@ async def test_merge(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         await sess.execute("insert into {} values ({}, 'test', '', 0, 0)"
                            .format(table.__tablename__, id_))
+
     async with db.get_session() as sess:
         await sess.merge(table(id=id_))
 
@@ -100,6 +101,7 @@ async def test_merge(db: DatabaseInterface, table: Table):
 async def test_delete(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         await sess.delete(table).where(table.id == 1)
+
     async with db.get_session() as sess:
         res = await sess.select(table).where(table.id == 1).first()
     assert res is None
@@ -119,8 +121,6 @@ async def test_numeric_decimal(db: DatabaseInterface, table: Table):
         await query.run()
     async with db.get_session() as sess:
         res = await sess.select(table).where(table.id == 110).first()
-
-    import decimal
 
     assert str(res.lat) == "12.010"
     assert str(res.lon) == "12.01"

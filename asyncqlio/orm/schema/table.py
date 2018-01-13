@@ -657,6 +657,14 @@ class Table(metaclass=TableMeta, register=False):
                 raise TypeError("Unexpected row parameter: '{}'".format(name))
 
             self._values[column] = value
+            # when merging, we need to store
+            change = md_history.ValueChange(column)
+            if column in self._history:
+                change.handle_change_with_history(self._history[column], value)
+            else:
+                change.handle_change(self._values[column], value)
+
+            self._history[column] = change
 
         return self
 
@@ -723,8 +731,7 @@ class Table(metaclass=TableMeta, register=False):
         return tuple(result)
 
     def __getattr__(self, item: str):
-        obb = self._resolve_item(item)
-        return obb
+        return self._resolve_item(item)
 
     __hash__ = object.__hash__
 
@@ -865,7 +872,7 @@ class Table(metaclass=TableMeta, register=False):
         for fmt_param in needed_params:
             if fmt_param == "where":
                 fmt_params["where"] = " AND ".join("{}={}".format(col.quoted_fullname,
-                                                   session.bind.emit_param(param))
+                                                                  session.bind.emit_param(param))
                                                    for col in on_conflict_columns)
                 params.update({emitter(): self.get_column_value(col)
                                for col in on_conflict_columns})
@@ -998,7 +1005,7 @@ class Table(metaclass=TableMeta, register=False):
             if column in self._history:
                 change.handle_change_with_history(self._history[column], value)
             else:
-                 change.handle_change(self._values[column], value)
+                change.handle_change(self._values[column], value)
 
             self._history[column] = change
         else:
