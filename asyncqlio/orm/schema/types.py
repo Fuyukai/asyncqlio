@@ -364,6 +364,7 @@ class Numeric(ColumnType):
     Represents a NUMERIC type.
 
     .. note::
+
         :class:`.Numeric` type columns are similar to :class:`.Real` objects, except Numeric
         represents an explicit known value (``DECIMAL``, ``NUMERIC``, ``DOUBLE``, etc) and not
         a floating point type like ``REAL``, or ``FLOAT``. Use :class:`.Real` for floating points.

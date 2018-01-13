@@ -63,6 +63,14 @@ async def test_update(db: DatabaseInterface, table: Table):
             assert result.name == name
 
 
+async def test_history(db: DatabaseInterface, table: Table):
+    async with db.get_session() as sess:
+        row = await sess.select(table).first()
+        row.name = "test"
+        assert row.name == "test"  # sanity check
+        assert table.name in row._history
+
+
 async def test_upsert(db: DatabaseInterface, table: Table):
     async with db.get_session() as sess:
         query = sess.insert.rows(table(id=1, name="upsert", email="notupdated"))
@@ -121,6 +129,8 @@ async def test_numeric_decimal(db: DatabaseInterface, table: Table):
         await query.run()
     async with db.get_session() as sess:
         res = await sess.select(table).where(table.id == 110).first()
+
+    import decimal
 
     assert str(res.lat) == "12.010"
     assert str(res.lon) == "12.01"

@@ -175,8 +175,6 @@ class Column(object):
         if self.name is None:
             logger.debug("Column created with name {} on {}".format(name, owner))
             self.name = name
-
-        if self.table is None:
             self.table = owner
 
     def __getattr__(self, item):

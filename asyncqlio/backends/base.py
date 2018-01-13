@@ -1,7 +1,6 @@
 """
 The base implementation of a backend. This provides some ABC classes.
 """
-import asyncio
 import collections
 import typing
 from abc import abstractmethod
@@ -107,7 +106,7 @@ class BaseDialect:
         raise NotImplementedError
 
     def get_upsert_sql(self, table_name: str,
-                       *, on_conflict_update: bool=True) -> 'typing.Tuple[str, set]':
+                       *, on_conflict_update: bool = True) -> 'typing.Tuple[str, set]':
         """
         Get a formattable query and a set of required params to execute upsert-like functionality.
 
@@ -331,12 +330,10 @@ class BaseConnector(AsyncABC):
         - :meth:`.BaseConnector.get_db_server_info`
     """
 
-    def __init__(self, dsn: ParseResult, *, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, dsn: ParseResult):
         """
         :param dsn: The :class:`urllib.parse.ParseResult` created from parsing a DSN.
         """
-        self.loop = loop or asyncio.get_event_loop()
-
         self._parse_result = dsn
         self.dsn = dsn.geturl()
         self.host = dsn.hostname
@@ -347,7 +344,7 @@ class BaseConnector(AsyncABC):
         self.params = {k: v[0] for k, v in parse_qs(dsn.query).items()}
 
     @abstractmethod
-    async def connect(self) -> 'BaseConnector':
+    async def connect(self, **kwargs) -> 'BaseConnector':
         """
         Connects the current connector to the database server. This is called automatically by the
         :class:`.DatabaseInterface
@@ -377,11 +374,13 @@ class BaseConnector(AsyncABC):
         :param name: The name of the parameter.
         :return: A string that represents the substitute to be placed in the query.
         """
+
     @abstractmethod
     async def get_db_server_version(self) -> str:
         """
         Gets the version of the DB server running.
         """
+
 
 # python 3.5 dicts are unordered
 # so we inherit from OrderedDict instead of dict
@@ -393,6 +392,7 @@ class DictRow(OrderedDict):
 
     This class allows for accessing both via key and index.
     """
+
     def __getitem__(self, item):
         if isinstance(item, int):
             try:

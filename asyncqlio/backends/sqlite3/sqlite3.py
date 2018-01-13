@@ -82,18 +82,21 @@ class Sqlite3Connector(BaseConnector):
     A connector powered by sqlite3.
     """
 
-    def __init__(self, parsed, *, loop: asyncio.AbstractEventLoop = None,
+    def __init__(self, parsed, *,
                  max_size: int = 12):
-        super().__init__(parsed, loop=loop)
+        super().__init__(parsed)
 
+        self.loop = None
         self.max_size = max_size
         self.pool = None  # type: _SqlitePool
 
-    async def connect(self) -> 'BaseConnector':
+    async def connect(self, *, loop: asyncio.AbstractEventLoop = None) -> 'BaseConnector':
         """
         Creates the new pool of sqlite3 connections.
         """
-        self.pool = _SqlitePool(max_size=self.max_size, database=self.db, **self.params)
+        self.loop = loop or asyncio.get_event_loop()
+        self.pool = _SqlitePool(max_size=self.max_size, database=self.db, loop=self.loop,
+                                **self.params)
         await self.pool.connect()
         return self
 

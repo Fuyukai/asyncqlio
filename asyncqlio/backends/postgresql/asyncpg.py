@@ -171,8 +171,8 @@ class AsyncpgConnector(BaseConnector):
     A connector that uses the `asyncpg <https://github.com/MagicStack/asyncpg>`_ library.
     """
 
-    def __init__(self, parsed, *, loop: asyncio.AbstractEventLoop = None):
-        super().__init__(parsed, loop=loop)
+    def __init__(self, parsed):
+        super().__init__(parsed)
 
         #: The :class:`asyncpg.pool.Pool` connection pool.
         self.pool = None  # type: asyncpg.pool.Pool
@@ -191,13 +191,14 @@ class AsyncpgConnector(BaseConnector):
         # inst
         return "{{{name}}}".format(name=name)
 
-    async def connect(self) -> 'BaseConnector':
+    async def connect(self, *, loop: asyncio.AbstractEventLoop = None) -> 'BaseConnector':
         # create our connection pool
         port = self.port or 5432
+        loop = loop or asyncio.get_event_loop()
         logger.debug("Connecting to {}".format(self.dsn))
         self.pool = await asyncpg.create_pool(host=self.host, port=port, user=self.username,
                                               password=self.password, database=self.db,
-                                              loop=self.loop, **self.params)
+                                              loop=loop, **self.params)
         return self
 
     def get_transaction(self) -> 'AsyncpgTransaction':

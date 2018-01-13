@@ -1,6 +1,7 @@
 """
 The :ref:`aiomysql` connector for MySQL/MariaDB databases.
 """
+import asyncio
 import logging
 import typing
 
@@ -134,18 +135,19 @@ class AiomysqlConnector(BaseConnector):
     A connector that uses the `aiomysql <https://github.com/aio-libs/aiomysql>`_ library.
     """
 
-    def __init__(self, dsn, *, loop=None):
-        super().__init__(dsn, loop=loop)
+    def __init__(self, dsn):
+        super().__init__(dsn)
 
         #: The current connection pool for this connector.
         self.pool = None  # type: aiomysql.Pool
 
-    async def connect(self) -> 'AiomysqlConnector':
+    async def connect(self, *, loop: asyncio.AbstractEventLoop) -> 'AiomysqlConnector':
         """
         Connects this connector.
         """
         # aiomysql doesnt support a nice dsn
         port = self.port or 3306
+        loop = loop or asyncio.get_event_loop()
 
         # XXX: Force SQL mode to be ANSI.
         # This means we don't break randomly, because we attempt to use ANSI when possible.
@@ -154,7 +156,7 @@ class AiomysqlConnector(BaseConnector):
         logger.info("Connecting to MySQL on mysql://{}:{}/{}".format(self.host, port, self.db))
         self.pool = await aiomysql.create_pool(host=self.host, user=self.username,
                                                password=self.password, port=port,
-                                               db=self.db, **self.params)
+                                               db=self.db, loop=loop, **self.params)
         return self
 
     async def close(self, forcefully: bool = False):
