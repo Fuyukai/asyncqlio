@@ -7,6 +7,7 @@ import io
 import itertools
 import logging
 import sys
+import textwrap
 import typing
 from collections import OrderedDict
 
@@ -40,7 +41,22 @@ class TableMetadata(object):
         self.tables = {}
 
         #: The DB object bound to this metadata.
-        self.bind = None  # type: md_db.DatabaseInterface
+        self._bind = None  # type: md_db.DatabaseInterface
+
+    @property
+    def bind(self) -> 'md_db.DatabaseInterface':
+        """
+        :return: The :class:`.DatabaseInterface` bound to this metadata.
+        """
+        if self._bind is None:
+            raise RuntimeError(textwrap.dedent("""No bind has been configured.
+            You need to bind your tables to a DatabaseInterface before doing
+            anything else; this can be done with the usage of
+            DatabaseInterface.bind_tables(table_or_meta) where table_or_meta
+            is your base Table object or your TableMetadata object.
+            """))
+
+        return self._bind
 
     def register_table(self, tbl: 'TableMeta', *,
                        autosetup_tables: bool = False) -> 'TableMeta':
