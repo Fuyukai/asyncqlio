@@ -141,7 +141,7 @@ class AiomysqlConnector(BaseConnector):
         #: The current connection pool for this connector.
         self.pool = None  # type: aiomysql.Pool
 
-    async def connect(self, *, loop: asyncio.AbstractEventLoop) -> 'AiomysqlConnector':
+    async def connect(self, *, loop: asyncio.AbstractEventLoop = None) -> 'AiomysqlConnector':
         """
         Connects this connector.
         """
