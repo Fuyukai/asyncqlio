@@ -5,19 +5,7 @@ Tests methods of Table.
 import pytest
 
 from asyncqlio.db import DatabaseInterface
-from asyncqlio.exc import DatabaseException
-
-from asyncqlio.orm.schema.column import Column
-from asyncqlio.orm.schema.index import Index
-from asyncqlio.orm.schema.relationship import Relationship, ForeignKey
 from asyncqlio.orm.schema.table import table_base as table_base
-from asyncqlio.orm.schema.types import (
-    Integer,
-    Text,
-    String,
-    Numeric,
-    Timestamp,
-)
 
 # mark all test_ functions as coroutines
 pytestmark = pytest.mark.asyncio
@@ -87,7 +75,4 @@ async def test_generate_schema():
 
 async def test_drop_table():
     for table in tables:
-        try:
-            await table.drop(cascade=True)
-        except DatabaseException:
-            pass
+        await table.drop(cascade=True)

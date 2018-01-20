@@ -15,6 +15,8 @@ class DDLSession(SessionBase):
     """
     A session for executing DDL statements in.
     """
+    def __aenter__(self) -> 'typing.Coroutine[None, None, DDLSession]':
+        return super().__aenter__()
 
     async def create_table(self, table_name: str,
                            *items: 'typing.Union[md_column.Column, md_index.Index]',

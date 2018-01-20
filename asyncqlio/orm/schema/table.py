@@ -499,6 +499,25 @@ class Table(metaclass=TableMeta, register=False):
             await sess.drop_table(cls.__tablename__, if_exists=if_exists, cascade=cascade)
 
     @classmethod
+    @enforce_bound
+    async def get(cls, *conditions) -> 'Table':
+        """
+        Gets a single row of this table from the database.
+
+        .. warning::
+
+            The resulting row will not be bound to a session.
+
+        :param conditions: The conditions to filter on.
+        :return: A new :class:`.Table` instance that was found in the database.
+        """
+        async with cls.metadata.bind.get_session() as sess:
+            row = await sess.select.from_(cls).where(*conditions).first()
+
+        row = row._unbind()
+        return row
+
+    @classmethod
     async def truncate(cls, *, cascade: bool = False):
         """
         Truncates this table.
@@ -668,9 +687,17 @@ class Table(metaclass=TableMeta, register=False):
 
         return self
 
-    def __repr__(self):
-        gen = ("{}={}".format(col.name, self.get_column_value(col)) for col in self.table.columns)
-        return "<{} {}>".format(self.table.__name__, " ".join(gen))
+    def _unbind(self):
+        """
+        Unbinds this row from the current session.
+        """
+        self._session = None
+        return self
+
+    def __repr__(self) -> str:
+        gen = ("{!r}={!r}".format(col.name,
+                                  self.get_column_value(col)) for col in self.table.columns)
+        return "<{!r} {}>".format(self.table.__name__, " ".join(gen))
 
     def __eq__(self, other):
         if not isinstance(other, Table):

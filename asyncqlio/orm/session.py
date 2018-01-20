@@ -188,6 +188,8 @@ class Session(SessionBase):
         # get a session from our db interface
         sess = db.get_session()
     """
+    def __aenter__(self) -> 'typing.Coroutine[None, None, Session]':
+        return super().__aenter__()
 
     # Query builders
     @property

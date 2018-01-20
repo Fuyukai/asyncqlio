@@ -53,6 +53,11 @@ async def test_select(db: DatabaseInterface, table: Table):
         assert getattr(res, attr, object()) == value.format(res.id)
 
 
+async def test_table_get(db: DatabaseInterface, table: Table):
+    row = await table.get(Table.name == "test1")
+    assert row
+
+
 async def test_update(db: DatabaseInterface, table: Table):
     name = "test2"
     async with db.get_session() as sess:
@@ -129,8 +134,6 @@ async def test_numeric_decimal(db: DatabaseInterface, table: Table):
         await query.run()
     async with db.get_session() as sess:
         res = await sess.select(table).where(table.id == 110).first()
-
-    import decimal
 
     assert str(res.lat) == "12.010"
     assert str(res.lon) == "12.01"
