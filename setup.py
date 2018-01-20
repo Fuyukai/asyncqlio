@@ -30,7 +30,7 @@ setup(
     license="MIT",
     author="Laura Dickinson",
     author_email="l@veriny.tf",
-    description="An asyncio ORM for Python 3.5+",
+    description="An async ORM for Python 3.5+",
     long_description=Path(__file__).with_name("README.rst").read_text(encoding="utf-8"),
     setup_requires=[
         "setuptools_scm",
@@ -50,10 +50,10 @@ setup(
             "guzzle_sphinx_theme",
             "typing"  # for rtd
         ],
-        "postgresql": [
+        "asyncpg": [
             "asyncpg>=0.12.0"
         ],
-        "mysql": [
+        "aiomysql": [
             "aiomysql>=0.0.9",
         ]
     },

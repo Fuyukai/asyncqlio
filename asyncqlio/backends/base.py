@@ -382,10 +382,6 @@ class BaseConnector(AsyncABC):
         """
 
 
-# python 3.5 dicts are unordered
-# so we inherit from OrderedDict instead of dict
-# also, python 3.6+ dicts aren't technically ordered
-# it's just a side effect
 class DictRow(OrderedDict):
     """
     Represents a row returned from a base result set, in dict form.
