@@ -1,3 +1,13 @@
+"""
+SQLite3 backends.
+
+.. autosummary::
+    :toctree:
+
+    sqlite3
+"""
+
+
 import io
 import re
 from pkgutil import extend_path
@@ -11,7 +21,7 @@ from asyncqlio.orm.schema import types as md_types
 
 __path__ = extend_path(__path__, __name__)
 
-DEFAULT_CONNECTOR = "sqlite3"
+DEFAULT_CONNECTOR = "aiosqlite3"
 
 find_col_expr = re.compile(r"\((.*)\)")
 
@@ -23,7 +33,7 @@ def _parse_numeric_params(t):
 
 class Sqlite3Dialect(BaseDialect):
     """
-    The dialect for sqlite3.
+    The dialect for SQLite3.
     """
 
     @property
@@ -52,6 +62,10 @@ class Sqlite3Dialect(BaseDialect):
 
     @property
     def has_truncate(self):
+        return False
+
+    @property
+    def has_cascade(self):
         return False
 
     def get_primary_key_index_name(self, table_name):

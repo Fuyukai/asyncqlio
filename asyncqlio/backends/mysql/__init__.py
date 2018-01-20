@@ -1,3 +1,14 @@
+"""
+MySQL backends.
+
+.. currentmodule:: asyncqlio.backends.mysql
+
+.. autosummary::
+    :toctree:
+
+    aiomysql
+"""
+
 import io
 import itertools
 import operator
@@ -45,6 +56,10 @@ class MysqlDialect(BaseDialect):
 
     @property
     def has_truncate(self):
+        return True
+
+    @property
+    def has_cascade(self):
         return True
 
     def get_primary_key_index_name(self, table):

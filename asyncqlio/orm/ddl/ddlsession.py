@@ -83,13 +83,18 @@ class DDLSession(SessionBase):
         :param table_name: The name of the table to drop.
         :param cascade: Should this drop cascade?
         :param if_exists: Should we should only attempt to drop tables that exist?
+
+        .. note::
+
+            The ``cascade`` param is silently dropped if the database does not support it.
         """
         base = io.StringIO()
         base.write("DROP TABLE ")
         if if_exists:
             base.write("IF EXISTS ")
         base.write(table_name)
-        if cascade:
+        # TODO: Possibly handle this ourselves?
+        if cascade and self.bind.dialect.has_cascade:
             base.write(" CASCADE")
         base.write(";")
 

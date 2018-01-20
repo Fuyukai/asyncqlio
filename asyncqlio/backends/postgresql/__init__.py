@@ -65,6 +65,10 @@ class PostgresqlDialect(BaseDialect):
     def has_truncate(self):
         return True
 
+    @property
+    def has_cascade(self):
+        return True
+
     def get_primary_key_index_name(self, table_name):
         return "{}_pkey".format(table_name)
 
