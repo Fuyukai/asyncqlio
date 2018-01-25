@@ -8,7 +8,7 @@ Code Style
 
 asyncqlio has a strict code style that must be followed:
 
- - `PEP 8<https://www.python.org/dev/peps/pep-0008/>_` is to be followed with several exceptions:
+ - `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`__ is to be followed with several exceptions:
 
     - The line length limit is 100 characters.
 
@@ -16,7 +16,7 @@ asyncqlio has a strict code style that must be followed:
 
  - All docstrings must use double quotes, not single quotes.
 
- - Docstrings must always have a newline after the opened ``"""`` and before the closing ``"""``.
+ - Docstrings must always have a newline after the opening ``"""`` and before the closing ``"""``.
    This includes single line docstrings.
 
  - Absolute imports only. No relative imports are allowed.
@@ -33,6 +33,7 @@ checkers to work.
 
 Type annotations that reference ORM objects must be enclosed in single quotes; type annotations
 to refer to other objects must not.
+
 .. code-block:: python3
 
     # Good
