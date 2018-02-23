@@ -824,7 +824,7 @@ class Table(metaclass=TableMeta, register=False):
         base_query = io.StringIO()
         base_query.write("UPDATE {} SET ".format(self.__quoted_name__))
 
-        for column in self.table.columns:
+        for idx, column in enumerate(self.table.columns):
             # lookup the history object
             # if there is none, there's been no change
             try:
@@ -835,6 +835,9 @@ class Table(metaclass=TableMeta, register=False):
             response = change.get_update_sql(emitter)
             base_query.write(" ")
             base_query.write(response.sql)
+            if idx + 1 != len(self.table.columns):
+                base_query.write(", ")
+
             params.update(response.parameters)
 
         base_query.write(" WHERE (")
