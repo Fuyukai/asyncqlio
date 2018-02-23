@@ -824,7 +824,7 @@ class Table(metaclass=TableMeta, register=False):
         base_query = io.StringIO()
         base_query.write("UPDATE {} SET ".format(self.__quoted_name__))
 
-        written_count = 0
+        sqls = []
         for column in self.table.columns:
             # lookup the history object
             # if there is none, there's been no change
@@ -834,14 +834,10 @@ class Table(metaclass=TableMeta, register=False):
                 continue
 
             response = change.get_update_sql(emitter)
-            base_query.write(" ")
-            base_query.write(response.sql)
-            written_count += 1
-            if written_count < len(self.table.columns):
-                base_query.write(", ")
-
+            sqls.append(response.sql)
             params.update(response.parameters)
 
+        base_query.write(", ".join(sqls))
         base_query.write(" WHERE (")
         where_clauses = 0
 
