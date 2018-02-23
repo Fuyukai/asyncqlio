@@ -835,7 +835,7 @@ class Table(metaclass=TableMeta, register=False):
             response = change.get_update_sql(emitter)
             base_query.write(" ")
             base_query.write(response.sql)
-            if idx + 1 != len(self.table.columns):
+            if idx + 1 < len(self.table.columns):
                 base_query.write(", ")
 
             params.update(response.parameters)
